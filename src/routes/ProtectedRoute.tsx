@@ -1,58 +1,55 @@
-// src/components/ProtectedRoute.tsx
-import { useContext, useEffect } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import React, { useContext } from "react";
+import { Navigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 
-interface Props {
+interface ProtectedRouteProps {
   children: React.ReactNode;
-  role: "admin" | "employee";
+  role?: "admin" | "employee"; // rôle requis pour accéder à la route
 }
 
-export default function ProtectedRoute({ children, role }: Props) {
+const ProtectedRoute = ({ children, role }: ProtectedRouteProps) => {
   const { user, loading } = useContext(AuthContext);
-  const location = useLocation();
 
-  // 🔍 Debug: Log à chaque rendu
-  useEffect(() => {
-    console.log("🛡️ ProtectedRoute render:", {
-      path: location.pathname,
-      requiredRole: role,
-      loading,
-      user: user ? { id: user.id, role: user.role } : null
-    });
-  }, [loading, user, role, location.pathname]);
-
-  // 🔧 FIX: Attendre que le chargement soit terminé avant toute redirection
+  // Tant que le chargement est en cours, on affiche un loader
   if (loading) {
-    console.log("⏳ Chargement en cours...");
     return (
       <div style={{ 
         display: "flex", 
         justifyContent: "center", 
         alignItems: "center", 
-        height: "100vh" 
+        height: "100vh",
+        backgroundColor: "#f5f5f5"
       }}>
-        <p>Chargement...</p>
+        <div style={{ textAlign: "center" }}>
+          <div style={{
+            width: "50px",
+            height: "50px",
+            border: "5px solid #e0e0e0",
+            borderTop: "5px solid #3b82f6",
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+            margin: "0 auto 20px"
+          }}></div>
+          <p style={{ color: "#666", fontSize: "16px" }}>Vérification des permissions...</p>
+        </div>
       </div>
     );
   }
 
-  // Si pas d'utilisateur, rediriger vers login
+  // Si pas de user, redirection vers login
   if (!user) {
-    console.warn("🚫 Pas d'utilisateur - Redirection vers /login");
+    console.warn("⚠️ Accès refusé : Utilisateur non connecté");
     return <Navigate to="/login" replace />;
   }
 
-  // Si l'utilisateur n'a pas le bon rôle, rediriger vers son propre dashboard
-  if (user.role !== role) {
-    const redirectPath = user.role === "admin" 
-      ? "/admin/dashboard" 
-      : "/employee/dashboard";
-    console.warn(`🚫 Mauvais rôle (${user.role} ≠ ${role}) - Redirection vers ${redirectPath}`);
-    return <Navigate to={redirectPath} replace />;
+  // Si rôle requis et utilisateur n'a pas ce rôle, redirection vers dashboard
+  if (role && user.role !== role) {
+    console.warn(`⚠️ Accès refusé : Rôle requis "${role}", rôle actuel "${user.role}"`);
+    return <Navigate to="/dashboard" replace />;
   }
 
-  console.log("✅ Accès autorisé");
-  // Tout est OK, afficher le contenu protégé
+  // Sinon, afficher le contenu protégé
   return <>{children}</>;
-}
+};
+
+export default ProtectedRoute;
