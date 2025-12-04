@@ -30,14 +30,32 @@ export default function DepartmentEdit() {
     load();
   }, []);
 
-  const loadManagers = async () => {
-    try {
-      const res = await api.get("/managers");
-      setManagers(res.data.data || res.data || []);
-    } catch (err) {
-      console.error("❌ Erreur chargement managers:", err);
-    }
-  };
+  // Dans src/modules/departments/edit.tsx
+
+const loadManagers = async () => {
+  try {
+    const res = await api.get("/managers");
+    
+    let fetchedManagers = [];
+    
+    // VERIFICATION CRITIQUE : Assurez-vous d'extraire le tableau.
+    // Si l'API retourne { data: [...] }
+    if (Array.isArray(res.data.data)) {
+      fetchedManagers = res.data.data;
+    // Si l'API retourne [...]
+    } else if (Array.isArray(res.data)) {
+      fetchedManagers = res.data;
+    } 
+    // Si la clé est différente (e.g., res.data.items), ajustez ici.
+    
+    setManagers(fetchedManagers);
+
+  } catch (err) {
+    console.error("❌ Erreur chargement managers:", err);
+    // Assurez-vous qu'en cas d'erreur, managers reste un tableau itérable (vide)
+    setManagers([]); 
+  }
+};
 
   const load = async () => {
     try {

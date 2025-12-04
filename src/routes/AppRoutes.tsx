@@ -13,7 +13,7 @@ import AdminDashboard from "../modules/admin/dashboard";
 import EmployeeDashboard from "../modules/employee/dashboard";
 
 // Employees
-import Employees from "../modules/employees/list";
+import EmployeeList from "../modules/employees/list";
 import EmployeeCreate from "../modules/employees/create";
 import EmployeeEdit from "../modules/employees/edit";
 import EmployeeShow from "../modules/employees/show";
@@ -23,24 +23,6 @@ import Departments from "../modules/departments/list";
 import DepartmentCreate from "../modules/departments/create";
 import DepartmentEdit from "../modules/departments/edit";
 import DepartmentShow from "../modules/departments/show";
-
-// Tasks
-import Tasks from "../modules/tasks/list";
-import TaskCreate from "../modules/tasks/create";
-import TaskEdit from "../modules/tasks/edit";
-import TaskShow from "../modules/tasks/show";
-
-// Roles
-import Roles from "../modules/roles/list";
-import RoleCreate from "../modules/roles/create";
-import RoleEdit from "../modules/roles/edit";
-import RoleShow from "../modules/roles/show";
-
-// Managers
-import Managers from "../modules/managers/list";
-import ManagerCreate from "../modules/managers/create";
-import ManagerEdit from "../modules/managers/edit";
-import ManagerShow from "../modules/managers/show";
 
 // Presences
 import Presences from "../modules/presences/list";
@@ -59,6 +41,24 @@ import Announcements from "../modules/announcements/list";
 import AnnouncementCreate from "../modules/announcements/create";
 import AnnouncementEdit from "../modules/announcements/edit";
 import AnnouncementShow from "../modules/announcements/show";
+
+
+import ManagerCreate from "../modules/managers/create";
+import ManagerEdit from "../modules/managers/edit";
+import ManagerShow from "../modules/managers/show";
+import ManagerList from "../modules/managers/list";
+
+
+import RoleCreate from "../modules/roles/create";
+import RoleEdit from "../modules/roles/edit";
+import RoleShow from "../modules/roles/show";
+import RoleList from "../modules/roles/list";
+
+
+import TaskShow from "../modules/tasks/show";
+import TaskEdit from "../modules/tasks/edit";
+import TaskCreate from "../modules/tasks/create";
+import TaskList from "../modules/tasks/list";
 
 export default function AppRoutes() {
   const { user, loading } = useContext(AuthContext);
@@ -115,7 +115,7 @@ export default function AppRoutes() {
         <Route path="dashboard" element={<AdminDashboard />} />
 
         {/* EMPLOYEES */}
-        <Route path="employees" element={<Employees />} />
+        <Route path="employees" element={<EmployeeList />} />
         <Route path="employees/create" element={<EmployeeCreate />} />
         <Route path="employees/:id/edit" element={<EmployeeEdit />} />
         <Route path="employees/:id" element={<EmployeeShow />} />
@@ -127,19 +127,19 @@ export default function AppRoutes() {
         <Route path="departments/:id" element={<DepartmentShow />} />
 
         {/* TASKS */}
-        <Route path="tasks" element={<Tasks />} />
+        <Route path="tasks" element={<TaskList />} />
         <Route path="tasks/create" element={<TaskCreate />} />
         <Route path="tasks/:id/edit" element={<TaskEdit />} />
         <Route path="tasks/:id" element={<TaskShow />} />
 
         {/* ROLES */}
-        <Route path="roles" element={<Roles />} />
+        <Route path="roles" element={<RoleList />} />
         <Route path="roles/create" element={<RoleCreate />} />
         <Route path="roles/:id/edit" element={<RoleEdit />} />
         <Route path="roles/:id" element={<RoleShow />} />
 
         {/* MANAGERS */}
-        <Route path="managers" element={<Managers />} />
+        <Route path="managers" element={<ManagerList />} />
         <Route path="managers/create" element={<ManagerCreate />} />
         <Route path="managers/:id/edit" element={<ManagerEdit />} />
         <Route path="managers/:id" element={<ManagerShow />} />

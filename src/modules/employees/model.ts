@@ -15,8 +15,8 @@ export interface Role {
 export interface Employee {
   id: number;
   first_name: string;
-  last_name?: string | null;
-  email: string;
+  last_name: string | null | undefined; 
+  email: string | undefined;
   phone?: string | null;
 
   contract_type?: string | null;
@@ -35,8 +35,8 @@ export interface Employee {
 
 export interface EmployeeFormData {
   first_name: string;
-  last_name?: string | null;
-  email: string;
+  last_name: string | null | undefined; 
+  email: string | undefined;
   phone?: string | null;
 
   contract_type?: string | null;
@@ -45,4 +45,10 @@ export interface EmployeeFormData {
 
   department_id?: number | null;
   role_ids?: number[];
+}
+
+export interface EmployeeSelect {
+    id: number;
+    first_name: string;
+last_name: string | null | undefined; 
 }

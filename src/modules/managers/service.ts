@@ -1,46 +1,74 @@
-// src/modules/managers/service.ts
+import { api } from "../../api/axios";
+import type { Department, Employee, Manager, ManagerFormData } from "./model";
 
-import type { Manager } from "./model";
+// --- Types de réponse API ---
 
-
-const API_URL = "http://127.0.0.1:8000/api/managers";
-
-export async function fetchManagers(search = "", page = 1) {
-  const res = await fetch(`${API_URL}?search=${search}&page=${page}`);
-  if (!res.ok) throw new Error("Erreur lors du chargement des managers");
-  return res.json();
+interface PaginatedResponse {
+    current_page: number;
+    data: Manager[];
+    total: number;
+    last_page: number;
+    per_page: number;
 }
 
-export async function getManager(id: number): Promise<Manager> {
-  const res = await fetch(`${API_URL}/${id}`);
-  if (!res.ok) throw new Error("Manager introuvable");
-  return res.json();
+interface DependenciesResponse {
+    employees: Employee[];
+    departments: Department[];
 }
 
-export async function createManager(data: Partial<Manager>) {
-  const res = await fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error("Erreur lors de la création");
-  return res.json();
-}
+// --- Fonctions de chargement des dépendances (pour create.tsx et edit.tsx) ---
 
-export async function updateManager(id: number, data: Partial<Manager>) {
-  const res = await fetch(`${API_URL}/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error("Erreur lors de la modification");
-  return res.json();
-}
+export const fetchEmployeesAndDepartments = async (): Promise<DependenciesResponse> => {
+    const [employeesRes, departmentsRes] = await Promise.all([
+        api.get("/employees?per_page=999"), 
+        api.get("/departments?per_page=999"), 
+    ]);
 
-export async function deleteManager(id: number) {
-  const res = await fetch(`${API_URL}/${id}`, {
-    method: "DELETE",
-  });
-  if (!res.ok) throw new Error("Erreur lors de la suppression");
-  return true;
-}
+    return {
+        employees: employeesRes.data.data || [],
+        departments: departmentsRes.data.data || [],
+    };
+};
+
+// --- CRUD Managers ---
+
+export const fetchManagers = async (page: number = 1, search: string = ""): Promise<PaginatedResponse> => {
+    const response = await api.get(`/managers?page=${page}&search=${search}`);
+    const responseData = response.data || {};
+
+    return {
+        current_page: responseData.current_page || 1,
+        data: responseData.data || [],
+        total: responseData.total || 0,
+        last_page: responseData.last_page || 1,
+        per_page: responseData.per_page || 15,
+    };
+};
+
+// 🎯 CORRECTION : Gérer les deux formats de réponse possibles
+export const getManager = async (id: string): Promise<Manager> => {
+    const response = await api.get(`/managers/${id}`);
+    console.log("📥 Réponse getManager:", response.data);
+    
+    // Si l'API retourne { data: {...} }
+    if (response.data.data) {
+        return response.data.data;
+    }
+    
+    // Si l'API retourne directement l'objet manager
+    return response.data;
+};
+
+export const createManager = async (data: ManagerFormData): Promise<Manager> => {
+    const response = await api.post("/managers", data);
+    return response.data.data || response.data;
+};
+
+export const updateManager = async (id: number, data: ManagerFormData): Promise<Manager> => {
+    const response = await api.put(`/managers/${id}`, data);
+    return response.data.data || response.data;
+};
+
+export const deleteManager = async (id: number): Promise<void> => {
+    await api.delete(`/managers/${id}`);
+};

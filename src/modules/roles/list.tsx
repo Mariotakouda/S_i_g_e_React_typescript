@@ -1,151 +1,149 @@
 // src/modules/roles/list.tsx
+
 import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { RoleService } from "./service";
-import type { Role } from "./model";
+import type { Role, LaravelPaginationResponse } from "./model";
 
-// Définition de l'interface Meta pour améliorer la sûreté du typage
-interface PaginationMeta {
-  current_page: number;
-  last_page: number;
-  prev_page_url: string | null;
-  next_page_url: string | null;
-}
+// État initial sécurisé
+const initialPaginationState: LaravelPaginationResponse<Role> = {
+  current_page: 1, data: [], last_page: 1, per_page: 10, total: 0,
+  first_page_url: '', last_page_url: '', next_page_url: null, prev_page_url: null,
+  from: null, to: null, path: '',
+};
+
+const formatDate = (dateString: string) => {
+  if (!dateString) return 'N/A';
+  return new Date(dateString).toLocaleDateString('fr-FR', { year: 'numeric', month: 'short', day: 'numeric' });
+};
 
 export default function RoleList() {
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  // Initialiser meta avec des valeurs par défaut sécurisées
-  const [meta, setMeta] = useState<PaginationMeta>({ 
-    current_page: 1, 
-    last_page: 1, 
-    prev_page_url: null, 
-    next_page_url: null 
-  });
-  const [loading, setLoading] = useState(false);
+  // Un seul état pour toutes les données de pagination
+  const [paginationData, setPaginationData] = useState<LaravelPaginationResponse<Role>>(initialPaginationState);
+  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Utilisation de useCallback pour stabiliser la fonction de chargement
-  const load = useCallback(async (currentPage: number, currentSearch: string) => {
+  // Déstructuration pour un accès facile
+  const { data: roles, total, current_page, last_page, prev_page_url, next_page_url } = paginationData;
+
+  const load = useCallback(async (currentPage: number, currentSearch: string) => {
     setLoading(true);
-    try {
-      const res = await RoleService.list(currentPage, currentSearch);
-      // ✅ VÉRIFICATION CRITIQUE 1: Assurez-vous que res.data et res.meta existent
-      if (res.data && res.meta) {
-        setRoles(res.data);
-        setMeta(res.meta as PaginationMeta);
-      } else {
-        // Gérer le cas où la structure de la réponse API est inattendue
-        setRoles([]);
-        setMeta({ current_page: 1, last_page: 1, prev_page_url: null, next_page_url: null });
-        console.error("Structure de réponse API inattendue lors du chargement des rôles.");
-      }
-    } catch (error) {
-        console.error("❌ Erreur de chargement des rôles:", error);
-        // Afficher un message d'erreur si le chargement échoue
-        alert("Impossible de charger la liste des rôles. Vérifiez l'API.");
+    setError(null);
+    
+    try {
+      const res = await RoleService.list(currentPage, currentSearch);
+      setPaginationData(res); 
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Impossible de charger la liste des rôles.");
+      // Réinitialise les données pour forcer l'affichage de l'erreur
+      setPaginationData(prev => ({ ...prev, data: [] })); 
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
-  }, []); // La dépendance est vide car currentPage et currentSearch sont passés en arguments
+  }, []);
 
-  useEffect(() => {
-    // ✅ VÉRIFICATION CRITIQUE 2: Déclencher le chargement lorsque page ou search change
-    load(page, search);
-  }, [page, search, load]); 
+  useEffect(() => {
+    load(page, search);
+  }, [page, search, load]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (page !== 1) {
-      setPage(1); // Déclencher useEffect
-    } else {
-      // Si la page est déjà 1, le changement de 'search' seul ne déclenche pas 'useEffect'.
-      // Donc, on force le rechargement ici pour la page 1.
-      load(1, search);
-    }
-  };
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSearch(searchInput);
+    setPage(1); 
+  };
 
-  const remove = async (id: number) => {
-    if (!window.confirm("Supprimer ce rôle ?")) return;
+  const handleClearSearch = () => {
+    setSearchInput("");
+    setSearch("");
+    setPage(1);
+  };
+
+  const remove = async (id: number, name: string) => {
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer le rôle "${name}" ?`)) return;
+    
     setLoading(true);
     try {
-      await RoleService.remove(id);
-      // Après suppression, recharger la page actuelle.
-      load(page, search); 
-    } catch (error) {
-        console.error("Erreur de suppression:", error);
-        alert("Impossible de supprimer le rôle. Il est peut-être utilisé.");
+      await RoleService.remove(id);
+      alert("Rôle supprimé avec succès !");
+      load(page, search); // Recharger la page actuelle
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.message || "Impossible de supprimer le rôle.";
+      alert(errorMsg);
+      setLoading(false);
     }
-  };
+  };
   
-  return (
-    <div style={{ padding: 20 }}>
-      <h2>Liste des rôles</h2>
+  return (
+    <div style={{ padding: 20 }}>
+      <h2>Liste des rôles ({total} trouvés)</h2>
       
-      {/* ... (Formulaire de recherche et bouton de création) ... */}
+      {/* Formulaire de recherche et Création */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <form onSubmit={handleSearch}>
-              <input
-                placeholder="Recherche par nom..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                style={{ padding: '8px', marginRight: '10px' }}
-              />
-              <button type="submit" disabled={loading} style={{ padding: '8px 15px', backgroundColor: '#ccc', border: 'none', borderRadius: '5px', cursor: loading ? 'not-allowed' : 'pointer' }}>Rechercher</button>
-          </form>
-
-          <Link to="create">
-            <button style={{ padding: '10px 15px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>+ Nouveau rôle</button>
-          </Link>
+        <form onSubmit={handleSearch} style={{ display: 'flex', gap: '10px' }}>
+          <input placeholder="Recherche par nom..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} style={{ padding: '8px', width: '250px' }}/>
+          <button type="submit" disabled={loading}> Rechercher </button>
+          {search && <button type="button" onClick={handleClearSearch} disabled={loading}> Réinitialiser </button>}
+        </form>
+        <Link to="create"><button style={{ padding: '10px 15px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}> + Nouveau rôle </button></Link>
       </div>
+
+      {/* Affichage des erreurs */}
+      {error && (
+        <div style={{ padding: '10px', marginBottom: '20px', backgroundColor: '#f8d7da', color: '#721c24', border: '1px solid #f5c6cb', borderRadius: '5px' }}>
+          {error}
+        </div>
+      )}
 
       {/* Affichage de l'état de chargement ou de la liste */}
       {loading && roles.length === 0 ? (
-          <p>Chargement des rôles en cours...</p>
-      ) : roles.length === 0 ? (
-          <p>Aucun rôle trouvé.</p>
+        <p>Chargement des rôles en cours... 
+
+[Image of a data loading indicator]
+</p>
+      ) : roles.length === 0 && !loading ? (
+        <p>Aucun rôle trouvé{search ? ` pour "${search}"` : ''}.</p>
       ) : (
-          <>
-            <table border={1} cellPadding={6} style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                    <tr style={{ backgroundColor: '#f0f0f0' }}>
-                      <th>ID</th>
-                      <th>Nom</th>
-                      <th>Actions</th>
-                    </tr>
-                </thead>
+        <>
+          <table border={1} cellPadding={10} style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ backgroundColor: '#f0f0f0' }}>
+                <th>ID</th>
+                <th>Nom</th>
+                <th>Employés</th>
+                <th>Créé le</th>
+                <th style={{ textAlign: 'center', width: '250px' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {roles.map((r) => (
+                <tr key={r.id}>
+                  <td>{r.id}</td>
+                  <td>{r.name}</td>
+                  <td>{r.employees_count ?? 0}</td>
+                  <td>{formatDate(r.created_at)}</td>
+                  <td style={{ textAlign: 'center' }}>
+                    <Link to={`${r.id}`}>Voir</Link> | 
+                    <Link to={`${r.id}/edit`}>Modifier</Link> | 
+                    <button className="btn btn-danger" onClick={() => remove(r.id, r.name)} disabled={loading}>Supprimer</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
-                <tbody>
-                    {roles.map((r) => (
-                      <tr key={r.id}>
-                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{r.id}</td>
-                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{r.name}</td>
-                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>
-                          <Link to={`${r.id}`} style={{ marginRight: 10, color: '#007bff', textDecoration: 'none' }}>Voir</Link> |
-                          <Link to={`${r.id}/edit`} style={{ margin: '0 10px', color: '#ffc107', textDecoration: 'none' }}>Modifier</Link> |
-                          <button onClick={() => remove(r.id)} disabled={loading} style={{ color: '#dc3545', background: 'none', border: 'none', cursor: 'pointer', marginLeft: 10 }}>Supprimer</button>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-
-            {/* Pagination */}
-            <div style={{ marginTop: "20px", display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {meta.prev_page_url && (
-                <button onClick={() => setPage(page - 1)} disabled={loading} style={{ padding: '8px 15px', marginRight: '10px', cursor: loading ? 'not-allowed' : 'pointer' }}>← Précédent</button>
-              )}
-
-              <span style={{ margin: "0 10px" }}>
-                Page **{meta.current_page}** / **{meta.last_page}**
-              </span>
-
-              {meta.next_page_url && (
-                <button onClick={() => setPage(page + 1)} disabled={loading} style={{ padding: '8px 15px', cursor: loading ? 'not-allowed' : 'pointer' }}>Suivant →</button>
-              )}
-            </div>
-          </>
+          {/* Pagination */}
+          {last_page > 1 && (
+            <div style={{ marginTop: "20px", display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+              <button onClick={() => setPage(page - 1)} disabled={loading || !prev_page_url || current_page === 1}> ← Précédent </button>
+              <span style={{ margin: "0 10px", fontWeight: 'bold' }}>Page {current_page} / {last_page}</span>
+              <button onClick={() => setPage(page + 1)} disabled={loading || !next_page_url || current_page === last_page}> Suivant → </button>
+            </div>
+          )}
+        </>
       )}
-    </div>
-  );
+    </div>
+  );
 }

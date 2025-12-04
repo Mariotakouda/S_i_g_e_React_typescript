@@ -16,15 +16,15 @@ export default function AdminLayout() {
   };
 
   const menuItems = [
-    { label: "📊 Dashboard", path: "/admin/dashboard" },
-    { label: "👥 Employés", path: "/admin/employees" },
-    { label: "🏢 Départements", path: "/admin/departments" },
-    { label: "✅ Tâches", path: "/admin/tasks" },
-    { label: "📅 Congés", path: "/admin/leave_requests" },
-    { label: "👔 Managers", path: "/admin/managers" },
-    { label: "🛡️ Rôles", path: "/admin/roles" },
-    { label: "📢 Annonces", path: "/admin/announcements" },
-    { label: "⏰ Présences", path: "/admin/presences" },
+    { label: "Dashboard", path: "/admin/dashboard" },
+    { label: "Employés", path: "/admin/employees" },
+    { label: "Départements", path: "/admin/departments" },
+    { label: "Tâches", path: "/admin/tasks" },
+    { label: "Congés", path: "/admin/leave_requests" },
+    { label: "Managers", path: "/admin/managers" },
+    { label: "Rôles", path: "/admin/roles" },
+    { label: "Annonces", path: "/admin/announcements" },
+    { label: "Présences", path: "/admin/presences" },
   ];
 
   return (

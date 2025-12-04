@@ -1,68 +1,112 @@
 // src/modules/roles/edit.tsx
+
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { RoleService } from "./service";
+import type { RolePayload } from "./model";
+
+interface FormErrors {
+  name?: string[];
+}
 
 export default function RoleEdit() {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  
-  const [name, setName] = useState("");
-  const [loadingForm, setLoadingForm] = useState(false); // NOUVEAU: Chargement du formulaire
-  const [loadingData, setLoadingData] = useState(true); // NOUVEAU: Chargement des données initiales
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    load();
-  }, []);
+  const [initialName, setInitialName] = useState('');
+  const [name, setName] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [generalError, setGeneralError] = useState<string | null>(null);
 
-  const load = async () => {
-    setLoadingData(true);
-    try {
-      const data = await RoleService.get(Number(id));
-      setName(data.name);
-    } catch (error) {
-      console.error("Erreur de chargement du rôle:", error);
-      alert("Erreur lors du chargement des données du rôle.");
-    } finally {
-      setLoadingData(false);
+  useEffect(() => {
+    if (id) {
+      loadRole(Number(id));
     }
-  };
+  }, [id]);
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoadingForm(true); // Démarrer le chargement
+  const loadRole = async (roleId: number) => {
+    setLoading(true);
+    setGeneralError(null);
     try {
-      await RoleService.update(Number(id), { name });
-      navigate("/admin/roles");
-    } catch (error) {
-        console.error("Erreur de mise à jour du rôle:", error);
-        alert("Une erreur est survenue lors de la mise à jour du rôle.");
+      const data = await RoleService.get(roleId);
+      setInitialName(data.name); 
+      setName(data.name); 
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.message || "Erreur lors du chargement des données du rôle.";
+      setGeneralError(errorMsg);
     } finally {
-      setLoadingForm(false); // Arrêter le chargement
+      setLoading(false);
     }
-  };
+  };
 
-  if (loadingData) return <p>Chargement des données du rôle...</p>;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!id) return;
 
-  return (
-    <div>
-      <h2>Modifier le rôle</h2>
+    setIsSubmitting(true);
+    setErrors({});
+    setGeneralError(null);
 
-      <form onSubmit={submit} style={{ maxWidth: 400 }}>
-        <div style={{ marginBottom: 15 }}>
-          <label style={{ display: "block", marginBottom: 5 }}>Nom</label>
-          <input 
-            required 
-            value={name} 
-            onChange={(e) => setName(e.target.value)} 
-            style={{ width: '100%', padding: '8px' }}
+    try {
+      const payload: RolePayload = { name };
+      await RoleService.update(Number(id), payload);
+      alert(`Rôle "${name}" mis à jour avec succès !`);
+      navigate(`/admin/roles/${id}`);
+    } catch (err: any) {
+      console.error("Erreur de mise à jour:", err.response);
+      if (err.response?.status === 422 && err.response.data?.erreurs) {
+        setErrors(err.response.data.erreurs as FormErrors);
+      } else {
+        const errorMsg = err.response?.data?.message || "Erreur lors de la mise à jour du rôle.";
+        setGeneralError(errorMsg);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return <div style={{ padding: 20 }}>Chargement des données du rôle...</div>;
+  }
+
+  if (generalError || !initialName) {
+    return (
+      <div style={{ padding: 20 }}>
+        {generalError && <div style={{ color: 'red', marginBottom: '15px' }}>{generalError}</div>}
+        <p>Rôle non trouvé ou erreur de chargement.</p>
+        <Link to="/admin/roles"><button>← Retour à la liste</button></Link>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: 20 }}>
+      <h2>Modifier le Rôle : {initialName} (ID: {id})</h2>
+      {generalError && <div style={{ color: 'red', marginBottom: '15px' }}>{generalError}</div>}
+      
+      <form onSubmit={handleSubmit} style={{ maxWidth: 400 }}>
+        <div>
+          <label htmlFor="name">Nom du Rôle</label>
+          <input
+            id="name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            disabled={isSubmitting}
+            style={{ border: errors.name ? '1px solid red' : '1px solid #ccc', padding: '10px', width: '100%' }}
           />
-        </div>
-
-        <button type="submit" disabled={loadingForm} style={{ padding: '10px 15px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '5px', cursor: loadingForm ? 'not-allowed' : 'pointer' }}>
-          {loadingForm ? "Mise à jour..." : "Mettre à jour"}
-        </button>
-      </form>
-    </div>
-  );
+          {errors.name && <p style={{ color: 'red', fontSize: '14px' }}>{errors.name.join(', ')}</p>}
+        </div>
+        
+        <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+          <button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Mise à jour...' : 'Enregistrer les Modifications'}
+          </button>
+          <Link to={`/admin/roles/${id}`}><button type="button" className="btn btn-danger" disabled={isSubmitting}>Annuler</button></Link>
+        </div>
+      </form>
+    </div>
+  );
 }

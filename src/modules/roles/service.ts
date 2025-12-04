@@ -1,33 +1,51 @@
 // src/modules/roles/service.ts
 
-import { api } from "../../api/axios"; // Supposons que votre instance axios soit ici
-import type { Role, RoleForm } from "./model";
+import {api} from "../../api/axios";
+import type { Role, LaravelPaginationResponse, RolePayload } from "./model";
 
 export const RoleService = {
-  async list(page = 1, search = "") {
-    const res = await api.get("/roles", { // CHANGEMENT: Utilisation de 'api' au lieu de 'axios'
-      params: { page, search }
-    });
-    return res.data;
-  },
+  /**
+   * Récupère la liste paginée des rôles avec recherche.
+   */
+  async list(
+    page: number = 1, 
+    search: string = ''
+  ): Promise<LaravelPaginationResponse<Role>> {
+    const response = await api.get("/roles", {
+      params: { page, search }
+    });
+    return response.data;
+  },
 
-  async get(id: number): Promise<Role> {
-    const res = await api.get(`/roles/${id}`); // CHANGEMENT: Utilisation de 'api'
-    return res.data;
-  },
+  /**
+   * Récupère les détails d'un rôle.
+   */
+  async get(id: number): Promise<Role> {
+    const response = await api.get(`/roles/${id}`);
+    // Le controller show renvoie maintenant l'objet Role directement
+    return response.data; 
+  },
 
-  async create(data: RoleForm) {
-    const res = await api.post("/roles", data); // CHANGEMENT: Utilisation de 'api'
-    return res.data;
-  },
+  /**
+   * Crée un nouveau rôle.
+   */
+  async create(payload: RolePayload): Promise<Role> {
+    const response = await api.post("/roles", payload);
+    return response.data;
+  },
 
-  async update(id: number, data: RoleForm) {
-    const res = await api.put(`/roles/${id}`, data); // CHANGEMENT: Utilisation de 'api'
-    return res.data;
-  },
+  /**
+   * Met à jour un rôle existant.
+   */
+  async update(id: number, payload: RolePayload): Promise<Role> {
+    const response = await api.put(`/roles/${id}`, payload);
+    return response.data;
+  },
 
-  async remove(id: number) {
-    const res = await api.delete(`/roles/${id}`); // CHANGEMENT: Utilisation de 'api'
-    return res.data;    
-    },
+  /**
+   * Supprime un rôle.
+   */
+  async remove(id: number): Promise<void> {
+    await api.delete(`/roles/${id}`); 
+  },
 };
