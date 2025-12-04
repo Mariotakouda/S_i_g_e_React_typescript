@@ -36,13 +36,6 @@ import LeaveRequestCreate from "../modules/leaveRequests/create";
 import LeaveRequestEdit from "../modules/leaveRequests/edit";
 import LeaveRequestShow from "../modules/leaveRequests/show";
 
-// Announcements
-import Announcements from "../modules/announcements/list";
-import AnnouncementCreate from "../modules/announcements/create";
-import AnnouncementEdit from "../modules/announcements/edit";
-import AnnouncementShow from "../modules/announcements/show";
-
-
 import ManagerCreate from "../modules/managers/create";
 import ManagerEdit from "../modules/managers/edit";
 import ManagerShow from "../modules/managers/show";
@@ -59,6 +52,12 @@ import TaskShow from "../modules/tasks/show";
 import TaskEdit from "../modules/tasks/edit";
 import TaskCreate from "../modules/tasks/create";
 import TaskList from "../modules/tasks/list";
+
+
+import AnnouncementShow from "../modules/announcements/show";
+import AnnouncementEdit from "../modules/announcements/edit";
+import AnnouncementCreate from "../modules/announcements/create";
+import AnnouncementList from "../modules/announcements/list";
 
 export default function AppRoutes() {
   const { user, loading } = useContext(AuthContext);
@@ -157,7 +156,7 @@ export default function AppRoutes() {
         <Route path="leave_requests/:id" element={<LeaveRequestShow />} />
 
         {/* ANNOUNCEMENTS */}
-        <Route path="announcements" element={<Announcements />} />
+        <Route path="announcements" element={<AnnouncementList />} />
         <Route path="announcements/create" element={<AnnouncementCreate />} />
         <Route path="announcements/:id/edit" element={<AnnouncementEdit />} />
         <Route path="announcements/:id" element={<AnnouncementShow />} />
