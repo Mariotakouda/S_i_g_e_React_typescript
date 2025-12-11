@@ -1,5 +1,3 @@
-// src/modules/tasks/model.ts
-
 export interface Employee {
   id: number;
   first_name: string;
@@ -10,7 +8,7 @@ export interface Task {
   id: number;
   title: string;
   description?: string;
-  status: string; // pending | in_progress | completed
+  status: string; 
   employee_id?: number | null;
   employee?: Employee;
   due_date?: string;
@@ -22,6 +20,6 @@ export interface TaskForm {
   title: string;
   description?: string | null;
   status: string;
-  employee_id?: number | null; // ✅ Accepte maintenant null
+  employee_id?: number | null; 
   due_date?: string | null;
 }

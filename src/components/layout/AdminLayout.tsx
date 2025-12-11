@@ -131,7 +131,7 @@ export default function AdminLayout() {
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#dc2626"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#ef4444"}
               >
-                🚪 Déconnexion
+                 Déconnexion
               </button>
             </div>
           </>
