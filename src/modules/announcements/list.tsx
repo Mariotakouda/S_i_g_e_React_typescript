@@ -42,6 +42,19 @@ export default function AnnouncementList() {
     }
   }
 
+  function getDestinataireLabel(announcement: Announcement): string {
+    if (announcement.is_general) {
+      return "🌐 Tous les employés (Général)";
+    }
+    if (announcement.department) {
+      return `🏢 Département: ${announcement.department.name}`;
+    }
+    if (announcement.employee) {
+      return `👤 ${announcement.employee.first_name} ${announcement.employee.last_name}`;
+    }
+    return "📢 Général";
+  }
+
   return (
     <div style={{ padding: "20px" }}>
       <h1>Gestion des Annonces</h1>
@@ -67,7 +80,7 @@ export default function AnnouncementList() {
         </Link>
       </div>
 
-      {error && <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>}
+      {error && <div style={{ color: "red", marginBottom: "10px", padding: "10px", backgroundColor: "#fee", borderRadius: "4px" }}>{error}</div>}
 
       {loading ? (
         <p>Chargement...</p>
@@ -90,15 +103,14 @@ export default function AnnouncementList() {
               <tr key={a.id}>
                 <td style={{ padding: "10px", textAlign: "center" }}>{a.id}</td>
                 <td style={{ padding: "10px" }}>
-                  {a.employee ? (
-                    <span>
-                      {a.employee.first_name} {a.employee.last_name}
-                      <br />
-                      <small style={{ color: "#666" }}>{a.employee.email}</small>
-                    </span>
-                  ) : (
-                    <em style={{ color: "#999" }}>Tous les employés</em>
-                  )}
+                  <span style={{ 
+                    padding: "4px 8px", 
+                    borderRadius: "4px",
+                    backgroundColor: a.is_general ? "#e3f2fd" : a.department_id ? "#fff3e0" : "#f3e5f5",
+                    fontSize: "13px"
+                  }}>
+                    {getDestinataireLabel(a)}
+                  </span>
                 </td>
                 <td style={{ padding: "10px", fontWeight: "bold" }}>{a.title}</td>
                 <td style={{ padding: "10px" }}>

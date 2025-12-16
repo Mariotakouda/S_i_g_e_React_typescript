@@ -74,7 +74,7 @@ export default function EmployeeDashboard() {
           console.warn("⚠️ Erreur tasks:", err);
           return { data: [] };
         }),
-        api.get("/me/leave-requests").catch(err => {
+        api.get("/me/leave_requests").catch(err => {
           console.warn("⚠️ Erreur leaves:", err);
           return { data: [] };
         }),

@@ -3,29 +3,29 @@
  * (utilisée dans les relations)
  */
 export interface EmployeeNameOnly {
-  id: number;
-  first_name: string;
-  last_name?: string | null;
+    id: number;
+    first_name: string;
+    last_name?: string | null;
 }
 
 /**
  * Interface principale pour une demande de congé
  */
 export interface LeaveRequest {
-  id: number;
-  employee_id: number;
-  type: 'vacances' | 'maladie' | 'impayé' | 'autres';
-  start_date: string;
-  end_date: string;
-  status: 'pending' | 'approved' | 'rejected';
-  message?: string | null | undefined;
-  
-  // Relation avec l'employé (chargée via eager loading)
-  employee?: EmployeeNameOnly;
-  
-  // Timestamps
-  created_at?: string;
-  updated_at?: string;
+    id: number;
+    employee_id: number;
+    type: 'vacances' | 'maladie' | 'impayé' | 'autres';
+    start_date: string;
+    end_date: string;
+    status: 'pending' | 'approved' | 'rejected';
+    message?: string | null | undefined;
+    
+    // Relation avec l'employé (chargée via eager loading)
+    employee?: EmployeeNameOnly;
+    
+    // Timestamps
+    created_at?: string; // 👈 Ceci cause l'erreur car il peut être undefined
+    updated_at?: string;
 }
 
 /**

@@ -29,17 +29,20 @@ api.interceptors.request.use(
 
 // Intercepteur pour gérer les réponses
 api.interceptors.response.use(
-  (response) => {
-    console.log('✅ Réponse:', response.status, response.config.url);
-    return response;
-  },
-  (error) => {
-    if (error.response?.status === 401) {
-      console.error('❌ Non authentifié - Redirection vers login');
-      // Optionnel: rediriger automatiquement
-      // window.location.href = '/login';
-    }
-    console.error('❌ Erreur intercepteur réponse:', error.response?.status, error.response?.data);
-    return Promise.reject(error);
-  }
+  (response) => {
+    console.log('✅ Réponse:', response.status, response.config.url);
+    return response;
+  },
+  (error) => {
+    if (error.response?.status === 401) {
+      console.error('❌ Non authentifié - Nettoyage du token');
+      // Suggestion: Nettoyer le localStorage immédiatement en cas de 401
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('employee');
+      // Le AuthContext peut alors réagir à l'absence de token/user
+    }
+    console.error('❌ Erreur intercepteur réponse:', error.response?.status, error.response?.data);
+    return Promise.reject(error);
+  }
 );

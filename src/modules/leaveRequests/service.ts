@@ -1,164 +1,77 @@
+// Fichier : leave_requests/service.ts (Corrigé pour utiliser les bonnes URLs)
+
 import { api } from "../../api/axios";
-import type { LeaveRequest, LeaveRequestPaginatedResponse, LeaveStatistics, CreateLeaveRequest, UpdateLeaveRequest } from "./model";
+import { ApiError, handleAxiosError } from "../../api/ApiError"; 
+import type { CreateLeaveRequest, LeaveRequest } from "./model";
 
-export class ApiError extends Error {
-    status: number;
-    errors?: Record<string, string[]>;
-    responseBody?: unknown;
+// ---------------------------------------------------------------------
+
+export const LeaveRequestService = {
+    // 1. Récupérer TOUTES les demandes (🎯 Pour le dashboard Admin)
+    async fetchAllAdmin(): Promise<LeaveRequest[]> {
+        try {
+            // ✅ URL correcte SANS préfixe /admin/
+            const response = await api.get('/leave-requests'); 
+            return response.data; 
+        } catch (error) {
+            handleAxiosError(error);
+        }
+    },
+
+    // 1b. Récupérer MES demandes (🎯 Pour le tableau de bord Employé)
+    async fetchMyLeaves(): Promise<LeaveRequest[]> {
+        try {
+            // ✅ URL correcte pour l'employé connecté
+            const response = await api.get('/me/leave_requests'); 
+            return response.data; 
+        } catch (error) {
+            handleAxiosError(error);
+        }
+    },
+
+    // 2. Créer une demande (Utilisé par l'employé)
+    async create(data: CreateLeaveRequest): Promise<LeaveRequest> {
+        try {
+            // ✅ URL correcte pour l'employé connecté
+            const response = await api.post('/me/leave_requests', data); 
+            return response.data.request;
+        } catch (error) {
+            handleAxiosError(error);
+        }
+    },
     
-    constructor(message: string, status: number, errors?: Record<string, string[]>, responseBody?: unknown) {
-        super(message);
-        this.name = 'ApiError';
-        this.status = status;
-        this.errors = errors;
-        this.responseBody = responseBody;
-    }
-}
-
-// Fonction utilitaire pour gérer les erreurs axios
-function handleAxiosError(error: any): never {
-    console.error('❌ Erreur Axios:', error);
-    
-    if (error.response) {
-        // Le serveur a répondu avec un code d'erreur
-        const status = error.response.status;
-        const data = error.response.data;
-        
-        console.error('📡 Response status:', status);
-        console.error('📡 Response data:', data);
-        
-        const message = data.message || `Erreur HTTP ${status}`;
-        const errors = data.errors;
-        
-        throw new ApiError(message, status, errors, data);
-    } else if (error.request) {
-        // La requête a été faite mais pas de réponse
-        console.error('❌ Aucune réponse du serveur:', error.request);
-        throw new ApiError('Aucune réponse du serveur', 0);
-    } else {
-        // Erreur lors de la configuration de la requête
-        console.error('❌ Erreur de configuration:', error.message);
-        throw new ApiError(error.message, 0);
-    }
-}
-
-export async function fetchLeaveRequests(search = "", page = 1, filters?: {
-    status?: string;
-    employee_id?: number;
-}): Promise<LeaveRequestPaginatedResponse> {
-    try {
-        console.log('🔍 GET /leave_requests', { search, page, filters });
-        
-        const params: any = { page };
-        if (search) params.search = search;
-        if (filters?.status) params.status = filters.status;
-        if (filters?.employee_id) params.employee_id = filters.employee_id;
-        
-        const response = await api.get('/leave_requests', { params });
-        
-        console.log('✅ Réponse:', response.data);
-        return response.data;
-    } catch (error) {
-        handleAxiosError(error);
-    }
-}
-
-export async function getLeaveRequest(id: number): Promise<LeaveRequest> {
-    try {
-        console.log('🔍 GET /leave_requests/' + id);
-        
-        const response = await api.get(`/leave_requests/${id}`);
-        
-        console.log('✅ Réponse:', response.data);
-        return response.data;
-    } catch (error) {
-        handleAxiosError(error);
-    }
-}
-
-export async function createLeaveRequest(data: CreateLeaveRequest): Promise<LeaveRequest> {
-    try {
-        console.log('📤 === DÉBUT CRÉATION DEMANDE DE CONGÉ ===');
-        console.log('📤 Données brutes:', data);
-        
-        // Validation côté client
-        if (!data.employee_id || isNaN(Number(data.employee_id))) {
-            throw new Error('employee_id doit être un nombre valide');
+    // 3. Action : Approuver une demande (🎯 Pour l'Admin)
+    async approve(id: number): Promise<LeaveRequest> {
+        try {
+            // ✅ URL correcte SANS préfixe /admin/
+            const response = await api.put(`/leave-requests/${id}/approve`); 
+            return response.data.request;
+        } catch (error) {
+            handleAxiosError(error);
         }
-        
-        if (!data.type || !['vacances', 'maladie', 'impayé', 'autres'].includes(data.type)) {
-            throw new Error('type doit être valide');
-        }
-        
-        if (!data.start_date || !data.end_date) {
-            throw new Error('Les dates sont requises');
-        }
-        
-        // Construction du payload
-        const payload = {
-            employee_id: Number(data.employee_id),
-            type: data.type,
-            start_date: data.start_date,
-            end_date: data.end_date,
-            message: data.message || null
-        };
-        
-        console.log('📤 Payload final:', payload);
-        console.log('📤 Token utilisé:', localStorage.getItem('token') ? 'OUI ✅' : 'NON ❌');
-        
-        const response = await api.post('/leave_requests', payload);
-        
-        console.log('✅ === FIN CRÉATION - SUCCÈS ===');
-        console.log('✅ Réponse:', response.data);
-        
-        return response.data.data || response.data;
-    } catch (error) {
-        console.error('❌ === FIN CRÉATION - ÉCHEC ===');
-        handleAxiosError(error);
-    }
-}
+    },
 
-export async function updateLeaveRequest(id: number, data: Partial<UpdateLeaveRequest>): Promise<LeaveRequest> {
-    try {
-        console.log('📤 PUT /leave_requests/' + id, data);
-        
-        if (data.employee_id !== undefined) {
-            data.employee_id = Number(data.employee_id);
+    // 4. Action : Rejeter une demande (🎯 Pour l'Admin)
+    async reject(id: number): Promise<LeaveRequest> {
+        try {
+            // ✅ URL correcte SANS préfixe /admin/
+            const response = await api.put(`/leave-requests/${id}/reject`); 
+            return response.data.request;
+        } catch (error) {
+            handleAxiosError(error);
         }
-        
-        const response = await api.put(`/leave_requests/${id}`, data);
-        
-        console.log('✅ Réponse:', response.data);
-        return response.data.data || response.data;
-    } catch (error) {
-        handleAxiosError(error);
-    }
-}
+    },
 
-export async function deleteLeaveRequest(id: number): Promise<void> {
-    try {
-        console.log('🗑️ DELETE /leave_requests/' + id);
-        
-        await api.delete(`/leave_requests/${id}`);
-        
-        console.log('✅ Suppression réussie');
-    } catch (error) {
-        handleAxiosError(error);
+    // 5. Action : Supprimer une demande (🎯 Pour l'Admin)
+    async delete(id: number): Promise<void> {
+        try {
+            // ✅ URL correcte SANS préfixe /admin/
+            await api.delete(`/leave-requests/${id}`); 
+        } catch (error) {
+            handleAxiosError(error);
+        }
     }
-}
+};
 
-export async function fetchLeaveStatistics(employeeId?: number): Promise<LeaveStatistics> {
-    try {
-        console.log('📊 GET /leave_requests/statistics', { employeeId });
-        
-        const params: any = {};
-        if (employeeId) params.employee_id = employeeId;
-        
-        const response = await api.get('/leave_requests/statistics', { params });
-        
-        console.log('✅ Réponse:', response.data);
-        return response.data;
-    } catch (error) {
-        handleAxiosError(error);
-    }
-}
+// Exporter ApiError du service pour l'utiliser dans les composants React
+export { ApiError };
