@@ -91,7 +91,7 @@ export default function AdminDashboard() {
           console.error("Erreur tasks:", err);
           return { data: [] };
         }),
-        api.get("/leave_requests").catch((err) => {
+        api.get("/leave-requests").catch((err) => {
           console.error("Erreur leave_requests:", err);
           return { data: [] };
         }),
@@ -222,7 +222,7 @@ export default function AdminDashboard() {
   return (
     <div className="admin-dashboard-container">
       <div className="dashboard-header">
-        <h1 className="dashboard-title">Dashboard Admin</h1>
+        <h1 className="dashboard-title">Admin Dashboard</h1>
         <p className="dashboard-welcome">Bienvenue {user?.name}</p>
       </div>
 

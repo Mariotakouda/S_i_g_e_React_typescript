@@ -11,7 +11,7 @@ import EmployeeLayout from "../components/layout/EmployeeLayout";
 
 // Auth Pages
 import Login from "../modules/auth/Login";
-import Register from "../modules/auth/Register";
+// import Register from "../modules/auth/Register";
 
 // Dashboards
 import AdminDashboard from "../modules/admin/dashboard";
@@ -66,6 +66,8 @@ import AnnouncementList from "../modules/announcements/list";
 
 import EmployeeCreate from "../modules/employees/create";
 import AdminLeaveRequests from "../modules/admin/AdminLeaveRequests";
+import EmployeeTaskList from "../modules/employee/TaskList";
+import EditLeaveRequest from "../modules/employee/EditLeaveRequest";
 
 export default function AppRoutes() {
   const { user, loading } = useContext(AuthContext);
@@ -90,10 +92,10 @@ export default function AppRoutes() {
         path="/login"
         element={!user ? <Login /> : <Navigate to="/dashboard" replace />}
       />
-      <Route
+      {/* <Route
         path="/register"
         element={!user ? <Register /> : <Navigate to="/dashboard" replace />}
-      />
+      /> */}
 
       {/* ========== REDIRECTION DASHBOARD SELON RÔLE ========== */}
       <Route
@@ -187,6 +189,9 @@ export default function AppRoutes() {
         {/* LEAVE REQUESTS (Soumission et Historique par Employé) */}
         <Route path="leave_requests" element={<EmployeeLeaveHistory />} />
         <Route path="leave_requests/create" element={<LeaveRequestForm />} />
+
+        <Route path="/employee/leave_requests/edit/:id" element={<EditLeaveRequest />} />
+        <Route path="/employee/tasks" element={<EmployeeTaskList />} />
 
         {/* Ajoutez ici les autres routes spécifiques aux employés (tasks, presences, etc.) */}
         {/* Exemple: <Route path="tasks" element={<EmployeeTaskList />} /> */}

@@ -91,10 +91,12 @@ export default function LeaveRequestForm() {
                             required
                             style={inputStyle}
                         >
-                            <option value="annuel">Congé Annuel</option>
-                            <option value="maladie">Arrêt Maladie</option>
-                            <option value="sans-solde">Congé Sans Solde</option>
-                            <option value="autre">Autre</option>
+                            <option value="paid">Congé Payé</option>
+                            <option value="sick">Congé Maladie</option>
+                            <option value="unpaid">Congé Sans Solde</option>
+                            <option value="maternity">Maternité</option>
+                            <option value="maternity">Paternité</option>
+                            <option value="other">Autre</option>
                         </select>
                     </div>
 
