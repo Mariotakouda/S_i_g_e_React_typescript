@@ -15,21 +15,36 @@ export interface Employee {
   first_name: string;
   last_name: string;
   email: string;
-  department?: any;
-  roles?: any[];
+  // Ajoutez cette ligne 👇
+  profile_photo_url?: string | null; 
+  
+  // Ajoutez aussi ces champs si TS se plaint pour le profil :
+  phone?: string;
+  contract_type?: string;
+  hire_date?: string;
+  salary_base?: number;
+  department?: {
+    id: number;
+    name: string;
+  };
+  roles?: Array<{
+    id: number;
+    name: string;
+  }>;
 }
 
-interface RegisterData {
-  name: string;
-  email: string;
-  password: string;
-}
+// interface RegisterData {
+//   name: string;
+//   email: string;
+//   password: string;
+// }
 
 interface AuthContextType {
   user: User | null;
   employee: Employee | null;
+  setEmployee: React.Dispatch<React.SetStateAction<Employee | null>>; // 👈 AJOUTER CECI
   login: (email: string, password: string) => Promise<User>; 
-  register: (data: RegisterData) => Promise<User>; 
+  // register: (data: RegisterData) => Promise<User>; 
   logout: () => Promise<void>;
   updateLocalUserStatus: () => void; // Nouvelle fonction utile
   loading: boolean;
@@ -99,30 +114,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const register = async (data: RegisterData): Promise<User> => {
-    try {
-      const res = await api.post("/register", data);
-      const token = res.data.token;
-      const userData: User = res.data.user; 
-      const employeeData: Employee | null = res.data.employee;
+  // const register = async (data: RegisterData): Promise<User> => {
+  //   try {
+  //     const res = await api.post("/register", data);
+  //     const token = res.data.token;
+  //     const userData: User = res.data.user; 
+  //     const employeeData: Employee | null = res.data.employee;
 
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(userData));
+  //     localStorage.setItem("token", token);
+  //     localStorage.setItem("user", JSON.stringify(userData));
       
-      if (employeeData) {
-        localStorage.setItem("employee", JSON.stringify(employeeData));
-        setEmployee(employeeData);
-      }
+  //     if (employeeData) {
+  //       localStorage.setItem("employee", JSON.stringify(employeeData));
+  //       setEmployee(employeeData);
+  //     }
 
-      setUser(userData);
-      return userData;
-    } catch (err: any) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      localStorage.removeItem("employee");
-      throw new Error(err.response?.data?.message || "Erreur lors de l'inscription");
-    }
-  };
+  //     setUser(userData);
+  //     return userData;
+  //   } catch (err: any) {
+  //     localStorage.removeItem("token");
+  //     localStorage.removeItem("user");
+  //     localStorage.removeItem("employee");
+  //     throw new Error(err.response?.data?.message || "Erreur lors de l'inscription");
+  //   }
+  // };
 
   const logout = async () => {
     try {
@@ -138,7 +153,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, employee, login, register, logout, updateLocalUserStatus, loading }}>
+    <AuthContext.Provider value={{ user, employee, setEmployee, login, logout, updateLocalUserStatus, loading }}>
       {children}
     </AuthContext.Provider>
   );

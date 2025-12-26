@@ -1,3 +1,4 @@
+// src/modules/employees/list.tsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../api/axios";
@@ -23,6 +24,10 @@ export default function EmployeeList() {
         }
     };
 
+    const getInitials = (firstName: string, lastName: string) => {
+        return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`;
+    };
+
     return (
         <div style={{ padding: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
@@ -33,6 +38,7 @@ export default function EmployeeList() {
             <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff' }}>
                 <thead>
                     <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
+                        <th style={thStyle}>Photo</th>
                         <th style={thStyle}>Nom</th>
                         <th style={thStyle}>Email</th>
                         <th style={thStyle}>Département</th>
@@ -42,6 +48,36 @@ export default function EmployeeList() {
                 <tbody>
                     {employees.map(emp => (
                         <tr key={emp.id} style={{ borderBottom: '1px solid #eee' }}>
+                            <td style={tdStyle}>
+                                {emp.profile_photo_url ? (
+                                    <img 
+                                        src={emp.profile_photo_url} 
+                                        alt={`${emp.first_name} ${emp.last_name}`}
+                                        style={{
+                                            width: '40px',
+                                            height: '40px',
+                                            borderRadius: '50%',
+                                            objectFit: 'cover',
+                                            border: '2px solid #e2e8f0'
+                                        }}
+                                    />
+                                ) : (
+                                    <div style={{
+                                        width: '40px',
+                                        height: '40px',
+                                        borderRadius: '50%',
+                                        backgroundColor: '#3b82f6',
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        color: 'white',
+                                        fontWeight: 'bold',
+                                        fontSize: '14px'
+                                    }}>
+                                        {getInitials(emp.first_name, emp.last_name)}
+                                    </div>
+                                )}
+                            </td>
                             <td style={tdStyle}>{emp.first_name} {emp.last_name}</td>
                             <td style={tdStyle}>{emp.email}</td>
                             <td style={tdStyle}>{emp.department?.name || "-"}</td>

@@ -14,6 +14,7 @@ import Login from "../modules/auth/Login";
 import AdminDashboard from "../modules/admin/dashboard";
 import EmployeeDashboard from "../modules/employee/dashboard";
 
+
 // Admin modules
 import EmployeeList from "../modules/employees/list";
 import EmployeeEdit from "../modules/employees/edit";
@@ -54,6 +55,7 @@ import EditLeaveRequest from "../modules/employee/EditLeaveRequest";
 import EmployeeTaskList from "../modules/employee/TaskList";
 import EmployeePresencePage from "../modules/employee/EmployeePresencePage";
 import AdminPresencePage from "../modules/admin/AdminPresencePage";
+import EmployeeProfile from "../modules/employee/Profile";
 
 export default function AppRoutes() {
   const { user, loading } = useContext(AuthContext);
@@ -140,7 +142,7 @@ export default function AppRoutes() {
         <Route path="leave_requests/create" element={<LeaveRequestForm />} />
         <Route path="leave_requests/:id/edit" element={<LeaveRequestForm />} />
 
-        {/* ANNOUNCEMENTS - Admin complet */}
+        {/* ANNOUNCEMENTS */}
         <Route path="announcements" element={<AnnouncementList />} />
         <Route path="announcements/create" element={<AnnouncementCreate />} />
         <Route path="announcements/:id/edit" element={<AnnouncementEdit />} />
@@ -158,6 +160,7 @@ export default function AppRoutes() {
       >
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<EmployeeDashboard />} />
+        <Route path="profile" element={<EmployeeProfile />} />
         <Route path="presences" element={<EmployeePresencePage />} />
 
         {/* LEAVE REQUESTS */}
@@ -168,7 +171,7 @@ export default function AppRoutes() {
         {/* TASKS */}
         <Route path="tasks" element={<EmployeeTaskList />} />
 
-        {/* ✅ ANNOUNCEMENTS POUR MANAGERS (Routes intégrées ici) */}
+        {/* ANNOUNCEMENTS */}
         <Route path="announcements" element={<AnnouncementList />} />
         <Route path="announcements/create" element={<AnnouncementCreate />} />
         <Route path="announcements/:id" element={<AnnouncementShow />} />

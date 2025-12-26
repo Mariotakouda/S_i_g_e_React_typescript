@@ -4,6 +4,7 @@ export interface Employee {
     last_name: string | null;
     email: string;
     phone: string | null;
+    profile_photo_url: string | null; // <--- AJOUTEZ CECI
     contract_type: string | null;
     hire_date: string | null;
     salary_base: number | null;
@@ -17,6 +18,8 @@ export interface EmployeeFormData {
     last_name: string | null;
     email: string;
     phone: string | null;
+    // Optionnel : si vous gérez l'upload directement dans le formulaire
+    profile_photo?: File | null; 
     contract_type: string | null;
     hire_date: string | null;
     salary_base?: number | null;

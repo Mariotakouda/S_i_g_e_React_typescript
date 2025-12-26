@@ -1,3 +1,4 @@
+// src/modules/employees/show.tsx
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { EmployeeService } from "./service";
@@ -18,6 +19,10 @@ export default function EmployeeShow() {
         }
     }, [id]);
 
+    const getInitials = () => {
+        return `${employee?.first_name?.charAt(0) || ''}${employee?.last_name?.charAt(0) || ''}`;
+    };
+
     if (loading) return <div style={centerStyle}><p>Chargement des données...</p></div>;
     if (!employee) return <div style={centerStyle}><p>Employé introuvable.</p></div>;
 
@@ -28,11 +33,47 @@ export default function EmployeeShow() {
             </div>
 
             <header style={headerStyle}>
-                <div>
-                    <h1 style={{ margin: 0 }}>{employee.first_name} {employee.last_name}</h1>
-                    <span style={badgeStyle(employee.contract_type || 'Inconnu')}>
-                        {employee.contract_type || 'Type de contrat non défini'}
-                    </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                    {/* Photo de profil */}
+                    {employee.profile_photo_url ? (
+                        <img 
+                            src={employee.profile_photo_url} 
+                            alt={`${employee.first_name} ${employee.last_name}`}
+                            style={{
+                                width: '100px',
+                                height: '100px',
+                                borderRadius: '50%',
+                                objectFit: 'cover',
+                                border: '4px solid #3b82f6',
+                                boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                            }}
+                        />
+                    ) : (
+                        <div style={{
+                            width: '100px',
+                            height: '100px',
+                            borderRadius: '50%',
+                            backgroundColor: '#3b82f6',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            color: 'white',
+                            fontWeight: 'bold',
+                            fontSize: '36px',
+                            border: '4px solid #3b82f6',
+                            boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                        }}>
+                            {getInitials()}
+                        </div>
+                    )}
+
+                    {/* Nom et contrat */}
+                    <div>
+                        <h1 style={{ margin: 0 }}>{employee.first_name} {employee.last_name}</h1>
+                        <span style={badgeStyle(employee.contract_type || 'Inconnu')}>
+                            {employee.contract_type || 'Type de contrat non défini'}
+                        </span>
+                    </div>
                 </div>
                 <div style={idBadgeStyle}>ID: #{employee.id}</div>
             </header>
@@ -81,8 +122,8 @@ export default function EmployeeShow() {
             
             <div style={{ marginTop: '30px', textAlign: 'right' }}>
                 <Link to={`/admin/employees/${employee.id}/edit`} style={editButtonStyle}>
-    Modifier le profil
-</Link>
+                    Modifier le profil
+                </Link>
             </div>
 
             <div style={{ marginTop: '20px', fontSize: '12px', color: '#94a3b8', textAlign: 'center' }}>
@@ -92,7 +133,7 @@ export default function EmployeeShow() {
     );
 }
 
-// --- STYLES CORRIGÉS ET AMÉLIORÉS ---
+// --- STYLES ---
 
 const centerStyle = { display: 'flex' as const, justifyContent: 'center', alignItems: 'center', height: '50vh' };
 

@@ -55,6 +55,10 @@ export default function EmployeeDashboard() {
     }
   };
 
+  const getInitials = () => {
+    return `${employee?.first_name?.charAt(0) || ''}${employee?.last_name?.charAt(0) || ''}`;
+  };
+
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh', fontFamily: 'Inter, sans-serif', color: '#64748b' }}>
        <p>Chargement de votre espace employé...</p>
@@ -108,7 +112,7 @@ export default function EmployeeDashboard() {
 
         {error && <div style={{ padding: "16px", backgroundColor: "#fef2f2", color: "#b91c1c", borderRadius: "12px", marginBottom: "30px", border: "1px solid #fee2e2" }}>{error}</div>}
 
-        {/* CARTE INFOS PERSONNELLES STYLE 'PROFILE' */}
+        {/* CARTE INFOS PERSONNELLES AVEC PHOTO DE PROFIL */}
         <div style={{ 
           backgroundColor: "#fff", 
           padding: "24px", 
@@ -120,20 +124,74 @@ export default function EmployeeDashboard() {
           gap: "30px",
           border: "1px solid #f1f5f9"
         }}>
-          <div style={{ 
-            width: "80px", 
-            height: "80px", 
-            borderRadius: "50%", 
-            backgroundColor: "#3b82f6", 
-            display: "flex", 
-            justifyContent: "center", 
-            alignItems: "center", 
-            fontSize: "32px", 
-            color: "#fff",
-            fontWeight: "bold"
-          }}>
-            {employee?.first_name?.charAt(0)}{employee?.last_name?.charAt(0)}
-          </div>
+          {/* Photo de profil avec lien vers la page profil */}
+          <Link to="/employee/profile" style={{ textDecoration: 'none', position: 'relative' }}>
+            {employee?.profile_photo_url ? (
+              <img 
+                src={employee.profile_photo_url} 
+                alt="Photo de profil"
+                style={{ 
+                  width: "80px", 
+                  height: "80px", 
+                  borderRadius: "50%", 
+                  objectFit: "cover",
+                  border: "3px solid #3b82f6",
+                  cursor: "pointer",
+                  transition: "transform 0.2s, box-shadow 0.2s"
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = "scale(1.05)";
+                  e.currentTarget.style.boxShadow = "0 8px 16px rgba(59, 130, 246, 0.3)";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = "scale(1)";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              />
+            ) : (
+              <div style={{ 
+                width: "80px", 
+                height: "80px", 
+                borderRadius: "50%", 
+                backgroundColor: "#3b82f6", 
+                display: "flex", 
+                justifyContent: "center", 
+                alignItems: "center", 
+                fontSize: "32px", 
+                color: "#fff",
+                fontWeight: "bold",
+                cursor: "pointer",
+                transition: "transform 0.2s, box-shadow 0.2s"
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = "scale(1.05)";
+                e.currentTarget.style.boxShadow = "0 8px 16px rgba(59, 130, 246, 0.3)";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = "scale(1)";
+                e.currentTarget.style.boxShadow = "none";
+              }}>
+                {getInitials()}
+              </div>
+            )}
+            {/* Badge "Modifier" au survol */}
+            <div style={{
+              position: 'absolute',
+              bottom: '-8px',
+              right: '-8px',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              padding: '4px 8px',
+              borderRadius: '12px',
+              fontSize: '10px',
+              fontWeight: '600',
+              border: '2px solid white',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            }}>
+              ✏️
+            </div>
+          </Link>
+
           <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "40px", flex: 1 }}>
             <div><label style={labelStyle}>NOM COMPLET</label><p style={dataStyle}> {employee?.last_name} {employee?.first_name}</p></div>
             <div><label style={labelStyle}>EMAIL</label><p style={dataStyle}>{employee?.email || user?.email}</p></div>
