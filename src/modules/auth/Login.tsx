@@ -9,13 +9,12 @@ export default function Login() {
 
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
+  const [showPassword, setShowPassword] = useState<boolean>(false); // État pour la visibilité
   const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false); 
 
-  // --- 1. Gestion de la redirection si déjà connecté ---
   useEffect(() => {
     if (user) {
-      // Si l'utilisateur doit changer son mot de passe, on le bloque ici
       if (user.needs_password_change) {
         navigate('/change-password', { replace: true });
       } else {
@@ -25,30 +24,22 @@ export default function Login() {
     }
   }, [user, navigate]);
 
-
   const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     setError("");
     setIsLoading(true); 
 
     try {
-      // ✅ Récupération de l'utilisateur après login
       const loggedInUser: User = await login(email, password); 
-
-      // --- 2. Logique de redirection intelligente ---
       if (loggedInUser.needs_password_change) {
-        // Priorité absolue : changer le mot de passe temporaire
         navigate('/change-password', { replace: true });
       } else {
-        // Redirection classique selon le rôle
         const redirectPath = loggedInUser.role === 'admin' ? '/admin/dashboard' : '/employee/dashboard';
         navigate(redirectPath, { replace: true });
       }
-      
     } catch (err: any) {
       let errorMessage = "Une erreur inconnue est survenue";
-
-      if (err.response && err.response.data && err.response.data.message) {
+      if (err.response?.data?.message) {
         errorMessage = err.response.data.message; 
       } else if (err instanceof Error) {
         errorMessage = err.message;
@@ -76,41 +67,40 @@ export default function Login() {
               className="form-input"
               placeholder="votre@email.com"
               value={email}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
 
           <div className="form-group">
             <label htmlFor="password" className="form-label">Mot de passe</label>
-            <input
-              id="password"
-              type="password"
-              className="form-input"
-              placeholder="Votre mot de passe"
-              value={password}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-              required
-            />
+            <div className="password-input-wrapper">
+              <input
+                id="password"
+                // 🎯 Bascule dynamique entre 'password' et 'text'
+                type={showPassword ? "text" : "password"}
+                className="form-input password-field"
+                placeholder="Votre mot de passe"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <button 
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1} // Évite que la touche Tab s'arrête sur l'œil
+              >
+                {/* Icônes (utilisez des icônes SVG ou Lucide-React) */}
+                {showPassword ? "🙈" : "👁️"} 
+              </button>
+            </div>
           </div>
 
           <button type="submit" className="login-button" disabled={isLoading}>
             {isLoading ? 'Connexion...' : 'Se connecter'}
           </button>
         </form>
-
-        {/* <div className="auth-links">
-        <Link 
-            to={isLoading ? "#" : "/forgot-password"} 
-            className={`forgot-link ${isLoading ? "link-disabled" : ""}`}
-            onClick={(e) => isLoading && e.preventDefault()}>
-            Mot de passe oublié ?
-        </Link>
-          <span className="separator">|</span>
-          <Link to="/register" className="register-link"> 
-            Créer un compte Employé
-          </Link>
-        </div> */}
       </div>
     </div>
   );

@@ -3,71 +3,57 @@ import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import ProtectedRoute from "./ProtectedRoute";
 
-// ===========================================
-// IMPORTS DES LAYOUTS
-// ===========================================
+// Layouts
 import AdminLayout from "../components/layout/AdminLayout";
 import EmployeeLayout from "../components/layout/EmployeeLayout"; 
 
-// Auth Pages
+// Auth
 import Login from "../modules/auth/Login";
-// import Register from "../modules/auth/Register";
 
 // Dashboards
 import AdminDashboard from "../modules/admin/dashboard";
 import EmployeeDashboard from "../modules/employee/dashboard";
 
-// Employees (Admin)
+// Admin modules
 import EmployeeList from "../modules/employees/list";
 import EmployeeEdit from "../modules/employees/edit";
 import EmployeeShow from "../modules/employees/show";
+import EmployeeCreate from "../modules/employees/create";
 
-// Departments (Admin)
 import Departments from "../modules/departments/list";
 import DepartmentCreate from "../modules/departments/create";
 import DepartmentEdit from "../modules/departments/edit";
 import DepartmentShow from "../modules/departments/show";
-
-// Presences (Admin)
-import Presences from "../modules/presences/list";
-import PresenceCreate from "../modules/presences/create";
-import PresenceEdit from "../modules/presences/edit";
-import PresenceShow from "../modules/presences/show";
-
-// 🎯 NOUVEAUX IMPORTS POUR L'ADMINISTRATION DES CONGÉS 
-// Ces composants ont été créés lors de la correction précédente.
-
-// Leave Requests (Employee)
-import EmployeeLeaveHistory from "../modules/employee/EmployeeLeaveHistory"; 
-import LeaveRequestForm from "../modules/employee/LeaveRequestForm"; 
 
 import ManagerCreate from "../modules/managers/create";
 import ManagerEdit from "../modules/managers/edit";
 import ManagerShow from "../modules/managers/show";
 import ManagerList from "../modules/managers/list";
 
-
 import RoleCreate from "../modules/roles/create";
 import RoleEdit from "../modules/roles/edit";
 import RoleShow from "../modules/roles/show";
 import RoleList from "../modules/roles/list";
-
 
 import TaskShow from "../modules/tasks/show";
 import TaskEdit from "../modules/tasks/edit";
 import TaskCreate from "../modules/tasks/create";
 import TaskList from "../modules/tasks/list";
 
-
 import AnnouncementShow from "../modules/announcements/show";
 import AnnouncementEdit from "../modules/announcements/edit";
 import AnnouncementCreate from "../modules/announcements/create";
 import AnnouncementList from "../modules/announcements/list";
 
-import EmployeeCreate from "../modules/employees/create";
 import AdminLeaveRequests from "../modules/admin/AdminLeaveRequests";
-import EmployeeTaskList from "../modules/employee/TaskList";
+
+// Employee modules
+import EmployeeLeaveHistory from "../modules/employee/EmployeeLeaveHistory"; 
+import LeaveRequestForm from "../modules/employee/LeaveRequestForm";
 import EditLeaveRequest from "../modules/employee/EditLeaveRequest";
+import EmployeeTaskList from "../modules/employee/TaskList";
+import EmployeePresencePage from "../modules/employee/EmployeePresencePage";
+import AdminPresencePage from "../modules/admin/AdminPresencePage";
 
 export default function AppRoutes() {
   const { user, loading } = useContext(AuthContext);
@@ -92,10 +78,6 @@ export default function AppRoutes() {
         path="/login"
         element={!user ? <Login /> : <Navigate to="/dashboard" replace />}
       />
-      {/* <Route
-        path="/register"
-        element={!user ? <Register /> : <Navigate to="/dashboard" replace />}
-      /> */}
 
       {/* ========== REDIRECTION DASHBOARD SELON RÔLE ========== */}
       <Route
@@ -111,7 +93,7 @@ export default function AppRoutes() {
         }
       />
 
-      {/* ========== ROUTES ADMIN AVEC LAYOUT (Rôle: admin) ========== */}
+      {/* ========== ROUTES ADMIN AVEC LAYOUT ========== */}
       <Route
         path="/admin"
         element={
@@ -120,8 +102,8 @@ export default function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        {/* Dashboard */}
         <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="presences" element={<AdminPresencePage />} />
 
         {/* EMPLOYEES */}
         <Route path="employees" element={<EmployeeList />} />
@@ -153,27 +135,19 @@ export default function AppRoutes() {
         <Route path="managers/:id/edit" element={<ManagerEdit />} />
         <Route path="managers/:id" element={<ManagerShow />} />
 
-        {/* PRESENCES */}
-        <Route path="presences" element={<Presences />} />
-        <Route path="presences/create" element={<PresenceCreate />} />
-        <Route path="presences/:id/edit" element={<PresenceEdit />} />
-        <Route path="presences/:id" element={<PresenceShow />} />
-
-        {/* 🚀 LEAVE REQUESTS (Gestion par Admin) - NOUVELLES ROUTES */}
+        {/* LEAVE REQUESTS */}
         <Route path="leave_requests" element={<AdminLeaveRequests />} />
         <Route path="leave_requests/create" element={<LeaveRequestForm />} />
-        {/* Pour la modification du statut ou la visualisation détaillée */}
         <Route path="leave_requests/:id/edit" element={<LeaveRequestForm />} />
-        {/* <Route path="leave_requests/:id" element={<LeaveRequestShow />} /> // Facultatif si edit suffit */}
 
-        {/* ANNOUNCEMENTS */}
+        {/* ANNOUNCEMENTS - Admin complet */}
         <Route path="announcements" element={<AnnouncementList />} />
         <Route path="announcements/create" element={<AnnouncementCreate />} />
         <Route path="announcements/:id/edit" element={<AnnouncementEdit />} />
         <Route path="announcements/:id" element={<AnnouncementShow />} />
       </Route>
 
-      {/* ========== ROUTES EMPLOYEE AVEC LAYOUT (Rôle: employee) ========== */}
+      {/* ========== ROUTES EMPLOYEE AVEC LAYOUT ========== */}
       <Route
         path="/employee"
         element={
@@ -182,21 +156,23 @@ export default function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        {/* Dashboard (Route index par défaut) */}
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<EmployeeDashboard />} />
+        <Route path="presences" element={<EmployeePresencePage />} />
 
-        {/* LEAVE REQUESTS (Soumission et Historique par Employé) */}
+        {/* LEAVE REQUESTS */}
         <Route path="leave_requests" element={<EmployeeLeaveHistory />} />
         <Route path="leave_requests/create" element={<LeaveRequestForm />} />
+        <Route path="leave_requests/edit/:id" element={<EditLeaveRequest />} />
 
-        <Route path="/employee/leave_requests/edit/:id" element={<EditLeaveRequest />} />
-        <Route path="/employee/tasks" element={<EmployeeTaskList />} />
+        {/* TASKS */}
+        <Route path="tasks" element={<EmployeeTaskList />} />
 
-        {/* Ajoutez ici les autres routes spécifiques aux employés (tasks, presences, etc.) */}
-        {/* Exemple: <Route path="tasks" element={<EmployeeTaskList />} /> */}
-        {/* Exemple: <Route path="presences" element={<EmployeePresenceLog />} /> */}
-
+        {/* ✅ ANNOUNCEMENTS POUR MANAGERS (Routes intégrées ici) */}
+        <Route path="announcements" element={<AnnouncementList />} />
+        <Route path="announcements/create" element={<AnnouncementCreate />} />
+        <Route path="announcements/:id" element={<AnnouncementShow />} />
+        <Route path="announcements/:id/edit" element={<AnnouncementEdit />} />
       </Route>
 
       {/* ========== REDIRECTIONS PAR DÉFAUT ========== */}

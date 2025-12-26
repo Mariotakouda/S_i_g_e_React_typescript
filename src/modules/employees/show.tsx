@@ -80,9 +80,9 @@ export default function EmployeeShow() {
             </div>
             
             <div style={{ marginTop: '30px', textAlign: 'right' }}>
-                <Link to={`/admin/employees/edit/${employee.id}`} style={editButtonStyle}>
-                    Modifier le profil
-                </Link>
+                <Link to={`/admin/employees/${employee.id}/edit`} style={editButtonStyle}>
+    Modifier le profil
+</Link>
             </div>
 
             <div style={{ marginTop: '20px', fontSize: '12px', color: '#94a3b8', textAlign: 'center' }}>

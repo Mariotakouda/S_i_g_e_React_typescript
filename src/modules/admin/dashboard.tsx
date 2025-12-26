@@ -113,6 +113,8 @@ export default function AdminDashboard() {
         }),
       ]);
 
+      
+
       // 🔍 LOG DÉTAILLÉ POUR DEBUG
       console.log("📊 Réponse Departments:", departmentsRes.data);
       console.log("📊 Réponse Employees:", employeesRes.data);

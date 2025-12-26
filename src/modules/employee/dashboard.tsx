@@ -57,7 +57,7 @@ export default function EmployeeDashboard() {
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh', fontFamily: 'Inter, sans-serif', color: '#64748b' }}>
-       <p>Chargement de votre espace sécurisé...</p>
+       <p>Chargement de votre espace employé...</p>
     </div>
   );
 
@@ -207,7 +207,7 @@ export default function EmployeeDashboard() {
             )}
           </Section>
 
-          <Section title="Communications Internes">
+          <Section title="Communications Internes" link="/employee/announcements">
             {announcements.length === 0 ? <p style={emptyStyle}>Aucune annonce officielle.</p> : (
               <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
                 {announcements.slice(0, 3).map(a => (
