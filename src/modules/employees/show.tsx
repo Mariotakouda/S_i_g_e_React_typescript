@@ -1,4 +1,3 @@
-// src/modules/employees/show.tsx
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { EmployeeService } from "./service";
@@ -20,185 +19,162 @@ export default function EmployeeShow() {
     }, [id]);
 
     const getInitials = () => {
-        return `${employee?.first_name?.charAt(0) || ''}${employee?.last_name?.charAt(0) || ''}`;
+        return `${employee?.first_name?.charAt(0) || ''}${employee?.last_name?.charAt(0) || ''}`.toUpperCase();
     };
 
-    if (loading) return <div style={centerStyle}><p>Chargement des données...</p></div>;
-    if (!employee) return <div style={centerStyle}><p>Employé introuvable.</p></div>;
+    if (loading) {
+        return (
+            <div className="d-flex justify-content-center align-items-center vh-100">
+                <div className="spinner-border text-primary" role="status"></div>
+            </div>
+        );
+    }
+
+    if (!employee) {
+        return (
+            <div className="container py-5 text-center">
+                <div className="alert alert-warning">Employé introuvable.</div>
+                <Link to="/admin/employees" className="btn btn-primary">Retour à la liste</Link>
+            </div>
+        );
+    }
 
     return (
-        <div style={{ padding: '20px', maxWidth: '900px', margin: 'auto' }}>
-            <div style={{ marginBottom: '20px' }}>
-                <Link to="/admin/employees" style={backLinkStyle}>← Retour à la liste</Link>
-            </div>
-
-            <header style={headerStyle}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                    {/* Photo de profil */}
-                    {employee.profile_photo_url ? (
-                        <img 
-                            src={employee.profile_photo_url} 
-                            alt={`${employee.first_name} ${employee.last_name}`}
-                            style={{
-                                width: '100px',
-                                height: '100px',
-                                borderRadius: '50%',
-                                objectFit: 'cover',
-                                border: '4px solid #3b82f6',
-                                boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-                            }}
-                        />
-                    ) : (
-                        <div style={{
-                            width: '100px',
-                            height: '100px',
-                            borderRadius: '50%',
-                            backgroundColor: '#3b82f6',
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            color: 'white',
-                            fontWeight: 'bold',
-                            fontSize: '36px',
-                            border: '4px solid #3b82f6',
-                            boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-                        }}>
-                            {getInitials()}
-                        </div>
-                    )}
-
-                    {/* Nom et contrat */}
-                    <div>
-                        <h1 style={{ margin: 0 }}>{employee.first_name} {employee.last_name}</h1>
-                        <span style={badgeStyle(employee.contract_type || 'Inconnu')}>
-                            {employee.contract_type || 'Type de contrat non défini'}
-                        </span>
-                    </div>
-                </div>
-                <div style={idBadgeStyle}>ID: #{employee.id}</div>
-            </header>
-
-            <div style={gridContainer}>
-                {/* Section Informations Personnelles */}
-                <div style={cardStyle}>
-                    <h3 style={cardTitle}>Informations Personnelles</h3>
-                    <p><strong>Email:</strong> {employee.email}</p>
-                    <p><strong>Téléphone:</strong> {employee.phone || 'Non renseigné'}</p>
-                    <p><strong>Département:</strong> {employee.department?.name || 'Aucun département'}</p>
-                </div>
-
-                {/* Section Contrat et Salaire */}
-                <div style={cardStyle}>
-                    <h3 style={cardTitle}>Détails du Contrat</h3>
-                    <p>
-                        <strong>Date d'embauche:</strong> {
-                            employee.hire_date 
-                            ? new Date(employee.hire_date).toLocaleDateString('fr-FR') 
-                            : 'Non renseignée'
-                        }
-                    </p>
-                    <p>
-                        <strong>Salaire de base:</strong> {
-                            new Intl.NumberFormat('fr-FR', { 
-                                style: 'currency', 
-                                currency: 'XOF' 
-                            }).format(employee.salary_base ?? 0)
-                        }
-                    </p>
-                    <div>
-                        <strong>Rôles :</strong>
-                        <div style={{ display: 'flex', gap: '5px', marginTop: '5px', flexWrap: 'wrap' }}>
-                            {employee.roles && employee.roles.length > 0 ? (
-                                employee.roles.map((role: any) => (
-                                    <span key={role.id} style={roleBadgeStyle}>{role.name}</span>
-                                ))
-                            ) : (
-                                <span style={{ color: '#999', fontSize: '13px' }}>Aucun rôle assigné</span>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div style={{ marginTop: '30px', textAlign: 'right' }}>
-                <Link to={`/admin/employees/${employee.id}/edit`} style={editButtonStyle}>
-                    Modifier le profil
+        <div className="container-fluid py-4 px-md-5 bg-light min-vh-100">
+            {/* Barre de navigation haute */}
+            <div className="mb-4">
+                <Link to="/admin/employees" className="text-decoration-none d-inline-flex align-items-center text-muted fw-medium hover-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="me-2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Retour à l'annuaire
                 </Link>
             </div>
 
-            <div style={{ marginTop: '20px', fontSize: '12px', color: '#94a3b8', textAlign: 'center' }}>
-                Profil lié au compte utilisateur : {employee.email}
+            {/* Header Profil */}
+            <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: '15px' }}>
+                <div className="card-body p-4">
+                    <div className="d-flex flex-column flex-md-row align-items-center gap-4">
+                        {/* Avatar */}
+                        <div className="flex-shrink-0">
+                            {employee.profile_photo_url ? (
+                                <img 
+                                    src={employee.profile_photo_url} 
+                                    className="rounded-circle border border-4 border-white shadow-sm" 
+                                    style={{ width: '120px', height: '120px', objectFit: 'cover' }}
+                                    alt="Profil"
+                                />
+                            ) : (
+                                <div className="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white shadow-sm"
+                                     style={{ width: '120px', height: '120px', fontSize: '40px', background: 'linear-gradient(45deg, #4e73df, #224abe)' }}>
+                                    {getInitials()}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Infos principales */}
+                        <div className="text-center text-md-start flex-grow-1">
+                            <div className="d-flex flex-column flex-md-row align-items-md-center gap-2 mb-2">
+                                <h1 className="h2 fw-bold text-dark mb-0">{employee.first_name} {employee.last_name}</h1>
+                                <span className={`badge rounded-pill px-3 py-2 ${employee.contract_type === 'CDI' ? 'bg-success bg-opacity-10 text-success' : 'bg-warning bg-opacity-10 text-warning'}`}>
+                                    {employee.contract_type || 'Type non défini'}
+                                </span>
+                            </div>
+                            <p className="text-muted d-flex align-items-center justify-content-center justify-content-md-start mb-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="me-2 text-primary">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                                {employee.department?.name || 'Aucun département'}
+                            </p>
+                        </div>
+
+                        {/* Bouton Action */}
+                        <div className="mt-3 mt-md-0">
+                            <Link to={`/admin/employees/${employee.id}/edit`} className="btn btn-dark px-4 py-2 d-flex align-items-center shadow-sm" style={{ borderRadius: '10px' }}>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="me-2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                Modifier le profil
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Grille d'informations détaillée */}
+            <div className="row g-4">
+                {/* Colonne Gauche : Contact */}
+                <div className="col-12 col-lg-6">
+                    <div className="card border-0 shadow-sm h-100" style={{ borderRadius: '15px' }}>
+                        <div className="card-body p-4">
+                            <h5 className="fw-bold mb-4 d-flex align-items-center text-dark">
+                                <span className="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#4e73df" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                    </svg>
+                                </span>
+                                Coordonnées
+                            </h5>
+                            <div className="mb-3">
+                                <label className="text-muted small d-block mb-1">Email professionnel</label>
+                                <span className="fw-medium text-dark">{employee.email}</span>
+                            </div>
+                            <div className="mb-0">
+                                <label className="text-muted small d-block mb-1">Téléphone</label>
+                                <span className="fw-medium text-dark">{employee.phone || 'Non renseigné'}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Colonne Droite : Contrat */}
+                <div className="col-12 col-lg-6">
+                    <div className="card border-0 shadow-sm h-100" style={{ borderRadius: '15px' }}>
+                        <div className="card-body p-4">
+                            <h5 className="fw-bold mb-4 d-flex align-items-center text-dark">
+                                <span className="bg-success bg-opacity-10 p-2 rounded-3 me-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#198754" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </span>
+                                Détails administratifs
+                            </h5>
+                            <div className="row">
+                                <div className="col-sm-6 mb-3">
+                                    <label className="text-muted small d-block mb-1">Date d'embauche</label>
+                                    <span className="fw-medium text-dark">
+                                        {employee.hire_date ? new Date(employee.hire_date).toLocaleDateString('fr-FR') : 'Non renseignée'}
+                                    </span>
+                                </div>
+                                <div className="col-sm-6 mb-3">
+                                    <label className="text-muted small d-block mb-1">Salaire mensuel</label>
+                                    <span className="fw-medium text-dark">
+                                        {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF' }).format(employee.salary_base ?? 0)}
+                                    </span>
+                                </div>
+                                <div className="col-12">
+                                    <label className="text-muted small d-block mb-1">Rôles système</label>
+                                    <div className="d-flex gap-2 mt-1 flex-wrap">
+                                        {employee.roles && employee.roles.length > 0 ? (
+                                            employee.roles.map((role: any) => (
+                                                <span key={role.id} className="badge bg-light text-secondary border px-2 py-1 fw-normal">
+                                                    {role.name}
+                                                </span>
+                                            ))
+                                        ) : (
+                                            <span className="text-muted small italic">Aucun rôle spécifique</span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="text-center mt-5 text-muted small">
+                <p>Identifiant interne : <strong>#EMP-{employee.id}</strong> — Profil synchronisé avec l'authentification.</p>
             </div>
         </div>
     );
 }
-
-// --- STYLES ---
-
-const centerStyle = { display: 'flex' as const, justifyContent: 'center', alignItems: 'center', height: '50vh' };
-
-const backLinkStyle = { color: '#2563eb', textDecoration: 'none', fontWeight: '500' };
-
-const headerStyle = { 
-    display: 'flex' as const, 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    marginBottom: '30px',
-    borderBottom: '2px solid #f1f5f9',
-    paddingBottom: '20px'
-};
-
-const gridContainer = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
-    gap: '20px'
-};
-
-const cardStyle = { 
-    background: 'white', 
-    padding: '25px', 
-    borderRadius: '12px', 
-    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-    border: '1px solid #e2e8f0'
-};
-
-const cardTitle = { margin: '0 0 15px 0', fontSize: '18px', color: '#1e293b', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' };
-
-const badgeStyle = (type: string) => ({
-    display: 'inline-block',
-    padding: '4px 12px',
-    borderRadius: '20px',
-    fontSize: '12px',
-    fontWeight: 'bold' as const,
-    backgroundColor: type === 'CDI' ? '#dcfce7' : '#fef9c3',
-    color: type === 'CDI' ? '#166534' : '#854d0e',
-    marginTop: '10px'
-});
-
-const roleBadgeStyle = {
-    backgroundColor: '#eff6ff',
-    color: '#1e40af',
-    padding: '2px 10px',
-    borderRadius: '4px',
-    fontSize: '12px',
-    border: '1px solid #bfdbfe'
-};
-
-const idBadgeStyle = {
-    backgroundColor: '#f8fafc',
-    padding: '5px 15px',
-    borderRadius: '8px',
-    color: '#64748b',
-    fontWeight: 'bold' as const,
-    border: '1px solid #e2e8f0'
-};
-
-const editButtonStyle = {
-    backgroundColor: '#1e293b',
-    color: '#fff',
-    padding: '10px 20px',
-    borderRadius: '6px',
-    textDecoration: 'none',
-    fontSize: '14px',
-    fontWeight: '600'
-};

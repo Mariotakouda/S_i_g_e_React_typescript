@@ -1,16 +1,14 @@
+// src/modules/announcements/edit.tsx
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { getAnnouncement, updateAnnouncement } from "./service";
 import { EmployeeService } from "../employees/service";
 import { DepartmentService } from "../departments/service";
 import type { Employee } from "../employees/model";
 
-// Type pour l'interface du département (compatible avec votre service existant)
 interface DepartmentListItem {
   id: number;
   name: string;
-  description?: string;
-  manager_id?: number;
 }
 
 interface AnnouncementForm {
@@ -40,25 +38,14 @@ export default function AnnouncementEdit() {
     message: "",
   });
 
-  // Charger l'annonce et les données
   useEffect(() => {
     async function loadData() {
       try {
-        console.log("🔄 Chargement annonce #" + id);
-        
-        // Charger l'annonce
         const announcement = await getAnnouncement(Number(id));
-        console.log("✅ Annonce chargée:", announcement);
         
-        // Déterminer le type de cible
         let type: "general" | "department" | "employee" = "general";
-        if (announcement.employee_id) {
-          type = "employee";
-        } else if (announcement.department_id) {
-          type = "department";
-        } else if (announcement.is_general) {
-          type = "general";
-        }
+        if (announcement.employee_id) type = "employee";
+        else if (announcement.department_id) type = "department";
         
         setTargetType(type);
         setForm({
@@ -69,218 +56,155 @@ export default function AnnouncementEdit() {
           message: announcement.message,
         });
 
-        // Charger les employés et départements
-        try {
-          const [empData, deptResponse] = await Promise.all([
-            EmployeeService.fetchAllForSelect().catch(() => []),
-            DepartmentService.list().catch(() => ({ data: [], meta: null }))
-          ]);
-          setEmployees(empData);
-          setDepartments(deptResponse.data || []);
-        } catch (dataError) {
-          console.warn("⚠️ Impossible de charger les données:", dataError);
-        }
-
+        const [empData, deptResponse] = await Promise.all([
+          EmployeeService.fetchAllForSelect().catch(() => []),
+          DepartmentService.list().catch(() => ({ data: [] }))
+        ]);
+        setEmployees(empData);
+        setDepartments(deptResponse.data || []);
         setLoading(false);
       } catch (err) {
-        console.error("❌ Erreur chargement annonce:", err);
         setError("Impossible de charger l'annonce");
         setLoading(false);
       }
     }
-
     loadData();
   }, [id]);
 
-  // Gérer le changement de type de cible
   useEffect(() => {
-    if (targetType === "general") {
-      setForm(prev => ({ ...prev, is_general: true, employee_id: null, department_id: null }));
-    } else if (targetType === "department") {
-      setForm(prev => ({ ...prev, is_general: false, employee_id: null }));
-    } else if (targetType === "employee") {
-      setForm(prev => ({ ...prev, is_general: false, department_id: null }));
-    }
+    if (targetType === "general") setForm(p => ({ ...p, is_general: true, employee_id: null, department_id: null }));
+    else if (targetType === "department") setForm(p => ({ ...p, is_general: false, employee_id: null }));
+    else if (targetType === "employee") setForm(p => ({ ...p, is_general: false, department_id: null }));
   }, [targetType]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
     const { name, value } = e.target;
     setForm({
       ...form,
-      [name]: name === "employee_id" || name === "department_id" 
-        ? (value ? Number(value) : null) 
-        : value,
+      [name]: name.includes("_id") ? (value ? Number(value) : null) : value,
     });
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    setError("");
-
     try {
       await updateAnnouncement(Number(id), form);
-      nav("/admin/announcements");
+      nav(`/admin/announcements/${id}`);
     } catch (err: any) {
-      console.error("Erreur modification:", err);
       setError(err.response?.data?.message || "Erreur lors de la modification");
       setSubmitting(false);
     }
   }
 
-  if (loading) return <p style={{ padding: "20px" }}>Chargement...</p>;
-  if (error && !form.title) return <p style={{ color: "red", padding: "20px" }}>{error}</p>;
+  if (loading) return <div className="vh-100 d-flex justify-content-center align-items-center bg-light"><div className="spinner-border text-primary"></div></div>;
 
   return (
-    <div style={{ maxWidth: "600px", margin: "0 auto", padding: "20px" }}>
-      <h1>Modifier l'annonce #{id}</h1>
-      
-      {error && <div style={{ color: "red", marginBottom: "10px", padding: "10px", backgroundColor: "#fee", borderRadius: "4px" }}>{error}</div>}
-
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+    <div className="bg-light min-vh-100 py-4 py-md-5">
+      <div className="container-fluid px-3 px-lg-5" style={{ maxWidth: "1200px" }}>
         
-        {/* Type de destinataire */}
-        <div>
-          <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>
-            Type d'annonce
-          </label>
-          <div style={{ display: "flex", gap: "15px", marginTop: "10px" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-              <input
-                type="radio"
-                checked={targetType === "general"}
-                onChange={() => setTargetType("general")}
-              />
-              Générale (tous les employés)
-            </label>
-            <label style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-              <input
-                type="radio"
-                checked={targetType === "department"}
-                onChange={() => setTargetType("department")}
-              />
-              Par département
-            </label>
-            <label style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-              <input
-                type="radio"
-                checked={targetType === "employee"}
-                onChange={() => setTargetType("employee")}
-              />
-              Employé spécifique
-            </label>
-          </div>
-        </div>
-
-        {/* Sélection du département */}
-        {targetType === "department" && (
+        {/* En-tête du formulaire */}
+        <div className="d-flex justify-content-between align-items-end mb-4">
           <div>
-            <label htmlFor="department_id" style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>
-              Département destinataire *
-            </label>
-            <select
-              id="department_id"
-              name="department_id"
-              value={form.department_id || ""}
-              onChange={handleChange}
-              required
-              style={{ width: "100%", padding: "8px", fontSize: "14px" }}
-            >
-              <option value="">-- Sélectionner un département --</option>
-              {departments.map(dept => (
-                <option key={dept.id} value={dept.id}>
-                  {dept.name}
-                </option>
-              ))}
-            </select>
+            <nav aria-label="breadcrumb">
+              <ol className="breadcrumb mb-2">
+                <li className="breadcrumb-item"><Link to="/admin/announcements" className="text-decoration-none">Annonces</Link></li>
+                <li className="breadcrumb-item active">Édition</li>
+              </ol>
+            </nav>
+            <h2 className="fw-bold text-dark mb-0">Modifier l'annonce <span className="text-primary">#{id}</span></h2>
           </div>
-        )}
-
-        {/* Sélection de l'employé */}
-        {targetType === "employee" && (
-          <div>
-            <label htmlFor="employee_id" style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>
-              Employé destinataire *
-            </label>
-            <select
-              id="employee_id"
-              name="employee_id"
-              value={form.employee_id || ""}
-              onChange={handleChange}
-              required
-              style={{ width: "100%", padding: "8px", fontSize: "14px" }}
-            >
-              <option value="">-- Sélectionner un employé --</option>
-              {employees.map(emp => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.first_name} {emp.last_name} ({emp.email})
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        <div>
-          <label htmlFor="title" style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>
-            Titre *
-          </label>
-          <input
-            id="title"
-            name="title"
-            value={form.title}
-            onChange={handleChange}
-            required
-            style={{ width: "100%", padding: "8px", fontSize: "14px" }}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="message" style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>
-            Message *
-          </label>
-          <textarea
-            id="message"
-            name="message"
-            value={form.message}
-            onChange={handleChange}
-            required
-            rows={6}
-            style={{ width: "100%", padding: "8px", fontSize: "14px", resize: "vertical" }}
-          />
-        </div>
-
-        <div style={{ display: "flex", gap: "10px" }}>
-          <button 
-            type="submit" 
-            disabled={submitting}
-            style={{ 
-              padding: "10px 20px", 
-              backgroundColor: submitting ? "#ccc" : "#2196F3", 
-              color: "white", 
-              border: "none", 
-              borderRadius: "4px",
-              cursor: submitting ? "not-allowed" : "pointer" 
-            }}
-          >
-            {submitting ? "Enregistrement..." : "Enregistrer"}
-          </button>
-          
-          <button 
-            type="button"
-            onClick={() => nav("/admin/announcements")}
-            style={{ 
-              padding: "10px 20px", 
-              backgroundColor: "#999", 
-              color: "white", 
-              border: "none", 
-              borderRadius: "4px",
-              cursor: "pointer" 
-            }}
-          >
-            Annuler
+          <button type="button" onClick={() => nav(-1)} className="btn btn-outline-secondary border-0 fw-bold">
+            Annuler les changements
           </button>
         </div>
-      </form>
+
+        {error && <div className="alert alert-danger border-0 shadow-sm rounded-3 mb-4">{error}</div>}
+
+        <form onSubmit={handleSubmit} className="card border-0 shadow-sm rounded-4">
+          <div className="card-body p-4 p-lg-5">
+            
+            {/* Section : Cible de l'annonce */}
+            <div className="row mb-5 align-items-center">
+              <div className="col-lg-4">
+                <h5 className="fw-bold mb-1">Destinataires</h5>
+                <p className="text-muted small">Qui doit recevoir cette notification ?</p>
+              </div>
+              <div className="col-lg-8">
+                <div className="d-flex flex-wrap gap-3 p-3 bg-light rounded-3">
+                  {["general", "department", "employee"].map((type) => (
+                    <label key={type} className={`btn btn-sm px-4 py-2 rounded-2 fw-bold transition-all ${targetType === type ? 'btn-dark' : 'btn-white border'}`}>
+                      <input type="radio" className="btn-check" checked={targetType === type} onChange={() => setTargetType(type as any)} />
+                      {type === 'general' ? 'Tout le monde' : type === 'department' ? 'Département' : 'Employé spécifique'}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Section Dynamique : Sélections */}
+            {(targetType === "department" || targetType === "employee") && (
+              <div className="row mb-5 animate-fade-in">
+                <div className="col-lg-4">
+                  <h5 className="fw-bold mb-1">Sélection de la cible</h5>
+                </div>
+                <div className="col-lg-8">
+                  {targetType === "department" ? (
+                    <select name="department_id" className="form-select form-select-lg border-2" value={form.department_id || ""} onChange={handleChange} required>
+                      <option value="">Sélectionner un département...</option>
+                      {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                    </select>
+                  ) : (
+                    <select name="employee_id" className="form-select form-select-lg border-2" value={form.employee_id || ""} onChange={handleChange} required>
+                      <option value="">Sélectionner un employé...</option>
+                      {employees.map(e => <option key={e.id} value={e.id}>{e.first_name} {e.last_name} ({e.email})</option>)}
+                    </select>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <hr className="my-5 opacity-10" />
+
+            {/* Section : Contenu */}
+            <div className="row mb-4">
+              <div className="col-lg-4">
+                <h5 className="fw-bold mb-1">Contenu du message</h5>
+                <p className="text-muted small">Soignez votre titre et votre message.</p>
+              </div>
+              <div className="col-lg-8">
+                <div className="mb-4">
+                  <label className="form-label fw-bold small text-uppercase opacity-75">Titre de l'annonce</label>
+                  <input type="text" name="title" className="form-control form-control-lg border-2" value={form.title} onChange={handleChange} required placeholder="Ex: Maintenance prévue..." />
+                </div>
+                <div>
+                  <label className="form-label fw-bold small text-uppercase opacity-75">Message</label>
+                  <textarea name="message" className="form-control border-2" rows={10} value={form.message} onChange={handleChange} required placeholder="Saisissez votre texte ici..." />
+                </div>
+              </div>
+            </div>
+
+            {/* Boutons d'action */}
+            <div className="row mt-5 pt-4 border-top">
+              <div className="col-lg-8 offset-lg-4 d-flex gap-3">
+                <button type="submit" disabled={submitting} className="btn btn-primary btn-lg px-5 fw-bold shadow-sm rounded-3">
+                  {submitting ? "Mise à jour..." : "Enregistrer les modifications"}
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </form>
+      </div>
+
+      <style>{`
+        .btn-white { background: #fff; }
+        .form-control:focus, .form-select:focus { border-color: #0d6efd; box-shadow: none; }
+        .form-control, .form-select { border-radius: 10px; border-color: #eee; }
+        .transition-all { transition: all 0.2s ease; }
+        .animate-fade-in { animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
     </div>
   );
 }

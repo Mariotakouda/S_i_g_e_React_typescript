@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom"; 
+import { Link } from "react-router-dom";
 import { fetchManagers, deleteManager } from "./service";
 import type { Manager } from "./model";
 
@@ -16,13 +16,11 @@ export default function ManagerList() {
     try {
       setLoading(true);
       const data = await fetchManagers(page, search);
-      // 🎯 Correction : Assurer que managers est toujours un tableau
-      setManagers(data.data || []); 
+      setManagers(data.data || []);
       setCurrentPage(data.current_page);
       setLastPage(data.last_page);
       setError("");
     } catch (err: any) {
-      console.error("❌ Erreur chargement:", err);
       setError("Impossible de charger la liste des managers.");
     } finally {
       setLoading(false);
@@ -35,7 +33,7 @@ export default function ManagerList() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setCurrentPage(1); // Retour à la première page pour la recherche
+    setCurrentPage(1);
     loadManagers(1, searchQuery);
   };
 
@@ -44,143 +42,155 @@ export default function ManagerList() {
       setIsDeleting(id);
       try {
         await deleteManager(id);
-        alert("✅ Manager supprimé avec succès !");
-        loadManagers(currentPage, searchQuery); // Recharger la liste
-      } catch (err: any) {
-        console.error("❌ Erreur suppression:", err);
-        setError("Erreur lors de la suppression du manager.");
+        loadManagers(currentPage, searchQuery);
       } finally {
         setIsDeleting(null);
       }
     }
   };
 
-  if (loading && managers.length === 0) {
-    return <div style={{ padding: "20px" }}>Chargement de la liste...</div>;
-  }
-
   return (
-    <div style={{ padding: "20px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-        <h1>Liste des Managers ({lastPage > 0 ? lastPage : '0'} pages)</h1>
-        <Link to="/admin/managers/create"
-          style={{
-            padding: "10px 20px",
-            backgroundColor: "#28a745",
-            color: "white",
-            textDecoration: "none",
-            borderRadius: "4px",
-            fontWeight: "600",
-          }}
-        >
-          ➕ Créer un Manager
+    <div className="container-fluid py-4 px-2 px-md-5 bg-light min-vh-100">
+      {/* Header */}
+      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+          <h1 className="h3 mb-1 fw-bold text-dark">Gestion des Managers</h1>
+          <p className="text-muted small mb-0">Total : {managers.length} managers</p>
+        </div>
+        <Link to="/admin/managers/create" className="btn btn-primary d-inline-flex align-items-center justify-content-center shadow-sm py-2 px-4 rounded-3">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="me-2"><path d="M5 12h14m-7-7v14"/></svg>
+          <span className="fw-bold">Nouveau Manager</span>
         </Link>
       </div>
 
       {error && (
-        <div style={{ padding: "12px", marginBottom: "20px", backgroundColor: "#fee", border: "1px solid #fcc", borderRadius: "4px", color: "#c33" }}>
+        <div className="alert alert-danger shadow-sm border-0 mb-4 rounded-3 small">
           {error}
         </div>
       )}
 
       {/* Barre de recherche */}
-      <form onSubmit={handleSearch} style={{ marginBottom: "20px", display: "flex", gap: "10px" }}>
-        <input
-          type="text"
-          placeholder="Rechercher par nom, email..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          style={{ flexGrow: 1, padding: "10px", border: "1px solid #ccc", borderRadius: "4px" }}
-        />
-        <button type="submit" style={{ padding: "10px 15px", backgroundColor: "#007bff", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}>
-          🔍 Chercher
-        </button>
-      </form>
+      <div className="card border-0 shadow-sm mb-4 rounded-3">
+        <div className="card-body p-2">
+          <form onSubmit={handleSearch} className="row g-2">
+            <div className="col-12 col-md">
+              <div className="input-group">
+                <span className="input-group-text bg-transparent border-0 text-muted">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                </span>
+                <input
+                  type="text"
+                  className="form-control bg-transparent border-0 ps-0 small"
+                  placeholder="Rechercher..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="col-12 col-md-auto">
+              <button type="submit" className="btn btn-dark btn-sm w-100 px-4 fw-bold">Chercher</button>
+            </div>
+          </form>
+        </div>
+      </div>
 
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr style={{ backgroundColor: "#f4f4f4" }}>
-            <th style={{ padding: "12px", border: "1px solid #ddd", textAlign: "left" }}>Employé (Email)</th>
-            <th style={{ padding: "12px", border: "1px solid #ddd", textAlign: "left" }}>Département</th>
-            <th style={{ padding: "12px", border: "1px solid #ddd", textAlign: "center" }}>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {managers.length > 0 ? (
-            managers.map((manager) => (
-              <tr key={manager.id} style={{ borderBottom: "1px solid #eee" }}>
-                <td style={{ padding: "12px", border: "1px solid #ddd" }}>
-                  <Link to={`/admin/managers/${manager.id}`} style={{ color: "#007bff", textDecoration: "none" }}>
-                    {manager.employee.first_name} {manager.employee.last_name}
-                  </Link>
-                  <br />
-                  <span style={{ fontSize: "12px", color: "#666" }}>({manager.employee.email})</span>
-                </td>
-                <td style={{ padding: "12px", border: "1px solid #ddd" }}>
-                  {manager.department ? manager.department.name : "Non assigné"}
-                </td>
-                <td style={{ padding: "12px", border: "1px solid #ddd", textAlign: "center", display: "flex", gap: "5px", justifyContent: "center" }}>
-                  <Link to={`/admin/managers/${manager.id}/edit`}
-                    style={{
-                      padding: "5px 10px",
-                      backgroundColor: "#ffc107",
-                      color: "black",
-                      textDecoration: "none",
-                      borderRadius: "3px",
-                      fontSize: "12px",
-                    }}
-                  >
-                    ✏️ Modifier
-                  </Link>
-                  <button
-                    onClick={() => handleDelete(manager.id)}
-                    disabled={isDeleting === manager.id}
-                    style={{
-                      padding: "5px 10px",
-                      backgroundColor: "#dc3545",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "3px",
-                      cursor: "pointer",
-                      fontSize: "12px",
-                      opacity: isDeleting === manager.id ? 0.6 : 1,
-                    }}
-                  >
-                    {isDeleting === manager.id ? "Suppression..." : "🗑️ Supprimer"}
-                  </button>
-                </td>
+      {/* --- VUE MOBILE : Cartes --- */}
+      <div className="d-block d-md-none">
+        {loading && <div className="text-center py-4 small text-muted">Chargement...</div>}
+        {!loading && managers.map((manager) => (
+          <div key={manager.id} className="card border-0 shadow-sm mb-3 rounded-4">
+            <div className="card-body p-3">
+              <div className="d-flex justify-content-between mb-3">
+                <div>
+                  <div className="fw-bold text-dark small">{manager.employee.first_name} {manager.employee.last_name}</div>
+                  <div className="text-muted" style={{ fontSize: '11px' }}>{manager.employee.email}</div>
+                </div>
+                <span className="badge bg-primary-subtle text-primary rounded-pill small" style={{ fontSize: '10px' }}>
+                  {manager.department?.name || "Sans dép."}
+                </span>
+              </div>
+              <div className="d-grid gap-2">
+                {/* EMOJI UTILISÉ ICI POUR LE BOUTON MOBILE */}
+                <Link to={`/admin/managers/${manager.id}`} className="btn btn-sm btn-light fw-bold py-2 border shadow-sm rounded-3">
+                   👁️ Voir les détails
+                </Link>
+                <div className="d-flex gap-2">
+                    <Link to={`/admin/managers/${manager.id}/edit`} className="btn btn-sm btn-outline-warning flex-grow-1 py-2">
+                    Modifier
+                    </Link>
+                    <button onClick={() => handleDelete(manager.id)} className="btn btn-sm btn-outline-danger flex-grow-1 py-2">
+                    Supprimer
+                    </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* --- VUE DESKTOP : Tableau --- */}
+      <div className="card border-0 shadow-sm d-none d-md-block rounded-4 overflow-hidden">
+        <div className="table-responsive">
+          <table className="table table-hover align-middle mb-0">
+            <thead className="bg-light text-muted small" style={{ fontSize: '11px', textTransform: 'uppercase' }}>
+              <tr>
+                <th className="px-4 py-3">Gestionnaire</th>
+                <th className="py-3">Département</th>
+                <th className="py-3 text-center px-4">Actions</th>
               </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan={3} style={{ padding: "20px", textAlign: "center", color: "#888" }}>
-                Aucun manager trouvé.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+            </thead>
+            <tbody style={{ fontSize: '13px' }}>
+              {loading ? (
+                <tr><td colSpan={3} className="text-center py-5">Chargement...</td></tr>
+              ) : managers.length > 0 ? (
+                managers.map((manager) => (
+                  <tr key={manager.id}>
+                    <td className="px-4 py-3 fw-bold text-dark">
+                      {manager.employee.first_name} {manager.employee.last_name}
+                      <div className="fw-normal text-muted small" style={{ fontSize: '11px' }}>{manager.employee.email}</div>
+                    </td>
+                    <td className="py-3">
+                      <span className="fw-medium">{manager.department?.name || "—"}</span>
+                    </td>
+                    <td className="text-center px-4">
+                      <div className="d-inline-flex gap-2">
+                        
+                        {/* SVG UTILISÉ ICI POUR LE BOUTON DESKTOP (Icône Œil) */}
+                        <Link to={`/admin/managers/${manager.id}`} className="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center shadow-sm" style={{ width: '32px', height: '32px', borderRadius: '8px' }} title="Détails">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                          </svg>
+                        </Link>
+                        
+                        <Link to={`/admin/managers/${manager.id}/edit`} className="btn btn-sm btn-outline-warning d-flex align-items-center justify-content-center shadow-sm" style={{ width: '32px', height: '32px', borderRadius: '8px' }} title="Modifier">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                        </Link>
+
+                        <button onClick={() => handleDelete(manager.id)} disabled={isDeleting === manager.id} className="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center shadow-sm" style={{ width: '32px', height: '32px', borderRadius: '8px' }}>
+                          {isDeleting === manager.id ? <span className="spinner-border spinner-border-sm"></span> : 
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr><td colSpan={3} className="text-center py-5">Aucun manager.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {/* Pagination */}
       {lastPage > 1 && (
-        <div style={{ marginTop: "20px", display: "flex", justifyContent: "center", gap: "10px" }}>
-          <button
-            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-            disabled={currentPage === 1 || loading}
-            style={{ padding: "8px 15px", border: "1px solid #ccc", borderRadius: "4px", cursor: "pointer" }}
-          >
-            Précédent
-          </button>
-          <span style={{ padding: "8px 15px" }}>
-            Page {currentPage} sur {lastPage}
-          </span>
-          <button
-            onClick={() => setCurrentPage((prev) => Math.min(lastPage, prev + 1))}
-            disabled={currentPage === lastPage || loading}
-            style={{ padding: "8px 15px", border: "1px solid #ccc", borderRadius: "4px", cursor: "pointer" }}
-          >
-            Suivant
-          </button>
+        <div className="d-flex justify-content-between align-items-center mt-3 px-2">
+          <div className="text-muted" style={{ fontSize: '11px' }}>Page {currentPage}/{lastPage}</div>
+          <div className="d-flex gap-1">
+            <button className="btn btn-white btn-sm border px-3 fw-bold" onClick={() => setCurrentPage(p => Math.max(1, p-1))} disabled={currentPage === 1 || loading}>‹</button>
+            <button className="btn btn-white btn-sm border px-3 fw-bold" onClick={() => setCurrentPage(p => Math.min(lastPage, p+1))} disabled={currentPage === lastPage || loading}>›</button>
+          </div>
         </div>
       )}
     </div>

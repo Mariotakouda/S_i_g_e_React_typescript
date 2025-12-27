@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { api } from "../../api/axios";
 import type { Department, Employee, ManagerFormData } from "./model";
 
@@ -9,6 +9,7 @@ export default function ManagerCreate() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
 
@@ -18,43 +19,29 @@ export default function ManagerCreate() {
   });
 
   useEffect(() => {
-    loadData(); // C'est ici que l'appel API est déclenché au chargement du composant
-}, []); 
+    loadData();
+  }, []);
 
-const loadData = async () => {
+  const loadData = async () => {
     try {
-        setLoading(true);
-        const [employeesRes, departmentsRes] = await Promise.all([
-            api.get("/employees"), 
-            api.get("/departments"),
-        ]);
-
-        // 🎯 AJOUTEZ CECI :
-        console.log("Employés reçus par ManagerCreate:", employeesRes.data.data);
-
-        setEmployees(employeesRes.data.data || []);
-        setDepartments(departmentsRes.data.data || []);
+      setLoading(true);
+      const [employeesRes, departmentsRes] = await Promise.all([
+        api.get("/employees"),
+        api.get("/departments"),
+      ]);
+      setEmployees(employeesRes.data.data || []);
+      setDepartments(departmentsRes.data.data || []);
     } catch (err: any) {
-        // ...
+      setError("Erreur lors de la récupération des données.");
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
-};
+  };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
-
-    let processedValue: any = value;
-
-    if (name.includes("_id")) {
-      processedValue = value === "" ? null : Number(value);
-    }
-
-    setFormData({
-      ...formData,
-      [name]: processedValue,
-    });
-
+    const processedValue = value === "" ? null : Number(value);
+    setFormData((prev) => ({ ...prev, [name]: processedValue }));
     if (validationErrors[name]) {
       const newErrors = { ...validationErrors };
       delete newErrors[name];
@@ -68,168 +55,148 @@ const loadData = async () => {
     setValidationErrors({});
 
     if (!formData.employee_id) {
-      setError("Veuillez sélectionner un employé");
+      setError("Veuillez sélectionner un employé.");
       return;
     }
 
     try {
-      await api.post("/managers", formData); // Utilise la fonction createManager du service si vous l'aviez importée
-
-      alert("✅ Manager créé avec succès !");
+      setIsSubmitting(true);
+      await api.post("/managers", formData);
       navigate("/admin/managers");
-    // ... dans handleSubmit
-} catch (err: any) {
-    console.error("❌ Erreur création:", err);
-
-    if (err.response?.status === 422) {
+    } catch (err: any) {
+      if (err.response?.status === 422) {
         setValidationErrors(err.response.data.errors || {});
-        setError(err.response.data.message || "Erreur de validation");
-    } else if (err.response?.status === 500) {
-        // Ajout spécifique pour l'erreur 500
-        setError("Erreur serveur (500) : Une erreur inattendue s'est produite côté API. Veuillez vérifier les logs du serveur.");
-    } 
-    else {
-        setError(err.response?.data?.message || "Erreur lors de la création");
+      } else {
+        setError(err.response?.data?.message || "Erreur lors de la création.");
+      }
+    } finally {
+      setIsSubmitting(false);
     }
-}
-// ...
   };
 
   if (loading) {
-    return <div style={{ padding: "20px" }}>Chargement...</div>;
+    return (
+      <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
+        <div className="spinner-grow text-primary" role="status"></div>
+      </div>
+    );
   }
 
   return (
-    <div style={{ padding: "20px", maxWidth: "600px", margin: "0 auto" }}>
-      <h1>Créer un Manager</h1>
+    <div className="bg-light min-vh-100 py-4 py-md-5">
+      {/* container-fluid pour maximiser l'espace, px-md-5 pour les marges latérales sur PC */}
+      <div className="container-fluid px-md-5">
+        <div className="row justify-content-center">
+          
+          {/* Élargissement ici : col-xl-10 pour une vue large, col-xxl-8 pour éviter d'être trop étiré sur écrans géants */}
+          <div className="col-12 col-lg-11 col-xl-10 col-xxl-9">
+            
+            {/* Header de page */}
+            <div className="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center mb-4 gap-3">
+              <div>
+                <h1 className="h2 fw-bold text-dark mb-1">Nouveau Manager</h1>
+                <p className="text-muted mb-0">Attribuez des responsabilités d'encadrement à un employé.</p>
+              </div>
+              <Link to="/admin/managers" className="btn btn-outline-secondary rounded-pill px-4 shadow-sm">
+                <i className="bi bi-arrow-left me-2"></i>Retour
+              </Link>
+            </div>
 
-      {error && (
-        <div
-          style={{
-            padding: "12px",
-            marginBottom: "20px",
-            backgroundColor: "#fee",
-            border: "1px solid #fcc",
-            borderRadius: "4px",
-            color: "#c33",
-          }}
-        >
-          {error}
+            <div className="card border-0 shadow-lg rounded-4 overflow-hidden">
+              {/* Ligne d'accentuation en haut */}
+              <div className="bg-primary" style={{ height: '5px' }}></div>
+              
+              <div className="card-body p-4 p-md-5">
+                {error && (
+                  <div className="alert alert-danger border-0 shadow-sm d-flex align-items-center mb-4 animate__animated animate__fadeIn">
+                    <i className="bi bi-exclamation-octagon-fill fs-4 me-3"></i>
+                    <div>{error}</div>
+                  </div>
+                )}
+
+                <form onSubmit={handleSubmit} className="row g-4">
+                  
+                  {/* Utilisation de col-md-6 pour mettre les champs côte à côte sur large écran */}
+                  <div className="col-12 col-md-6">
+                    <label className="form-label fw-bold text-secondary small text-uppercase mb-2">
+                      Sélection de l'Employé <span className="text-danger">*</span>
+                    </label>
+                    <div className="input-group">
+                      <span className="input-group-text bg-white border-end-0 rounded-start-3">
+                        <i className="bi bi-person-badge text-primary"></i>
+                      </span>
+                      <select
+                        name="employee_id"
+                        className={`form-select form-select-lg border-start-0 rounded-end-3 ${validationErrors.employee_id ? 'is-invalid' : ''}`}
+                        value={formData.employee_id || ""}
+                        onChange={handleChange}
+                        disabled={isSubmitting}
+                      >
+                        <option value="">Choisir un membre de l'équipe...</option>
+                        {employees.map((emp) => (
+                          <option key={emp.id} value={emp.id}>
+                            {emp.first_name} {emp.last_name} — {emp.email}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {validationErrors.employee_id && (
+                      <div className="text-danger small mt-1 fw-medium">{validationErrors.employee_id[0]}</div>
+                    )}
+                  </div>
+
+                  <div className="col-12 col-md-6">
+                    <label className="form-label fw-bold text-secondary small text-uppercase mb-2">
+                      Département de Gestion
+                    </label>
+                    <div className="input-group">
+                      <span className="input-group-text bg-white border-end-0 rounded-start-3">
+                        <i className="bi bi-building text-primary"></i>
+                      </span>
+                      <select
+                        name="department_id"
+                        className="form-select form-select-lg border-start-0 rounded-end-3"
+                        value={formData.department_id || ""}
+                        onChange={handleChange}
+                        disabled={isSubmitting}
+                      >
+                        <option value="">Aucun département assigné</option>
+                        {departments.map((dept) => (
+                          <option key={dept.id} value={dept.id}>
+                            {dept.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="col-12 mt-5">
+                    <div className="bg-light p-4 rounded-4 border border-dashed d-flex flex-column flex-md-row justify-content-between align-items-center gap-4">
+                      <div className="text-muted small">
+                        <i className="bi bi-info-circle me-2"></i>
+                        L'employé sélectionné recevra immédiatement ses accès de manager après validation.
+                      </div>
+                      <div className="d-flex gap-3 w-100 w-md-auto">
+                        <button
+                          type="submit"
+                          className="btn btn-primary btn-lg px-5 fw-bold flex-grow-1 shadow"
+                          disabled={isSubmitting}
+                        >
+                          {isSubmitting ? (
+                            <span className="spinner-border spinner-border-sm me-2"></span>
+                          ) : (
+                            <i className="bi bi-check-circle me-2"></i>
+                          )}
+                          Créer le profil
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
         </div>
-      )}
-
-      <form onSubmit={handleSubmit}>
-        {/* Employé */}
-        <div style={{ marginBottom: "20px" }}>
-          <label
-            style={{ display: "block", marginBottom: "8px", fontWeight: "600" }}
-          >
-            Employé <span style={{ color: "red" }}>*</span>
-          </label>
-          <select
-            name="employee_id"
-            value={formData.employee_id || ""}
-            onChange={handleChange}
-            required
-            style={{
-              width: "100%",
-              padding: "10px",
-              border: validationErrors.employee_id
-                ? "2px solid #c33"
-                : "1px solid #ccc",
-              borderRadius: "4px",
-            }}
-          >
-            <option value="">-- Sélectionner un employé --</option>
-            {employees.map((emp) => (
-              <option key={emp.id} value={emp.id}>
-                {emp.first_name} {emp.last_name} ({emp.email})
-              </option>
-            ))}
-          </select>
-          {validationErrors.employee_id && (
-            <p style={{ color: "#c33", fontSize: "12px", marginTop: "4px" }}>
-              {validationErrors.employee_id[0]}
-            </p>
-          )}
-        </div>
-
-        {/* Département */}
-        <div style={{ marginBottom: "20px" }}>
-          <label
-            style={{ display: "block", marginBottom: "8px", fontWeight: "600" }}
-          >
-            Département à gérer
-          </label>
-          <select
-            name="department_id"
-            value={formData.department_id || ""}
-            onChange={handleChange}
-            style={{
-              width: "100%",
-              padding: "10px",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-            }}
-          >
-            <option value="">-- Optionnel --</option>
-            {departments.map((dept) => (
-              <option key={dept.id} value={dept.id}>
-                {dept.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div style={{ display: "flex", gap: "10px" }}>
-          <button
-            type="submit"
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "#28a745",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-              fontWeight: "600",
-            }}
-          >
-            ✅ Créer
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate("/admin/managers")}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "#6c757d",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
-          >
-            Annuler
-          </button>
-        </div>
-      </form>
-
-      {/* Info */}
-      <div
-        style={{
-          marginTop: "30px",
-          padding: "15px",
-          backgroundColor: "#e7f3ff",
-          border: "1px solid #b3d9ff",
-          borderRadius: "4px",
-        }}
-      >
-        <h3 style={{ marginTop: 0, fontSize: "14px", fontWeight: "600" }}>
-          ℹ️ Information
-        </h3>
-        <p style={{ margin: 0, fontSize: "13px", lineHeight: "1.6" }}>
-          Sélectionnez un employé existant pour lui attribuer le rôle de manager.
-          Vous pouvez optionnellement lui assigner un département à gérer.
-        </p>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { getAllPresences, type EmployeePresence } from "../presences/service";
 
 export default function AdminPresencePage() {
@@ -6,15 +6,11 @@ export default function AdminPresencePage() {
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState("");
 
-  useEffect(() => {
-    loadAll();
-  }, []);
-
-  const loadAll = async (dateFilter?: string) => {
+  const loadAll = useCallback(async (dateFilter?: string) => {
     try {
       setLoading(true);
       const response = await getAllPresences(dateFilter ? { date: dateFilter } : undefined);
-      // Extraction sécurisée des données (Laravel paginate renvoie un objet avec une clé 'data')
+      // Adaptation selon la structure de retour de l'API (Laravel paginate ou simple array)
       const data = response?.data?.data || response?.data || response;
       setPresences(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -23,107 +19,180 @@ export default function AdminPresencePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadAll();
+  }, [loadAll]);
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const date = e.target.value;
     setSelectedDate(date);
-    loadAll(date);
+    loadAll(date); // Déclenche le filtrage API
   };
 
   const resetFilter = () => {
     setSelectedDate("");
-    loadAll();
+    loadAll(); // Recharge toutes les données
   };
 
-  // Stats basées sur les données chargées
   const today = new Date().toISOString().split('T')[0];
-  const presentToday = presences.filter(p => p.date === today);
+  const presentTodayCount = presences.filter(p => p.date === today).length;
 
   return (
-    <div style={{ padding: "24px", maxWidth: "1200px", margin: "0 auto", fontFamily: "'Inter', sans-serif" }}>
-      
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px", flexWrap: "wrap", gap: "20px" }}>
+    <div className="admin-container">
+      <style>{`
+        .admin-container { padding: 20px; maxWidth: 1200px; margin: 0 auto; font-family: 'Inter', system-ui, sans-serif; background-color: #f8fafc; min-height: 100vh; }
+        .header-flex { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; flex-wrap: wrap; gap: 20px; }
+        
+        .filter-section { background: white; padding: 12px 16px; borderRadius: 12px; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .date-input { border: 1px solid #cbd5e1; padding: 8px 12px; border-radius: 8px; outline: none; font-size: 14px; color: #1e293b; cursor: pointer; }
+        .reset-btn { background: #fee2e2; color: #b91c1c; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 700; transition: all 0.2s; }
+        .reset-btn:hover { background: #fecaca; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 32px; }
+        .stat-card { background: white; padding: 24px; borderRadius: 16px; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 16px; }
+
+        /* RESPONSIVE TABLE */
+        .table-container { background: white; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 16px; background: #f8fafc; color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e2e8f0; }
+        td { padding: 16px; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #1e293b; }
+
+        .mobile-cards { display: none; gap: 16px; flex-direction: column; }
+        .card-item { background: white; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .card-info { display: flex; justify-content: space-between; margin-top: 8px; font-size: 14px; }
+
+        @media (max-width: 768px) {
+          table { display: none; }
+          .mobile-cards { display: flex; }
+          .header-flex { flex-direction: column; align-items: flex-start; }
+          .filter-section { width: 100%; justify-content: space-between; }
+        }
+
+        .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 9999px; font-size: 12px; font-weight: 700; }
+        .status-active { background: #fff7ed; color: #c2410c; }
+        .status-done { background: #f0fdf4; color: #15803d; }
+      `}</style>
+
+      {/* HEADER AVEC FILTRE */}
+      <div className="header-flex">
         <div>
-          <h1 style={{ fontSize: "28px", fontWeight: "800", color: "#0f172a", margin: 0 }}>
-            Tableau de bord des présences
-          </h1>
-          <p style={{ color: "#64748b", marginTop: "4px" }}>Interface Administrateur</p>
+          <h1 style={{ fontSize: "28px", fontWeight: "800", color: "#0f172a", margin: 0 }}>Gestion des Présences</h1>
+          <p style={{ color: "#64748b", margin: "4px 0 0 0", fontSize: "15px" }}>Suivi en temps réel des collaborateurs</p>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", backgroundColor: "#fff", padding: "10px 16px", borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
-          <label style={{ fontSize: "14px", fontWeight: "600", color: "#475569" }}>Filtrer par jour :</label>
+        <div className="filter-section">
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span style={{ fontSize: "14px", fontWeight: "600", color: "#475569" }}>Filtrer :</span>
+          </div>
           <input 
             type="date" 
-            value={selectedDate}
-            onChange={handleDateChange}
-            style={{ border: "1px solid #cbd5e1", borderRadius: "6px", padding: "6px 10px", outline: "none" }}
+            className="date-input"
+            value={selectedDate} 
+            onChange={handleDateChange} 
           />
           {selectedDate && (
-            <button onClick={resetFilter} style={{ background: "#f1f5f9", border: "none", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>
-              Réinitialiser
-            </button>
+            <button className="reset-btn" onClick={resetFilter}>Réinitialiser</button>
           )}
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px", marginBottom: "30px" }}>
-        <div style={cardStyle}>
-          <div style={{ width: "48px", height: "48px", borderRadius: "12px", backgroundColor: "#eff6ff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "24px" }}>👥</div>
+      {/* STATISTIQUES */}
+      <div className="stats-grid">
+        <div className="stat-card">
+          <div style={{ background: "#eff6ff", padding: "14px", borderRadius: "14px", color: "#3b82f6" }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
           <div>
-            <div style={{ fontWeight: "800", fontSize: "24px", color: "#1e293b" }}>{presentToday.length}</div>
-            <div style={{ color: "#64748b", fontSize: "14px" }}>Présents aujourd'hui</div>
+            <div style={{ fontSize: "28px", fontWeight: "800", color: "#1e293b", lineHeight: 1 }}>{presentTodayCount}</div>
+            <div style={{ fontSize: "14px", color: "#64748b", marginTop: "4px" }}>Présents aujourd'hui</div>
           </div>
         </div>
       </div>
 
-      <div style={{ backgroundColor: "#fff", borderRadius: "16px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)", border: "1px solid #f1f5f9", overflow: "hidden" }}>
-        {loading ? (
-          <div style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>Chargement des données...</div>
-        ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ backgroundColor: "#f8fafc", borderBottom: "2px solid #e2e8f0" }}>
-                <th style={thStyle}>Employé</th>
-                <th style={thStyle}>Date</th>
-                <th style={thStyle}>Arrivée</th>
-                <th style={thStyle}>Sortie</th>
-                <th style={thStyle}>Statut</th>
-              </tr>
-            </thead>
-            <tbody>
-              {presences.length > 0 ? (
-                presences.map((p: any) => (
-                  <tr key={p.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                    <td style={tdStyle}>
-                      <div style={{ fontWeight: "700", color: "#0f172a" }}>
-                        {p.employee ? `${p.employee.first_name} ${p.employee.last_name}` : `ID: ${p.employee_id}`}
-                      </div>
+      {/* LISTE DES PRÉSENCES */}
+      {loading ? (
+        <div style={{ textAlign: "center", padding: "80px", color: "#94a3b8" }}>
+          <div style={{ width: "32px", height: "32px", border: "3px solid #e2e8f0", borderTopColor: "#3b82f6", borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto 16px" }}></div>
+          <p style={{ fontWeight: "500" }}>Chargement des données...</p>
+        </div>
+      ) : (
+        <>
+          {/* DESKTOP TABLE */}
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Employé</th>
+                  <th>Date</th>
+                  <th>Heure Arrivée</th>
+                  <th>Heure Sortie</th>
+                  <th>Statut</th>
+                </tr>
+              </thead>
+              <tbody>
+                {presences.map((p: any) => (
+                  <tr key={p.id}>
+                    <td style={{ fontWeight: "700" }}>
+                      {p.employee ? `${p.employee.first_name} ${p.employee.last_name}` : `ID: ${p.employee_id}`}
                     </td>
-                    <td style={tdStyle}>{new Date(p.date).toLocaleDateString('fr-FR')}</td>
-                    <td style={tdStyle}>{p.check_in ? new Date(p.check_in).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '--:--'}</td>
-                    <td style={tdStyle}>{p.check_out ? new Date(p.check_out).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '--:--'}</td>
-                    <td style={tdStyle}>
-                      <span style={p.check_out ? statusDone : statusActive}>
-                        {p.check_out ? "✓ Terminé" : "⏳ En cours"}
+                    <td>{new Date(p.date).toLocaleDateString('fr-FR')}</td>
+                    <td style={{ fontWeight: "600" }}>{p.check_in ? new Date(p.check_in).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '--:--'}</td>
+                    <td style={{ fontWeight: "600" }}>{p.check_out ? new Date(p.check_out).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '--:--'}</td>
+                    <td>
+                      <span className={`status-badge ${p.check_out ? "status-done" : "status-active"}`}>
+                        <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "currentColor" }}></span>
+                        {p.check_out ? "Journée Terminée" : "En cours"}
                       </span>
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr><td colSpan={5} style={{ padding: "40px", textAlign: "center", color: "#94a3b8" }}>Aucun pointage trouvé.</td></tr>
-              )}
-            </tbody>
-          </table>
-        )}
-      </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* MOBILE CARDS */}
+          <div className="mobile-cards">
+            {presences.map((p: any) => (
+              <div key={p.id} className="card-item">
+                <div className="card-header">
+                  <div>
+                    <div style={{ fontWeight: "800", fontSize: "16px", color: "#0f172a" }}>
+                      {p.employee ? `${p.employee.first_name} ${p.employee.last_name}` : `ID: ${p.employee_id}`}
+                    </div>
+                    <div style={{ color: "#64748b", fontSize: "13px", marginTop: "2px" }}>{new Date(p.date).toLocaleDateString('fr-FR')}</div>
+                  </div>
+                  <span className={`status-badge ${p.check_out ? "status-done" : "status-active"}`}>
+                    {p.check_out ? "Terminé" : "En cours"}
+                  </span>
+                </div>
+                <div style={{ height: "1px", background: "#f1f5f9", margin: "12px 0" }}></div>
+                <div className="card-info">
+                  <span style={{ color: "#64748b" }}>📍 Arrivée</span>
+                  <span style={{ fontWeight: "700" }}>{p.check_in ? new Date(p.check_in).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '--:--'}</span>
+                </div>
+                <div className="card-info">
+                  <span style={{ color: "#64748b" }}>🏁 Sortie</span>
+                  <span style={{ fontWeight: "700" }}>{p.check_out ? new Date(p.check_out).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '--:--'}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {presences.length === 0 && (
+            <div style={{ textAlign: "center", padding: "60px", background: "white", borderRadius: "16px", border: "1px dashed #cbd5e1", marginTop: "20px" }}>
+              <p style={{ color: "#94a3b8", margin: 0 }}>Aucun enregistrement trouvé pour cette sélection.</p>
+            </div>
+          )}
+        </>
+      )}
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
     </div>
   );
 }
-
-// Styles inchangés
-const cardStyle = { padding: "20px", backgroundColor: "#fff", borderRadius: "16px", display: "flex", alignItems: "center", gap: "16px", border: "1px solid #f1f5f9" };
-const thStyle = { textAlign: "left" as const, padding: "16px", color: "#475569", fontSize: "12px", fontWeight: "700", textTransform: "uppercase" as const };
-const tdStyle = { padding: "16px", fontSize: "14px", color: "#334155" };
-const statusActive = { padding: "6px 12px", backgroundColor: "#fff7ed", color: "#c2410c", borderRadius: "9999px", fontSize: "12px", fontWeight: "700" };
-const statusDone = { padding: "6px 12px", backgroundColor: "#f0fdf4", color: "#15803d", borderRadius: "9999px", fontSize: "12px", fontWeight: "700" };

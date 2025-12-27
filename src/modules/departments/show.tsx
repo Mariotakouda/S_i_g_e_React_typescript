@@ -1,5 +1,4 @@
-// src/modules/departments/show.tsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { DepartmentService } from "./service";
 import type { Department } from "./model";
@@ -11,221 +10,145 @@ export default function DepartmentShow() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (id) {
-      load();
-    } else {
-      setError("ID invalide");
-      setLoading(false);
-    }
-  }, [id]); // ✅ dépendance ajoutée
-
-  const load = async () => {
+  const load = useCallback(async () => {
+    if (!id) return;
     try {
       setLoading(true);
       setError(null);
-
-      console.log("📤 Chargement département ID:", id);
       const data = await DepartmentService.get(Number(id));
       setDepartment(data);
     } catch (err: any) {
-      console.error("❌ Erreur chargement:", err);
-      setError(err.response?.data?.message || err.message || "Département introuvable");
+      setError(err.response?.data?.message || "Département introuvable");
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const handleDelete = async () => {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce département ?")) return;
-
     try {
       await DepartmentService.remove(Number(id));
-      alert("Département supprimé avec succès !");
-      navigate("/admin/departments");
+      navigate("/admin/departments", { state: { refresh: true } });
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message || "Erreur lors de la suppression");
+      alert(err.response?.data?.message || "Erreur lors de la suppression");
     }
   };
 
   if (loading) {
     return (
-      <div style={{ padding: "30px", textAlign: "center" }}>
-        <p>Chargement...</p>
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "60vh" }}>
+        <div className="spinner-border text-primary shadow-sm" role="status" style={{ width: "3rem", height: "3rem" }}>
+          <span className="visually-hidden">Chargement...</span>
+        </div>
       </div>
     );
   }
 
   if (error || !department) {
     return (
-      <div style={{ padding: "30px" }}>
-        <div
-          style={{
-            padding: "15px",
-            backgroundColor: "#fee",
-            border: "1px solid #fcc",
-            borderRadius: "8px",
-            color: "#c00",
-            marginBottom: "20px",
-          }}
-        >
-          {error || "Département introuvable"}
+      <div className="container py-5 text-center">
+        <div className="alert alert-danger border-0 shadow-sm rounded-4 p-4">
+          <h4 className="fw-bold text-danger">Erreur technique</h4>
+          <p className="text-muted">{error || "Données introuvables"}</p>
+          <Link to="/admin/departments" className="btn btn-danger mt-2 fw-bold rounded-pill px-4 text-decoration-none shadow-sm">
+            Retourner à la liste
+          </Link>
         </div>
-        <Link to="/admin/departments" style={{ color: "#3b82f6" }}>
-          ← Retour à la liste
-        </Link>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: "30px", maxWidth: "800px", margin: "0 auto" }}>
-      {/* En-tête */}
-      <div style={{ marginBottom: "30px" }}>
-        <Link
-          to="/admin/departments"
-          style={{
-            color: "#3b82f6",
-            textDecoration: "none",
-            display: "inline-block",
-            marginBottom: "15px",
-          }}
-        >
-          ← Retour à la liste
-        </Link>
-        <h2 style={{ margin: 0, fontSize: "28px", fontWeight: "bold" }}>
-          🏢 Détails du département
-        </h2>
-      </div>
-
-      {/* Card */}
-      <div
-        style={{
-          backgroundColor: "white",
-          padding: "30px",
-          borderRadius: "8px",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-        }}
-      >
-        <div style={{ marginBottom: "20px" }}>
-          <p
-            style={{
-              fontSize: "12px",
-              color: "#6b7280",
-              textTransform: "uppercase",
-              marginBottom: "5px",
-            }}
-          >
-            ID
-          </p>
-          <p style={{ fontSize: "18px", fontWeight: "500", margin: 0 }}>
-            {department.id}
-          </p>
-        </div>
-
-        <div style={{ marginBottom: "20px" }}>
-          <p
-            style={{
-              fontSize: "12px",
-              color: "#6b7280",
-              textTransform: "uppercase",
-              marginBottom: "5px",
-            }}
-          >
-            Nom
-          </p>
-          <p style={{ fontSize: "18px", fontWeight: "500", margin: 0 }}>
-            {department.name}
-          </p>
-        </div>
-
-        <div style={{ marginBottom: "20px" }}>
-          <p
-            style={{
-              fontSize: "12px",
-              color: "#6b7280",
-              textTransform: "uppercase",
-              marginBottom: "5px",
-            }}
-          >
-            Manager
-          </p>
-          {department.manager ? (
-            <p style={{ fontSize: "16px", margin: 0, color: "#374151" }}>
-              {department.manager.first_name} {department.manager.last_name}
-              <br />
-              <small style={{ color: "#6b7280" }}>
-                {department.manager.email}
-              </small>
-            </p>
-          ) : (
-            <p
-              style={{
-                fontSize: "16px",
-                margin: 0,
-                color: "#9ca3af",
-                fontStyle: "italic",
-              }}
-            >
-              Aucun manager assigné
-            </p>
-          )}
-        </div>
-
-        <div style={{ marginBottom: "30px" }}>
-          <p
-            style={{
-              fontSize: "12px",
-              color: "#6b7280",
-              textTransform: "uppercase",
-              marginBottom: "5px",
-            }}
-          >
-            Description
-          </p>
-          <p style={{ fontSize: "16px", margin: 0, color: "#374151" }}>
-            {department.description || "Aucune description"}
-          </p>
-        </div>
-
-        {/* Actions */}
-        <div
-          style={{
-            display: "flex",
-            gap: "10px",
-            borderTop: "1px solid #e5e7eb",
-            paddingTop: "20px",
-          }}
-        >
-          <Link
-            to={`/admin/departments/${department.id}/edit`}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "#f59e0b",
-              color: "white",
-              textDecoration: "none",
-              borderRadius: "8px",
-              fontWeight: "500",
-            }}
-          >
-            ✏️ Modifier
+    <div className="container-fluid py-4 px-3 px-md-5" style={{ backgroundColor: "#f8fafc", minHeight: "100vh" }}>
+      <div className="mx-auto" style={{ maxWidth: "1000px" }}>
+        
+        {/* HEADER SECTION */}
+        <div className="mb-4">
+          <Link to="/admin/departments" className="btn btn-link text-decoration-none text-muted p-0 mb-3 d-flex align-items-center gap-2 small fw-bold text-uppercase" style={{ letterSpacing: "1px" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Retour
           </Link>
+          
+          <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div className="d-flex align-items-center gap-3">
+              <div className="bg-white shadow-sm p-3 rounded-4 border border-light-subtle">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/>
+                </svg>
+              </div>
+              <div>
+                <h2 className="fw-bold text-dark m-0 h3">{department.name}</h2>
+                <div className="d-flex align-items-center gap-2 mt-1">
+                   <span className="badge bg-primary-subtle text-primary border-0 fw-bold px-2 py-1">ID #{department.id}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="d-flex gap-2">
+              <Link to={`/admin/departments/${department.id}/edit`} className="btn btn-white border shadow-sm px-4 d-flex align-items-center gap-2 fw-bold rounded-3 text-decoration-none">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Modifier
+              </Link>
+              <button onClick={handleDelete} className="btn btn-danger px-4 d-flex align-items-center gap-2 fw-bold rounded-3 shadow-sm border-0">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
 
-          <button
-            onClick={handleDelete}
-            aria-label="Supprimer le département"
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "#ef4444",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontWeight: "500",
-            }}
-          >
-            🗑️ Supprimer
-          </button>
+        <div className="row g-4">
+          {/* DESCRIPTION SECTION */}
+          <div className="col-12 col-lg-8">
+            <div className="card border-0 shadow-sm rounded-4 p-4 h-100">
+              <div className="mb-4">
+                <h6 className="text-muted small text-uppercase fw-bold mb-3" style={{ letterSpacing: "0.5px" }}>Description du département</h6>
+                <div className="p-4 bg-light rounded-4 text-secondary" style={{ minHeight: "200px", border: "1px solid #edf2f7" }}>
+                  <p className="mb-0 fs-6" style={{ lineHeight: "1.8" }}>
+                    {department.description || <span className="text-muted fst-italic">Aucune description détaillée n'a été fournie.</span>}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* MANAGER SECTION */}
+          <div className="col-12 col-lg-4">
+            <div className="card border-0 shadow-sm rounded-4 p-4 h-100">
+              <h6 className="text-muted small text-uppercase fw-bold mb-4" style={{ letterSpacing: "0.5px" }}>Manager Responsable</h6>
+              
+              {department.manager ? (
+                <div className="text-center py-2">
+                  <div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 fw-bold shadow-sm" 
+                       style={{ width: "70px", height: "70px", fontSize: "1.4rem", border: "3px solid #fff" }}>
+                    {department.manager.first_name[0]}{department.manager.last_name[0]}
+                  </div>
+                  
+                  <h5 className="fw-bold text-dark mb-1">
+                    {department.manager.first_name} {department.manager.last_name}
+                  </h5>
+                  <p className="text-muted small mb-4">{department.manager.email}</p>
+                  
+                  <div className="d-grid px-3">
+                    <button className="btn btn-outline-primary rounded-pill fw-bold btn-sm py-2">
+                      Envoyer un message
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-5">
+                  <p className="text-muted small fst-italic mb-3">Aucun responsable assigné</p>
+                  <Link to={`/admin/departments/${id}/edit`} className="btn btn-sm btn-light border rounded-pill px-4 fw-bold text-primary shadow-sm text-decoration-none">
+                    Assigner un manager
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

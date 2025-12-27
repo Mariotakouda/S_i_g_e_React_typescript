@@ -1,5 +1,4 @@
-// src/modules/departments/create.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { DepartmentService } from "./service";
 import { api } from "../../api/axios";
@@ -24,33 +23,25 @@ export default function DepartmentCreate() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadManagers();
+  const loadManagers = useCallback(async () => {
+    try {
+      const res = await api.get("/managers");
+      let fetchedManagers = [];
+      if (Array.isArray(res.data.data)) {
+        fetchedManagers = res.data.data;
+      } else if (Array.isArray(res.data)) {
+        fetchedManagers = res.data;
+      }
+      setManagers(fetchedManagers);
+    } catch (err) {
+      console.error("❌ Erreur chargement managers:", err);
+      setManagers([]); 
+    }
   }, []);
 
-  // src/modules/departments/create.tsx
-
-const loadManagers = async () => {
-  try {
-    const res = await api.get("/managers");
-    
-    let fetchedManagers = [];
-    
-    // Déterminez où se trouve le tableau, en privilégiant 'data' ou 'items' si c'est une réponse paginée/enveloppée
-    if (Array.isArray(res.data.data)) {
-      fetchedManagers = res.data.data;
-    } else if (Array.isArray(res.data)) {
-      fetchedManagers = res.data;
-    } 
-    // Si la réponse est un objet, vous pouvez utiliser les logs pour identifier la bonne clé
-    
-    setManagers(fetchedManagers);
-  } catch (err) {
-    console.error("❌ Erreur chargement managers:", err);
-    // Vous pouvez optionnellement définir managers à un tableau vide ici en cas d'erreur
-    setManagers([]); 
-  }
-};
+  useEffect(() => {
+    loadManagers();
+  }, [loadManagers]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -58,7 +49,6 @@ const loadManagers = async () => {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     try {
       setLoading(true);
       setError(null);
@@ -69,13 +59,9 @@ const loadManagers = async () => {
         manager_id: form.manager_id ? Number(form.manager_id) : undefined
       };
       
-      console.log("📤 Création département:", payload);
       await DepartmentService.create(payload);
-      
-      alert("Département créé avec succès !");
       navigate("/admin/departments", { state: { refresh: true } });
     } catch (err: any) {
-      console.error("❌ Erreur création:", err);
       setError(err.response?.data?.message || "Erreur lors de la création");
     } finally {
       setLoading(false);
@@ -83,168 +69,129 @@ const loadManagers = async () => {
   };
 
   return (
-    <div style={{ padding: "30px", maxWidth: "800px", margin: "0 auto" }}>
-      {/* En-tête */}
-      <div style={{ marginBottom: "30px" }}>
-        <Link 
-          to="/admin/departments"
-          style={{
-            color: "#3b82f6",
-            textDecoration: "none",
-            display: "inline-block",
-            marginBottom: "15px"
-          }}
-        >
-          ← Retour à la liste
+    <div className="container-fluid py-4 px-3 px-md-5" style={{ backgroundColor: "#f8fafc", minHeight: "100vh" }}>
+      <div className="mx-auto" style={{ maxWidth: "800px" }}>
+        
+        {/* Navigation */}
+        <Link to="/admin/departments" className="btn btn-link text-decoration-none text-muted p-0 mb-3 d-flex align-items-center gap-2 fw-bold small">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          RETOUR À LA LISTE
         </Link>
-        <h2 style={{ margin: 0, fontSize: "28px", fontWeight: "bold" }}>
-          ➕ Créer un département
-        </h2>
+
+        {/* Header Section */}
+        <div className="d-flex align-items-center gap-3 mb-4">
+          <div className="bg-white shadow-sm p-3 rounded-3 border border-light-subtle text-primary">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+          </div>
+          <div>
+            <h2 className="fw-bold text-dark m-0">Nouveau département</h2>
+            <p className="text-muted small m-0">Configurez les détails et le responsable de l'entité.</p>
+          </div>
+        </div>
+
+        {error && (
+          <div className="alert alert-danger border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center gap-2 fw-medium">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            {error}
+          </div>
+        )}
+
+        {/* Form Card */}
+        <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
+          <form onSubmit={submit} className="card-body p-4 p-md-5">
+            <div className="row g-4">
+              
+              {/* Nom du département */}
+              <div className="col-12">
+                <label className="form-label fw-bold text-muted small text-uppercase">Nom du département <span className="text-danger">*</span></label>
+                <div className="input-group">
+                  <span className="input-group-text bg-light border-end-0 text-muted px-3">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+                  </span>
+                  <input 
+                    type="text" 
+                    name="name"
+                    className="form-control form-control-lg bg-light border-start-0 fs-6 shadow-none"
+                    placeholder="ex: Marketing & Communication"
+                    value={form.name}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Manager */}
+              <div className="col-12">
+                <label className="form-label fw-bold text-muted small text-uppercase">Responsable (Manager)</label>
+                <div className="input-group">
+                  <span className="input-group-text bg-light border-end-0 text-muted px-3">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  </span>
+                  <select 
+                    name="manager_id"
+                    className="form-select form-select-lg bg-light border-start-0 fs-6 shadow-none"
+                    value={form.manager_id}
+                    onChange={handleChange}
+                  >
+                    <option value="">-- Sélectionner un manager --</option>
+                    {managers.map(m => (
+                      <option key={m.id} value={m.id}>
+                        {m.first_name} {m.last_name} — {m.email}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="col-12">
+                <label className="form-label fw-bold text-muted small text-uppercase">Description / Missions</label>
+                <div className="position-relative">
+                  <textarea 
+                    name="description"
+                    className="form-control bg-light fs-6 shadow-none"
+                    rows={5}
+                    placeholder="Décrivez les objectifs ou le rôle de ce département..."
+                    value={form.description}
+                    onChange={handleChange}
+                    style={{ paddingLeft: "15px" }}
+                  ></textarea>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="col-12 pt-3">
+                <div className="d-flex flex-column flex-md-row gap-3">
+                  <button 
+                    type="submit" 
+                    disabled={loading}
+                    className="btn btn-primary btn-lg px-5 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2 border-0"
+                    style={{ minWidth: "220px", backgroundColor: "#2563eb" }}
+                  >
+                    {loading ? (
+                      <span className="spinner-border spinner-border-sm" role="status"></span>
+                    ) : (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    )}
+                    {loading ? "Création en cours..." : "Créer le département"}
+                  </button>
+                  
+                  <Link to="/admin/departments" className="btn btn-light btn-lg px-4 fw-bold text-muted border shadow-sm">
+                    Annuler
+                  </Link>
+                </div>
+              </div>
+
+            </div>
+          </form>
+        </div>
+
+        <p className="text-center text-muted mt-4 small">
+          Les champs marqués d'une <span className="text-danger">*</span> sont obligatoires.
+        </p>
       </div>
-
-      {/* Erreur */}
-      {error && (
-        <div style={{
-          padding: "15px",
-          backgroundColor: "#fee",
-          border: "1px solid #fcc",
-          borderRadius: "8px",
-          color: "#c00",
-          marginBottom: "20px"
-        }}>
-          {error}
-        </div>
-      )}
-
-      {/* Formulaire */}
-      <form 
-        onSubmit={submit}
-        style={{
-          backgroundColor: "white",
-          padding: "30px",
-          borderRadius: "8px",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
-        }}
-      >
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{ 
-            display: "block", 
-            marginBottom: "8px",
-            fontWeight: "500",
-            color: "#374151"
-          }}>
-            Nom du département *
-          </label>
-          <input 
-            type="text"
-            name="name" 
-            value={form.name} 
-            onChange={handleChange} 
-            required 
-            style={{
-              width: "100%",
-              padding: "12px 16px",
-              border: "1px solid #d1d5db",
-              borderRadius: "8px",
-              fontSize: "14px",
-              boxSizing: "border-box"
-            }}
-          />
-        </div>
-
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{ 
-            display: "block", 
-            marginBottom: "8px",
-            fontWeight: "500",
-            color: "#374151"
-          }}>
-            Manager
-          </label>
-          <select
-            name="manager_id"
-            value={form.manager_id}
-            onChange={handleChange}
-            style={{
-              width: "100%",
-              padding: "12px 16px",
-              border: "1px solid #d1d5db",
-              borderRadius: "8px",
-              fontSize: "14px",
-              boxSizing: "border-box",
-              backgroundColor: "white"
-            }}
-          >
-            <option value="">-- Aucun manager --</option>
-            {managers.map(m => (
-              <option key={m.id} value={m.id}>
-                {m.first_name} {m.last_name} ({m.email})
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div style={{ marginBottom: "30px" }}>
-          <label style={{ 
-            display: "block", 
-            marginBottom: "8px",
-            fontWeight: "500",
-            color: "#374151"
-          }}>
-            Description
-          </label>
-          <textarea 
-            name="description" 
-            value={form.description} 
-            onChange={handleChange} 
-            rows={4}
-            style={{
-              width: "100%",
-              padding: "12px 16px",
-              border: "1px solid #d1d5db",
-              borderRadius: "8px",
-              fontSize: "14px",
-              boxSizing: "border-box",
-              resize: "vertical"
-            }}
-          />
-        </div>
-
-        <div style={{ display: "flex", gap: "10px" }}>
-          <button 
-            type="submit"
-            disabled={loading}
-            style={{
-              padding: "12px 24px",
-              backgroundColor: loading ? "#9ca3af" : "#3b82f6",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: loading ? "not-allowed" : "pointer",
-              fontWeight: "500",
-              fontSize: "14px"
-            }}
-          >
-            {loading ? "Création..." : "✓ Créer le département"}
-          </button>
-          
-          <Link
-            to="/admin/departments"
-            style={{
-              padding: "12px 24px",
-              backgroundColor: "#6b7280",
-              color: "white",
-              textDecoration: "none",
-              borderRadius: "8px",
-              fontWeight: "500",
-              fontSize: "14px",
-              display: "inline-block"
-            }}
-          >
-            Annuler
-          </Link>
-        </div>
-      </form>
     </div>
   );
 }

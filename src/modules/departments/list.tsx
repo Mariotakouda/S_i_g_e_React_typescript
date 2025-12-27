@@ -1,331 +1,201 @@
-// src/modules/departments/list.tsx
-import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom"; // 👈 Importer useLocation
+import { useEffect, useState, useCallback } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { DepartmentService } from "./service";
 import type { Department } from "./model";
 
 export default function DepartmentList() {
-  const location = useLocation(); // 👈 Initialiser useLocation
+  const location = useLocation();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [reloadKey, setReloadKey] = useState(0); // 👈 Utilisé pour forcer le rechargement après suppression
+  const [reloadKey, setReloadKey] = useState(0);
 
-  // On encapsule la fonction load dans un useCallback si on veut l'ajouter comme dépendance,
-  // ou on la laisse telle quelle et on l'appelle dans les effets
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      console.log("📤 Chargement des départements...", { page, search });
-      
       const res = await DepartmentService.list(page, search);
-      console.log("✅ Départements reçus:", res);
-      
       setDepartments(res.data || []);
       setMeta(res.meta || {});
     } catch (err: any) {
-      console.error("❌ Erreur chargement départements:", err);
       setError(err.response?.data?.message || "Erreur de chargement");
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, search]);
 
   useEffect(() => {
     load();
-  }, [page, reloadKey]); // L'effet se déclenche lors du changement de page ou de reloadKey
+  }, [load, reloadKey]);
 
   useEffect(() => {
-    // Vérifier l'état passé par la navigation (e.g., depuis la page de création/édition)
     if (location.state && (location.state as any).refresh) {
-      console.log("🔄 Rafraîchissement forcé par état de navigation.");
-      // Réinitialiser la pagination et recharger
-      if (page !== 1) {
-        setPage(1); // Force le useEffect ci-dessus à recharger
-      } else {
-        load(); // Recharger immédiatement si on est déjà sur la page 1
-      }
-      
-      // OPTIONNEL: Si vous souhaitez supprimer l'état après le rechargement :
-      // window.history.replaceState({}, document.title, location.pathname); 
+      page !== 1 ? setPage(1) : load();
     }
-  }, [location.state]); // 👈 NOUVEL EFFET POUR LE RECHARGEMENT POST-CRÉATION
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(1);
-    load();
-  };
+  }, [location.state, load, page]);
 
   const remove = async (id: number) => {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce département ?")) return;
-    
     try {
       await DepartmentService.remove(id);
-      alert("Département supprimé avec succès !");
-      setReloadKey(prev => prev + 1); // 👈 Déclenche le rechargement via reloadKey
+      setReloadKey(prev => prev + 1);
     } catch (err: any) {
-      console.error("❌ Erreur suppression:", err);
       alert(err.response?.data?.message || "Erreur lors de la suppression");
     }
   };
 
-  // ... (le reste du composant, inchangé)
-
   return (
-    <div style={{ padding: "30px", maxWidth: "1400px", margin: "0 auto" }}>
-      {/* En-tête */}
-      <div style={{ 
-        display: "flex", 
-        justifyContent: "space-between", 
-        alignItems: "center",
-        marginBottom: "30px" 
-      }}>
-        <h2 style={{ margin: 0, fontSize: "28px", fontWeight: "bold" }}>
-          🏢 Départements
-        </h2>
-        <Link 
-          to="/admin/departments/create"
-          style={{
-            padding: "12px 24px",
-            backgroundColor: "#3b82f6",
-            color: "white",
-            textDecoration: "none",
-            borderRadius: "8px",
-            fontWeight: "500",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px"
-          }}
-        >
-          + Nouveau département
+    <div className="container-fluid py-4 px-3 px-md-5" style={{ minHeight: "100vh", backgroundColor: "#f8fafc" }}>
+      
+      {/* HEADER SECTION: Responsive Flex */}
+      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+          <h2 className="fw-bold text-dark m-0 d-flex align-items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <line x1="9" y1="3" x2="9" y2="21" />
+            </svg>
+            Départements
+          </h2>
+          <p className="text-muted small m-0">Gérez la structure organisationnelle</p>
+        </div>
+        <Link to="/admin/departments/create" className="btn btn-primary d-flex align-items-center justify-content-center gap-2 px-4 py-2 shadow-sm fw-bold border-0 rounded-3" style={{ backgroundColor: "#2563eb" }}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          <span className="d-md-inline">Nouveau département</span>
         </Link>
       </div>
 
-      {/* Barre de recherche */}
-      <form 
-        onSubmit={handleSearch}
-        style={{ 
-          marginBottom: "20px",
-          display: "flex",
-          gap: "10px"
-        }}
-      >
-        <input
-          type="text"
-          placeholder="Rechercher un département..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{
-            flex: 1,
-            padding: "12px 16px",
-            border: "1px solid #d1d5db",
-            borderRadius: "8px",
-            fontSize: "14px"
-          }}
-        />
-        <button 
-          type="submit"
-          style={{
-            padding: "12px 24px",
-            backgroundColor: "#6366f1",
-            color: "white",
-            border: "none",
-            borderRadius: "8px",
-            cursor: "pointer",
-            fontWeight: "500"
-          }}
-        >
-          🔍 Rechercher
-        </button>
-      </form>
-
-      {/* Erreur */}
-      {error && (
-        <div style={{
-          padding: "15px",
-          backgroundColor: "#fee",
-          border: "1px solid #fcc",
-          borderRadius: "8px",
-          color: "#c00",
-          marginBottom: "20px"
-        }}>
-          {error}
-        </div>
-      )}
-
-      {/* Loading */}
-      {loading ? (
-        <div style={{ textAlign: "center", padding: "50px" }}>
-          <p>Chargement des départements...</p>
-        </div>
-      ) : (
-        <>
-          {/* Tableau */}
-          <div style={{ 
-            backgroundColor: "white",
-            borderRadius: "8px",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-            overflow: "hidden"
-          }}>
-            <table style={{ 
-              width: "100%", 
-              borderCollapse: "collapse" 
-            }}>
-              <thead>
-                <tr style={{ backgroundColor: "#f9fafb", borderBottom: "2px solid #e5e7eb" }}>
-                  <th style={{ padding: "16px", textAlign: "left", fontWeight: "600", color: "#374151" }}>
-                    ID
-                  </th>
-                  <th style={{ padding: "16px", textAlign: "left", fontWeight: "600", color: "#374151" }}>
-                    Nom
-                  </th>
-                  <th style={{ padding: "16px", textAlign: "left", fontWeight: "600", color: "#374151" }}>
-                    Manager
-                  </th>
-                  <th style={{ padding: "16px", textAlign: "left", fontWeight: "600", color: "#374151" }}>
-                    Description
-                  </th>
-                  <th style={{ padding: "16px", textAlign: "center", fontWeight: "600", color: "#374151" }}>
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {departments.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} style={{ 
-                      padding: "40px", 
-                      textAlign: "center",
-                      color: "#6b7280"
-                    }}>
-                      Aucun département trouvé
-                    </td>
-                  </tr>
-                ) : (
-                  departments.map((d) => (
-                    <tr 
-                      key={d.id}
-                      style={{ borderBottom: "1px solid #e5e7eb" }}
-                    >
-                      <td style={{ padding: "16px" }}>{d.id}</td>
-                      <td style={{ padding: "16px", fontWeight: "500" }}>{d.name}</td>
-                      <td style={{ padding: "16px", color: "#6b7280" }}>
-                        {d.manager ? (
-                          <span>
-                            {d.manager.first_name} {d.manager.last_name}
-                          </span>
-                        ) : (
-                          <span style={{ fontStyle: "italic", color: "#9ca3af" }}>
-                            Aucun manager
-                          </span>
-                        )}
-                      </td>
-                      <td style={{ padding: "16px", color: "#6b7280" }}>
-                        {d.description || "—"}
-                      </td>
-                      <td style={{ padding: "16px", textAlign: "center" }}>
-                        <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
-                          <Link 
-                            to={`/admin/departments/${d.id}`}
-                            style={{
-                              padding: "6px 12px",
-                              backgroundColor: "#10b981",
-                              color: "white",
-                              textDecoration: "none",
-                              borderRadius: "5px",
-                              fontSize: "14px"
-                            }}
-                          >
-                            👁️ Voir
-                          </Link>
-                          <Link 
-                            to={`/admin/departments/${d.id}/edit`}
-                            style={{
-                              padding: "6px 12px",
-                              backgroundColor: "#f59e0b",
-                              color: "white",
-                              textDecoration: "none",
-                              borderRadius: "5px",
-                              fontSize: "14px"
-                            }}
-                          >
-                            ✏️ Modifier
-                          </Link>
-                          <button 
-                            onClick={() => remove(d.id)}
-                            style={{
-                              padding: "6px 12px",
-                              backgroundColor: "#ef4444",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "5px",
-                              cursor: "pointer",
-                              fontSize: "14px"
-                            }}
-                          >
-                            🗑️ Supprimer
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+      {/* SEARCH BAR: Full width on mobile */}
+      <div className="bg-white p-2 p-md-3 rounded-4 shadow-sm border mb-4">
+        <form onSubmit={(e) => { e.preventDefault(); setPage(1); load(); }} className="row g-2">
+          <div className="col-12 col-md-10 position-relative">
+            <span className="position-absolute top-50 start-0 translate-middle-y ps-3 text-muted">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+            </span>
+            <input
+              type="text"
+              className="form-control ps-5 py-2 border-light-subtle shadow-none"
+              placeholder="Rechercher par nom..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ borderRadius: "10px" }}
+            />
           </div>
+          <div className="col-12 col-md-2">
+            <button type="submit" className="btn btn-dark w-100 py-2 fw-bold" style={{ borderRadius: "10px" }}>
+              Filtrer
+            </button>
+          </div>
+        </form>
+      </div>
 
-          {/* Pagination */}
-          {meta.last_page > 1 && (
-            <div style={{ 
-              marginTop: "20px",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              gap: "10px"
-            }}>
-              <button
-                onClick={() => setPage(page - 1)}
-                disabled={!meta.prev_page_url}
-                style={{
-                  padding: "8px 16px",
-                  backgroundColor: meta.prev_page_url ? "#6366f1" : "#d1d5db",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "5px",
-                  cursor: meta.prev_page_url ? "pointer" : "not-allowed"
-                }}
-              >
-                ← Précédent
-              </button>
+      {error && <div className="alert alert-danger border-0 shadow-sm rounded-3 mb-4">{error}</div>}
 
-              <span style={{ color: "#374151", fontWeight: "500" }}>
-                Page {meta.current_page || 1} / {meta.last_page || 1}
-              </span>
+      {/* CONTENT: Desktop Table vs Mobile Cards */}
+      <div className="bg-white rounded-4 shadow-sm border overflow-hidden">
+        
+        {/* DESKTOP TABLE VIEW */}
+        <div className="d-none d-md-block">
+          <table className="table table-hover align-middle mb-0">
+            <thead className="table-light">
+              <tr className="small text-muted uppercase">
+                <th className="ps-4 py-3">ID</th>
+                <th className="py-3">Nom</th>
+                <th className="py-3">Manager</th>
+                <th className="py-3 text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={4} className="text-center py-5">Chargement...</td></tr>
+              ) : departments.map((d) => (
+                <tr key={d.id}>
+                  <td className="ps-4 text-muted small">#{d.id}</td>
+                  <td className="fw-bold text-dark">{d.name}</td>
+                  <td>
+                    {d.manager ? (
+                       <span className="badge bg-blue-soft text-primary px-2 py-1 fw-normal" style={{ backgroundColor: "#eff6ff" }}>
+                         {d.manager.first_name} {d.manager.last_name}
+                       </span>
+                    ) : <span className="text-muted small italic">Aucun</span>}
+                  </td>
+                  <td className="text-center">
+                    <div className="d-flex gap-2 justify-content-center">
+                      <ActionButtons d={d} remove={remove} />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-              <button
-                onClick={() => setPage(page + 1)}
-                disabled={!meta.next_page_url}
-                style={{
-                  padding: "8px 16px",
-                  backgroundColor: meta.next_page_url ? "#6366f1" : "#d1d5db",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "5px",
-                  cursor: meta.next_page_url ? "pointer" : "not-allowed"
-                }}
-              >
-                Suivant →
-              </button>
+        {/* MOBILE CARDS VIEW */}
+        <div className="d-md-none">
+          {loading ? (
+            <div className="p-5 text-center text-muted">Chargement...</div>
+          ) : departments.map((d) => (
+            <div key={d.id} className="p-3 border-bottom">
+              <div className="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                  <span className="text-muted small">#{d.id}</span>
+                  <h6 className="fw-bold m-0 text-dark">{d.name}</h6>
+                </div>
+                <div className="d-flex gap-2">
+                  <ActionButtons d={d} remove={remove} isMobile />
+                </div>
+              </div>
+              <div className="d-flex align-items-center gap-2 mt-2">
+                <span className="small text-muted">Manager:</span>
+                <span className="small fw-medium">{d.manager ? `${d.manager.first_name} ${d.manager.last_name}` : "Non assigné"}</span>
+              </div>
             </div>
-          )}
-        </>
-      )}
+          ))}
+        </div>
+
+        {/* EMPTY STATE */}
+        {!loading && departments.length === 0 && (
+          <div className="p-5 text-center text-muted">Aucun département trouvé.</div>
+        )}
+
+        {/* PAGINATION */}
+        {!loading && meta.last_page > 1 && (
+          <div className="p-3 border-top d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 bg-light-subtle">
+            <span className="small text-muted fw-medium">Page {meta.current_page} sur {meta.last_page}</span>
+            <div className="btn-group shadow-sm w-100 w-md-auto">
+              <button onClick={() => setPage(page - 1)} disabled={!meta.prev_page_url} className="btn btn-sm btn-white border flex-fill px-4 py-2">Précédent</button>
+              <button onClick={() => setPage(page + 1)} disabled={!meta.next_page_url} className="btn btn-sm btn-white border flex-fill px-4 py-2">Suivant</button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
+  );
+}
+
+// Composant interne pour les boutons d'action (évite la répétition)
+function ActionButtons({ d, remove, isMobile = false }: { d: any, remove: any, isMobile?: boolean }) {
+  const size = isMobile ? 18 : 16;
+  return (
+    <>
+      <Link to={`/admin/departments/${d.id}`} className="btn btn-sm btn-light border p-2 rounded-2 text-primary" title="Voir">
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+      </Link>
+      <Link to={`/admin/departments/${d.id}/edit`} className="btn btn-sm btn-light border p-2 rounded-2 text-warning" title="Modifier">
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+      </Link>
+      <button onClick={() => remove(d.id)} className="btn btn-sm btn-light border p-2 rounded-2 text-danger" title="Supprimer">
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
+      </button>
+    </>
   );
 }

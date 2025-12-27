@@ -20,6 +20,17 @@ export default function EmployeeDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // --- LOGIQUE RESPONSIVE ---
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const isMobile = windowWidth < 768;
+  const isTablet = windowWidth < 1024;
+
   useEffect(() => {
     if (!employeeId) { setLoading(false); return; }
     loadDashboardData();
@@ -69,7 +80,7 @@ export default function EmployeeDashboard() {
     <div style={{ 
       backgroundColor: "#f8fafc", 
       minHeight: "100vh", 
-      padding: "40px 20px", 
+      padding: isMobile ? "20px 15px" : "40px 20px", 
       fontFamily: "'Inter', 'Segoe UI', sans-serif",
       color: "#1e293b"
     }}>
@@ -78,17 +89,19 @@ export default function EmployeeDashboard() {
         {/* HEADER PROFESSIONNEL */}
         <header style={{ 
           display: 'flex', 
+          flexDirection: isMobile ? 'column' : 'row',
           justifyContent: 'space-between', 
-          alignItems: 'center', 
-          marginBottom: '40px',
+          alignItems: isMobile ? 'flex-start' : 'center', 
+          marginBottom: '30px',
           borderBottom: "1px solid #e2e8f0",
-          paddingBottom: "20px"
+          paddingBottom: "20px",
+          gap: isMobile ? "15px" : "0"
         }}>
           <div>
-            <h1 style={{ fontSize: "32px", fontWeight: "800", margin: 0, color: "#0f172a", letterSpacing: "-0.025em" }}>
+            <h1 style={{ fontSize: isMobile ? "24px" : "32px", fontWeight: "800", margin: 0, color: "#0f172a", letterSpacing: "-0.025em" }}>
               Tableau de bord
             </h1>
-            <p style={{ color: "#64748b", marginTop: "4px" }}>Bienvenue, {user?.name || employee?.first_name}. Voici votre résumé du jour.</p>
+            <p style={{ color: "#64748b", marginTop: "4px", fontSize: isMobile ? "14px" : "16px" }}>Bienvenue, {user?.name || employee?.first_name}.</p>
           </div>
           <button 
             onClick={logout} 
@@ -100,11 +113,8 @@ export default function EmployeeDashboard() {
               borderRadius: "8px", 
               cursor: "pointer", 
               fontWeight: "600",
-              transition: "all 0.2s ease",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+              width: isMobile ? "100%" : "auto"
             }}
-            onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#fef2f2"}
-            onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#fff"}
           >
             Déconnexion
           </button>
@@ -112,97 +122,61 @@ export default function EmployeeDashboard() {
 
         {error && <div style={{ padding: "16px", backgroundColor: "#fef2f2", color: "#b91c1c", borderRadius: "12px", marginBottom: "30px", border: "1px solid #fee2e2" }}>{error}</div>}
 
-        {/* CARTE INFOS PERSONNELLES AVEC PHOTO DE PROFIL */}
+        {/* CARTE INFOS PERSONNELLES RESPONSIVE */}
         <div style={{ 
           backgroundColor: "#fff", 
-          padding: "24px", 
+          padding: isMobile ? "20px" : "24px", 
           borderRadius: "16px", 
-          marginBottom: "40px", 
-          boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1)",
+          marginBottom: "30px", 
+          boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
           display: "flex",
-          alignItems: "center",
-          gap: "30px",
+          flexDirection: isTablet ? "column" : "row",
+          alignItems: isTablet ? "center" : "center",
+          gap: isMobile ? "20px" : "30px",
           border: "1px solid #f1f5f9"
         }}>
-          {/* Photo de profil avec lien vers la page profil */}
           <Link to="/employee/profile" style={{ textDecoration: 'none', position: 'relative' }}>
-            {employee?.profile_photo_url ? (
-              <img 
-                src={employee.profile_photo_url} 
-                alt="Photo de profil"
-                style={{ 
-                  width: "80px", 
-                  height: "80px", 
-                  borderRadius: "50%", 
-                  objectFit: "cover",
-                  border: "3px solid #3b82f6",
-                  cursor: "pointer",
-                  transition: "transform 0.2s, box-shadow 0.2s"
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.transform = "scale(1.05)";
-                  e.currentTarget.style.boxShadow = "0 8px 16px rgba(59, 130, 246, 0.3)";
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.transform = "scale(1)";
-                  e.currentTarget.style.boxShadow = "none";
-                }}
-              />
-            ) : (
-              <div style={{ 
-                width: "80px", 
-                height: "80px", 
+            <div style={{ 
+                width: isMobile ? "70px" : "80px", 
+                height: isMobile ? "70px" : "80px", 
                 borderRadius: "50%", 
                 backgroundColor: "#3b82f6", 
                 display: "flex", 
                 justifyContent: "center", 
                 alignItems: "center", 
-                fontSize: "32px", 
+                fontSize: "28px", 
                 color: "#fff",
                 fontWeight: "bold",
-                cursor: "pointer",
-                transition: "transform 0.2s, box-shadow 0.2s"
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.transform = "scale(1.05)";
-                e.currentTarget.style.boxShadow = "0 8px 16px rgba(59, 130, 246, 0.3)";
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.transform = "scale(1)";
-                e.currentTarget.style.boxShadow = "none";
+                border: "3px solid #3b82f6"
               }}>
-                {getInitials()}
-              </div>
-            )}
-            {/* Badge "Modifier" au survol */}
-            <div style={{
-              position: 'absolute',
-              bottom: '-8px',
-              right: '-8px',
-              backgroundColor: '#3b82f6',
-              color: 'white',
-              padding: '4px 8px',
-              borderRadius: '12px',
-              fontSize: '10px',
-              fontWeight: '600',
-              border: '2px solid white',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-            }}>
-              ✏️
+                {employee?.profile_photo_url ? (
+                    <img src={employee.profile_photo_url} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover'}} />
+                ) : getInitials()}
             </div>
           </Link>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "40px", flex: 1 }}>
+          <div style={{ 
+            display: "grid", 
+            gridTemplateColumns: isMobile ? "1fr" : isTablet ? "1fr 1fr" : "repeat(5, 1fr)", 
+            gap: isMobile ? "15px" : "25px", 
+            flex: 1,
+            width: "100%",
+            textAlign: isTablet ? "center" : "left"
+          }}>
             <div><label style={labelStyle}>NOM COMPLET</label><p style={dataStyle}> {employee?.last_name} {employee?.first_name}</p></div>
             <div><label style={labelStyle}>EMAIL</label><p style={dataStyle}>{employee?.email || user?.email}</p></div>
             <div><label style={labelStyle}>DÉPARTEMENT</label><p style={dataStyle}>{employee?.department?.name || "Général"}</p></div>
-            <div><label style={labelStyle}>RÔLE</label><p style={dataStyle}>{employee?.roles && employee.roles.length > 0? employee.roles.map((r) => r.name).join(", "): "Aucun rôle"}</p></div>
+            <div><label style={labelStyle}>RÔLE</label><p style={dataStyle}>{employee?.roles?.[0]?.name || "Aucun"}</p></div>
             <div><label style={labelStyle}>STATUT</label><p style={dataStyle}><span style={{ color: "#10b981" }}>●</span> Actif</p></div>
           </div>
         </div>
 
-        {/* GRID LAYOUT DES SECTIONS */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "30px" }}>
+        {/* GRID LAYOUT DES SECTIONS RESPONSIVE */}
+        <div style={{ 
+          display: "grid", 
+          gridTemplateColumns: isTablet ? "1fr" : "1fr 1fr", 
+          gap: "25px" 
+        }}>
           
           <Section title="Missions & Tâches" link="/employee/tasks">
             {tasks.length === 0 ? <p style={emptyStyle}>Aucune tâche en attente.</p> : (
@@ -212,7 +186,7 @@ export default function EmployeeDashboard() {
                     <div style={{ fontWeight: "600", color: "#1e293b" }}>{t.title}</div>
                     <div style={{ display: "flex", justifyContent: "space-between", marginTop: "8px", alignItems: "center" }}>
                       <span style={statusBadgeStyle("#eff6ff", "#3b82f6")}>{t.status}</span>
-                      <small style={{ color: "#94a3b8" }}>{t.due_date ? `Échéance: ${new Date(t.due_date).toLocaleDateString()}` : ""}</small>
+                      <small style={{ color: "#94a3b8" }}>{t.due_date ? `${new Date(t.due_date).toLocaleDateString()}` : ""}</small>
                     </div>
                   </li>
                 ))}
@@ -224,8 +198,10 @@ export default function EmployeeDashboard() {
             {presences.length === 0 ? <p style={emptyStyle}>Aucun historique récent.</p> : (
               <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
                 {presences.slice(0, 3).map(p => (
-                  <li key={p.id} style={{ ...listItemStyle, display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ fontWeight: "500" }}>{new Date(p.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+                  <li key={p.id} style={{ ...listItemStyle, display: "flex", justifyContent: "space-between", alignItems: 'center' }}>
+                    <span style={{ fontWeight: "500", fontSize: isMobile ? "13px" : "14px" }}>
+                        {new Date(p.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                    </span>
                     <span style={statusBadgeStyle(p.status === "présent" ? "#ecfdf5" : "#fef2f2", p.status === "présent" ? "#10b981" : "#ef4444")}>
                       {p.status}
                     </span>
@@ -237,20 +213,18 @@ export default function EmployeeDashboard() {
 
           <Section title="Gestion des Congés" link="/employee/leave_requests">
              <div style={{ marginBottom: "20px" }}>
-                <Link to="/employee/leave_requests/create" style={primaryButtonStyle}>+ Nouvelle demande</Link>
+                <Link to="/employee/leave_requests/create" style={{ ...primaryButtonStyle, width: isMobile ? "100%" : "auto", textAlign: 'center' }}>+ Nouvelle demande</Link>
              </div>
-            {leaves.length === 0 ? <p style={emptyStyle}>Aucune demande enregistrée.</p> : (
+            {leaves.length === 0 ? <p style={emptyStyle}>Aucune demande.</p> : (
               <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
                 {leaves.slice(0, 3).map(l => (
                   <li key={l.id} style={listItemStyle}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", gap: "10px" }}>
                       <div>
-                        <div style={{ fontWeight: "600" }}>Du {l.start_date} au {l.end_date}</div>
-                        <div style={{ marginTop: "6px" }}>
-                          <span style={statusBadgeStyle(l.status === "approuvé" ? "#ecfdf5" : "#fffbeb", l.status === "approuvé" ? "#10b981" : "#f59e0b")}>
+                        <div style={{ fontWeight: "600", fontSize: "13px" }}>Du {l.start_date} au {l.end_date}</div>
+                        <span style={{ ...statusBadgeStyle(l.status === "approuvé" ? "#ecfdf5" : "#fffbeb", l.status === "approuvé" ? "#10b981" : "#f59e0b"), marginTop: '5px', display: 'inline-block' }}>
                             {l.status}
-                          </span>
-                        </div>
+                        </span>
                       </div>
                       {(l.status === "pending" || l.status === "en attente") && (
                         <div style={{ display: 'flex', gap: '8px' }}>
@@ -265,13 +239,13 @@ export default function EmployeeDashboard() {
             )}
           </Section>
 
-          <Section title="Communications Internes" link="/employee/announcements">
-            {announcements.length === 0 ? <p style={emptyStyle}>Aucune annonce officielle.</p> : (
+          <Section title="Communications" link="/employee/announcements">
+            {announcements.length === 0 ? <p style={emptyStyle}>Aucune annonce.</p> : (
               <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
                 {announcements.slice(0, 3).map(a => (
                   <li key={a.id} style={{ ...listItemStyle, borderLeft: "4px solid #3b82f6" }}>
-                    <div style={{ fontWeight: "600" }}>{a.title}</div>
-                    <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#64748b" }}>Direction Générale</p>
+                    <div style={{ fontWeight: "600", fontSize: "14px" }}>{a.title}</div>
+                    <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#64748b" }}>Direction Générale</p>
                   </li>
                 ))}
               </ul>
@@ -284,62 +258,60 @@ export default function EmployeeDashboard() {
   );
 }
 
-// COMPOSANT SECTION STYLISÉ
+// COMPOSANT SECTION ADAPTÉ
 function Section({ title, children, link }: { title: string; children: any; link?: string }) {
   return (
     <div style={{ 
       backgroundColor: "#fff", 
-      padding: "24px", 
+      padding: "20px", 
       borderRadius: "16px", 
       boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
       border: "1px solid #f1f5f9"
     }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-        <h2 style={{ fontSize: "18px", fontWeight: "700", color: "#1e293b", margin: 0 }}>{title}</h2>
-        {link && <Link to={link} style={{ fontSize: "13px", color: "#3b82f6", textDecoration: "none", fontWeight: "600" }}>Voir tout</Link>}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
+        <h2 style={{ fontSize: "16px", fontWeight: "700", color: "#1e293b", margin: 0 }}>{title}</h2>
+        {link && <Link to={link} style={{ fontSize: "12px", color: "#3b82f6", textDecoration: "none", fontWeight: "600" }}>Voir tout</Link>}
       </div>
       {children}
     </div>
   );
 }
 
-// OBJETS DE STYLE RÉUTILISABLES
-const labelStyle = { display: "block", fontSize: "11px", fontWeight: "700", color: "#94a3b8", marginBottom: "4px", letterSpacing: "0.05em" };
-const dataStyle = { margin: 0, fontSize: "15px", fontWeight: "600", color: "#1e293b" };
-const emptyStyle = { color: "#94a3b8", fontSize: "14px", fontStyle: "italic", textAlign: "center" as const, padding: "20px 0" };
+// STYLES ADAPTÉS
+const labelStyle = { display: "block", fontSize: "10px", fontWeight: "700", color: "#94a3b8", marginBottom: "2px", letterSpacing: "0.05em" };
+const dataStyle = { margin: 0, fontSize: "14px", fontWeight: "600", color: "#1e293b", wordBreak: "break-word" as any };
+const emptyStyle = { color: "#94a3b8", fontSize: "13px", fontStyle: "italic", textAlign: "center" as const, padding: "15px 0" };
 const listItemStyle = { 
-  padding: "16px", 
+  padding: "12px", 
   backgroundColor: "#f8fafc", 
-  borderRadius: "12px", 
-  marginBottom: "12px",
+  borderRadius: "10px", 
+  marginBottom: "10px",
   border: "1px solid #f1f5f9"
 };
 const statusBadgeStyle = (bg: string, color: string) => ({
   backgroundColor: bg,
   color: color,
-  padding: "4px 12px",
+  padding: "3px 10px",
   borderRadius: "9999px",
-  fontSize: "12px",
-  fontWeight: "700",
-  textTransform: "uppercase" as const
+  fontSize: "11px",
+  fontWeight: "700"
 });
 const primaryButtonStyle = {
-  display: "inline-block",
-  padding: "10px 20px",
+  display: "block",
+  padding: "10px 15px",
   backgroundColor: "#3b82f6",
   color: "#fff",
   textDecoration: "none",
   borderRadius: "8px",
-  fontSize: "14px",
-  fontWeight: "600",
-  boxShadow: "0 4px 6px -1px rgba(59, 130, 246, 0.3)"
+  fontSize: "13px",
+  fontWeight: "600"
 };
 const actionLinkStyle = (color: string) => ({
   color: color,
-  fontSize: "12px",
+  fontSize: "11px",
   fontWeight: "600",
   textDecoration: "none",
-  padding: "4px 8px",
+  padding: "4px 6px",
   borderRadius: "6px",
-  border: `1px solid ${color}22`
+  border: `1px solid ${color}44`
 });

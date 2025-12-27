@@ -7,13 +7,12 @@ import ProtectedRoute from "./ProtectedRoute";
 import AdminLayout from "../components/layout/AdminLayout";
 import EmployeeLayout from "../components/layout/EmployeeLayout"; 
 
-// Auth
+// Home & Auth
 import Login from "../modules/auth/Login";
 
 // Dashboards
 import AdminDashboard from "../modules/admin/dashboard";
 import EmployeeDashboard from "../modules/employee/dashboard";
-
 
 // Admin modules
 import EmployeeList from "../modules/employees/list";
@@ -56,6 +55,7 @@ import EmployeeTaskList from "../modules/employee/TaskList";
 import EmployeePresencePage from "../modules/employee/EmployeePresencePage";
 import AdminPresencePage from "../modules/admin/AdminPresencePage";
 import EmployeeProfile from "../modules/employee/Profile";
+import Home from "../Pages/Home";
 
 export default function AppRoutes() {
   const { user, loading } = useContext(AuthContext);
@@ -75,7 +75,11 @@ export default function AppRoutes() {
 
   return (
     <Routes>
-      {/* ========== ROUTES PUBLIQUES ========== */}
+      {/* ========== PAGE D'ACCUEIL PUBLIQUE ========== */}
+      {/* C'est ici que la page Home est affichée par défaut */}
+      <Route path="/" element={<Home />} />
+
+      {/* ========== LOGIN ========== */}
       <Route
         path="/login"
         element={!user ? <Login /> : <Navigate to="/dashboard" replace />}
@@ -178,9 +182,9 @@ export default function AppRoutes() {
         <Route path="announcements/:id/edit" element={<AnnouncementEdit />} />
       </Route>
 
-      {/* ========== REDIRECTIONS PAR DÉFAUT ========== */}
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="*" element={<Navigate to="/login" replace />} /> 
+      {/* ========== REDIRECTION PAR DÉFAUT ========== */}
+      {/* Si l'URL n'existe pas, on renvoie à l'accueil */}
+      <Route path="*" element={<Navigate to="/" replace />} /> 
     </Routes>
   );
 }

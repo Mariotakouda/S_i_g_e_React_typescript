@@ -7,8 +7,11 @@ export default function EmployeeCreate() {
     const navigate = useNavigate();
     const [departments, setDepartments] = useState<any[]>([]);
     const [roles, setRoles] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
-    const [form, setForm] = useState<EmployeeFormData>({
+    // État local du formulaire (plus flexible pour la saisie HTML)
+    const [form, setForm] = useState({
         first_name: "",
         last_name: "",
         email: "",
@@ -16,14 +19,10 @@ export default function EmployeeCreate() {
         contract_type: "CDI",
         hire_date: "",
         salary_base: 0,
-        department_id: undefined,
-        role_ids: []
+        department_id: "" as string | number, // Permet la chaîne vide du <select>
+        role_ids: [] as number[]
     });
 
-    const [errors, setErrors] = useState<Record<string, string>>({});
-    const [loading, setLoading] = useState(false);
-
-    // Charger les départements et rôles pour les listes déroulantes
     useEffect(() => {
         api.get("/departments").then(res => setDepartments(res.data.data || res.data));
         api.get("/roles").then(res => setRoles(res.data.data || res.data));
@@ -32,7 +31,7 @@ export default function EmployeeCreate() {
     const validateForm = (): boolean => {
         const newErrors: Record<string, string> = {};
         if (!form.first_name.trim()) newErrors.first_name = "Le prénom est requis";
-        if (!form.last_name?.trim()) newErrors.last_name = "Le nom est requis";
+        if (!form.last_name.trim()) newErrors.last_name = "Le nom est requis";
         if (!form.email.trim()) {
             newErrors.email = "L'email est requis";
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
@@ -51,8 +50,13 @@ export default function EmployeeCreate() {
 
         setLoading(true);
         try {
-            await api.post("/employees", form);
-            alert("Employé créé ! Un email avec le mot de passe temporaire a été envoyé.");
+            // Transformation pour correspondre à EmployeeFormData (Typescript strict)
+            const payload: EmployeeFormData = {
+                ...form,
+                department_id: form.department_id === "" ? undefined : Number(form.department_id)
+            };
+
+            await api.post("/employees", payload);
             navigate("/admin/employees");
         } catch (err: any) {
             if (err.response?.data?.errors) {
@@ -66,117 +70,122 @@ export default function EmployeeCreate() {
     };
 
     return (
-        <div style={{ maxWidth: '800px', margin: '20px auto', padding: '20px', background: '#fff', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
-            <h2 style={{ marginBottom: '20px', borderBottom: '2px solid #eee', paddingBottom: '10px' }}>Nouvel Employé</h2>
-            
-            <form onSubmit={handleSubmit}>
-                <div style={rowStyle}>
-                    <div style={colStyle}>
-                        <label style={labelStyle}>Prénom *</label>
-                        <input type="text" value={form.first_name} onChange={e => setForm({...form, first_name: e.target.value})} style={inputStyle(!!errors.first_name)} />
-                        {errors.first_name && <small style={errorText}>{errors.first_name}</small>}
-                    </div>
-                    <div style={colStyle}>
-                        <label style={labelStyle}>Nom *</label>
-                        <input type="text" value={form.last_name || ""} onChange={e => setForm({...form, last_name: e.target.value})} style={inputStyle(!!errors.last_name)} />
-                        {errors.last_name && <small style={errorText}>{errors.last_name}</small>}
-                    </div>
-                </div>
-
-                <div style={rowStyle}>
-                    <div style={colStyle}>
-                        <label style={labelStyle}>Email (Identifiant) *</label>
-                        <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} style={inputStyle(!!errors.email)} placeholder="exemple@entreprise.com" />
-                        {errors.email && <small style={errorText}>{errors.email}</small>}
-                    </div>
-                    <div style={colStyle}>
-                        <label style={labelStyle}>Téléphone</label>
-                        <input type="text" value={form.phone || ""} onChange={e => setForm({...form, phone: e.target.value})} style={inputStyle(false)} />
-                    </div>
-                </div>
-
-                <div style={rowStyle}>
-                    <div style={colStyle}>
-                        <label style={labelStyle}>Type de contrat *</label>
-                        <select value={form.contract_type || "CDI"} onChange={e => setForm({...form, contract_type: e.target.value})} style={inputStyle(false)}>
-                            <option value="CDI">CDI</option>
-                            <option value="CDD">CDD</option>
-                            <option value="Stage">Stage</option>
-                            <option value="Freelance">Freelance</option>
-                        </select>
-                    </div>
-                    <div style={colStyle}>
-                        <label style={labelStyle}>Date d'embauche *</label>
-                        <input type="date" value={form.hire_date || ""} onChange={e => setForm({...form, hire_date: e.target.value})} style={inputStyle(!!errors.hire_date)} />
-                        {errors.hire_date && <small style={errorText}>{errors.hire_date}</small>}
-                    </div>
-                </div>
-
-                <div style={rowStyle}>
-                    <div style={colStyle}>
-                        <label style={labelStyle}>Salaire de base *</label>
-                        <input type="number" value={form.salary_base || ""} onChange={e => setForm({...form, salary_base: Number(e.target.value)})} style={inputStyle(!!errors.salary_base)} />
-                        {errors.salary_base && <small style={errorText}>{errors.salary_base}</small>}
-                    </div>
-                    <div style={colStyle}>
-                        <label style={labelStyle}>Département</label>
-                        <select value={form.department_id || ""} onChange={e => setForm({...form, department_id: Number(e.target.value)})} style={inputStyle(false)}>
-                            <option value="">Sélectionner un département</option>
-                            {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                        </select>
-                    </div>
-                </div>
-
-                <div style={{ marginBottom: '20px' }}>
-                    <label style={labelStyle}>Rôles / Fonctions</label>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '5px' }}>
-                        {roles.map(role => (
-                            <label key={role.id} style={{ padding: '5px 10px', border: '1px solid #eee', borderRadius: '4px', cursor: 'pointer', background: form.role_ids?.includes(role.id) ? '#e0f2fe' : '#fff' }}>
-                                <input 
-                                    type="checkbox" 
-                                    checked={form.role_ids?.includes(role.id)} 
-                                    onChange={e => {
-                                        const ids = form.role_ids || [];
-                                        setForm({...form, role_ids: e.target.checked ? [...ids, role.id] : ids.filter(id => id !== role.id)});
-                                    }} 
-                                    style={{ marginRight: '5px' }}
-                                />
-                                {role.name}
-                            </label>
-                        ))}
-                    </div>
-                </div>
-
-                <button type="submit" disabled={loading} style={btnStyle(loading)}>
-                    {loading ? "Création et envoi de l'email..." : "Créer l'employé et envoyer l'invitation"}
+        <div className="container py-4 py-md-5">
+            <div className="d-flex align-items-center mb-4">
+                <button onClick={() => navigate(-1)} className="btn btn-link text-decoration-none p-0 me-3 text-muted">
+                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
                 </button>
+                <h2 className="fw-bold text-dark mb-0">Recruter un employé</h2>
+            </div>
+
+            <form onSubmit={handleSubmit}>
+                <div className="row g-4">
+                    <div className="col-12 col-lg-8">
+                        <div className="card border-0 shadow-sm p-4" style={{ borderRadius: '15px' }}>
+                            <h5 className="mb-4 d-flex align-items-center fw-bold text-primary">
+                                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="me-2"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                                État civil & Contact
+                            </h5>
+                            
+                            <div className="row g-3">
+                                <div className="col-md-6">
+                                    <label className="form-label small fw-bold text-muted">Prénom *</label>
+                                    <input type="text" className={`form-control border-light-subtle ${errors.first_name ? 'is-invalid' : ''}`}
+                                        value={form.first_name} onChange={e => setForm({...form, first_name: e.target.value})} />
+                                    {errors.first_name && <div className="invalid-feedback">{errors.first_name}</div>}
+                                </div>
+                                <div className="col-md-6">
+                                    <label className="form-label small fw-bold text-muted">Nom *</label>
+                                    <input type="text" className={`form-control border-light-subtle ${errors.last_name ? 'is-invalid' : ''}`}
+                                        value={form.last_name} onChange={e => setForm({...form, last_name: e.target.value})} />
+                                    {errors.last_name && <div className="invalid-feedback">{errors.last_name}</div>}
+                                </div>
+                                <div className="col-md-6">
+                                    <label className="form-label small fw-bold text-muted">Email *</label>
+                                    <input type="email" className={`form-control border-light-subtle ${errors.email ? 'is-invalid' : ''}`}
+                                        value={form.email} onChange={e => setForm({...form, email: e.target.value})} />
+                                    {errors.email && <div className="invalid-feedback">{errors.email}</div>}
+                                </div>
+                                <div className="col-md-6">
+                                    <label className="form-label small fw-bold text-muted">Téléphone</label>
+                                    <input type="text" className="form-control border-light-subtle"
+                                        value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} />
+                                </div>
+                            </div>
+
+                            <hr className="my-4 opacity-25" />
+
+                            <h5 className="mb-4 d-flex align-items-center fw-bold text-primary">
+                                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="me-2"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                                Rôles attribués
+                            </h5>
+                            <div className="d-flex flex-wrap gap-2">
+                                {roles.map(role => (
+                                    <label key={role.id} className={`btn btn-sm px-3 py-2 rounded-pill border ${form.role_ids?.includes(role.id) ? 'btn-primary shadow-sm' : 'btn-outline-light text-dark'}`} style={{ cursor: 'pointer' }}>
+                                        <input type="checkbox" className="d-none" checked={form.role_ids?.includes(role.id)} 
+                                            onChange={e => {
+                                                const ids = form.role_ids || [];
+                                                setForm({...form, role_ids: e.target.checked ? [...ids, role.id] : ids.filter(id => id !== role.id)});
+                                            }} />
+                                        {role.name}
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="col-12 col-lg-4">
+                        <div className="card border-0 shadow-sm p-4 mb-4" style={{ borderRadius: '15px' }}>
+                            <h5 className="mb-4 fw-bold">Poste & Contrat</h5>
+                            
+                            <div className="mb-3">
+                                <label className="form-label small fw-bold text-muted">Département</label>
+                                <select className="form-select border-light-subtle" value={form.department_id} 
+                                    onChange={e => setForm({...form, department_id: e.target.value})}>
+                                    <option value="">Non assigné</option>
+                                    {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                                </select>
+                            </div>
+
+                            <div className="mb-3">
+                                <label className="form-label small fw-bold text-muted">Type de contrat *</label>
+                                <select className="form-select border-light-subtle" value={form.contract_type} onChange={e => setForm({...form, contract_type: e.target.value})}>
+                                    <option value="CDI">CDI</option>
+                                    <option value="CDD">CDD</option>
+                                    <option value="Stage">Stage</option>
+                                    <option value="Freelance">Freelance</option>
+                                </select>
+                            </div>
+
+                            <div className="mb-3">
+                                <label className="form-label small fw-bold text-muted">Date d'embauche *</label>
+                                <input type="date" className={`form-control border-light-subtle ${errors.hire_date ? 'is-invalid' : ''}`}
+                                    value={form.hire_date} onChange={e => setForm({...form, hire_date: e.target.value})} />
+                                {errors.hire_date && <div className="invalid-feedback">{errors.hire_date}</div>}
+                            </div>
+
+                            <div className="mb-0">
+                                <label className="form-label small fw-bold text-muted">Salaire de base *</label>
+                                <div className="input-group">
+                                    <input type="number" className={`form-control border-light-subtle ${errors.salary_base ? 'is-invalid' : ''}`}
+                                        value={form.salary_base || ""} onChange={e => setForm({...form, salary_base: Number(e.target.value)})} />
+                                    <span className="input-group-text bg-light border-light-subtle small text-muted">XOF</span>
+                                    {errors.salary_base && <div className="invalid-feedback">{errors.salary_base}</div>}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="d-grid gap-2">
+                            <button type="submit" disabled={loading} className="btn btn-primary btn-lg py-3 fw-bold shadow-sm rounded-4">
+                                {loading ? <span className="spinner-border spinner-border-sm me-2"></span> : "Finaliser le recrutement"}
+                            </button>
+                            <button type="button" onClick={() => navigate(-1)} className="btn btn-light btn-lg py-3 fw-bold text-muted rounded-4">
+                                Annuler
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </form>
         </div>
     );
 }
-
-// Styles Inline
-const rowStyle = { display: 'flex', gap: '20px', marginBottom: '15px' };
-const colStyle = { flex: 1, display: 'flex', flexDirection: 'column' as const };
-const labelStyle = { fontWeight: 'bold', marginBottom: '5px', fontSize: '14px', color: '#374151' };
-const inputStyle = (hasError: boolean) => ({
-    padding: '10px',
-    borderRadius: '4px',
-    border: `1px solid ${hasError ? '#ef4444' : '#d1d5db'}`,
-    outline: 'none',
-    fontSize: '15px'
-});
-const errorText = { color: '#ef4444', fontSize: '12px', marginTop: '2px' };
-const btnStyle = (loading: boolean) => ({
-    width: '100%',
-    padding: '12px',
-    backgroundColor: loading ? '#9ca3af' : '#3b82f6',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: loading ? 'not-allowed' : 'pointer',
-    fontSize: '16px',
-    fontWeight: 'bold',
-    marginTop: '10px',
-    transition: 'background 0.2s'
-});
