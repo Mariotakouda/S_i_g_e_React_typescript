@@ -97,8 +97,7 @@ export async function checkOut(presenceId: number): Promise<EmployeePresence> {
     const data = {
       check_out: new Date().toISOString()
     };
-    
-    // Utilisation de la route spécifique update pour le check-out
+    // Cette URL doit correspondre à la route API définie plus haut
     const response = await api.put(`/presences/${presenceId}/check-out`, data);
     return response.data;
   } catch (error: any) {

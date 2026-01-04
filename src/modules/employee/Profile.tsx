@@ -1,8 +1,16 @@
-// src/modules/employee/Profile.tsx
 import { useContext, useState, useRef, useEffect } from "react";
 import { AuthContext } from "../../context/AuthContext";
 import { api } from "../../api/axios";
 import { Link } from "react-router-dom";
+
+// --- Icônes SVG Professionnelles ---
+const IconUser = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+const IconMail = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>;
+const IconPhone = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>;
+const IconBriefcase = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>;
+const IconCalendar = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
+const IconTrash = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>;
+const IconCamera = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>;
 
 export default function EmployeeProfile() {
   const { employee, setEmployee } = useContext(AuthContext);
@@ -11,7 +19,6 @@ export default function EmployeeProfile() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Initialiser la prévisualisation avec la photo actuelle
     if (employee?.profile_photo_url) {
       setPreviewUrl(employee.profile_photo_url);
     }
@@ -21,7 +28,6 @@ export default function EmployeeProfile() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validation
     if (!file.type.startsWith('image/')) {
       alert('Veuillez sélectionner une image (JPG, PNG, GIF)');
       return;
@@ -34,52 +40,43 @@ export default function EmployeeProfile() {
 
     try {
       setUploading(true);
-
-      // Prévisualisation immédiate
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewUrl(reader.result as string);
-      };
+      reader.onloadend = () => setPreviewUrl(reader.result as string);
       reader.readAsDataURL(file);
 
-      // Upload vers le serveur
       const formData = new FormData();
-      formData.append('photo', file);
+      formData.append('profile_photo', file);
 
-      const response = await api.post('/me/photo', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      const response = await api.post('/me/profile-photo', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      // Mise à jour du contexte
-      setEmployee(response.data.employee);
-      alert('✅ Photo mise à jour avec succès !');
+      if (response.data.employee && setEmployee) {
+        setEmployee(response.data.employee);
+      }
+      if (response.data.url) {
+        setPreviewUrl(response.data.url);
+      }
     } catch (error: any) {
-      console.error('Erreur upload:', error);
-      alert('❌ Erreur lors de l\'upload de la photo');
-      // Restaurer l'ancienne photo en cas d'erreur
+      alert(error.response?.data?.message || 'Erreur lors de l\'upload');
       setPreviewUrl(employee?.profile_photo_url || null);
     } finally {
       setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
   const handleDeletePhoto = async () => {
-    if (!window.confirm('Voulez-vous vraiment supprimer votre photo de profil ?')) return;
-
+    if (!window.confirm('Supprimer votre photo de profil ?')) return;
     try {
       setUploading(true);
-      const response = await api.delete('/me/photo');
-      setEmployee(response.data.employee);
-      setPreviewUrl(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+      const response = await api.delete('/me/profile-photo');
+      if (response.data.employee && setEmployee) {
+        setEmployee(response.data.employee);
       }
-      alert('✅ Photo supprimée avec succès');
-    } catch (error) {
-      console.error('Erreur suppression:', error);
-      alert('❌ Erreur lors de la suppression');
+      setPreviewUrl(null);
+    } catch (error: any) {
+      alert('Erreur lors de la suppression');
     } finally {
       setUploading(false);
     }
@@ -90,332 +87,147 @@ export default function EmployeeProfile() {
   };
 
   return (
-    <div style={{ 
-      maxWidth: '900px', 
-      margin: '0 auto', 
-      padding: '40px 20px',
-      fontFamily: "'Inter', sans-serif"
-    }}>
-      {/* En-tête avec lien retour */}
-      <div style={{ marginBottom: '30px' }}>
-        <Link to="/employee/dashboard" style={backLinkStyle}>
-          ← Retour au tableau de bord
+    <div className="container py-4 py-md-5" style={{ maxWidth: '1000px' }}>
+      {/* Bouton Retour */}
+      <div className="mb-4">
+        <Link to="/employee/dashboard" className="btn btn-link text-decoration-none text-secondary ps-0 d-inline-flex align-items-center">
+          <svg className="me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m15 18-6-6 6-6"/></svg>
+          Retour au tableau de bord
         </Link>
       </div>
 
-      <h1 style={{ 
-        fontSize: '32px', 
-        fontWeight: '700', 
-        marginBottom: '40px',
-        color: '#1e293b'
-      }}>
-        Mon Profil
-      </h1>
+      <div className="row g-4">
+        {/* Colonne Gauche : Photo et Actions Rapides */}
+        <div className="col-12 col-lg-4">
+          <div className="card border-0 shadow-sm rounded-4 text-center p-4 h-100">
+            <div className="position-relative mx-auto mb-4" style={{ width: '160px', height: '160px' }}>
+              {previewUrl ? (
+                <img 
+                  src={previewUrl} 
+                  alt="Profil" 
+                  className="rounded-circle border border-4 border-white shadow-sm object-fit-cover w-100 h-100"
+                />
+              ) : (
+                <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center h-100 w-100 fs-1 fw-bold">
+                  {getInitials()}
+                </div>
+              )}
+              
+              {uploading && (
+                <div className="position-absolute top-0 start-0 w-100 h-100 rounded-circle bg-dark bg-opacity-50 d-flex align-items-center justify-content-center text-white">
+                  <div className="spinner-border spinner-border-sm" role="status"></div>
+                </div>
+              )}
+            </div>
 
-      <div style={{ 
-        backgroundColor: 'white', 
-        borderRadius: '16px', 
-        padding: '40px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        border: '1px solid #e2e8f0'
-      }}>
-        {/* Section Photo */}
-        <div style={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center', 
-          marginBottom: '40px',
-          paddingBottom: '40px',
-          borderBottom: '1px solid #e2e8f0'
-        }}>
-          <div style={{ position: 'relative' }}>
-            {previewUrl ? (
-              <img 
-                src={previewUrl} 
-                alt="Photo de profil" 
-                style={{ 
-                  width: '150px', 
-                  height: '150px', 
-                  borderRadius: '50%', 
-                  objectFit: 'cover',
-                  border: '4px solid #3b82f6',
-                  boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-                }} 
-              />
-            ) : (
-              <div style={{ 
-                width: '150px', 
-                height: '150px', 
-                borderRadius: '50%', 
-                backgroundColor: '#3b82f6',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                fontSize: '48px',
-                fontWeight: 'bold',
-                color: 'white',
-                border: '4px solid #3b82f6',
-                boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-              }}>
-                {getInitials()}
-              </div>
-            )}
-            
-            {uploading && (
-              <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '150px',
-                height: '150px',
-                borderRadius: '50%',
-                backgroundColor: 'rgba(0,0,0,0.6)',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                color: 'white',
-                fontSize: '14px',
-                fontWeight: '600'
-              }}>
-                <div style={{
-                  width: '30px',
-                  height: '30px',
-                  border: '3px solid rgba(255,255,255,0.3)',
-                  borderTop: '3px solid white',
-                  borderRadius: '50%',
-                  animation: 'spin 1s linear infinite',
-                  marginBottom: '8px'
-                }}></div>
-                Upload...
-              </div>
-            )}
-          </div>
+            <h4 className="fw-bold mb-1">{employee?.first_name} {employee?.last_name}</h4>
+            <p className="text-muted small mb-4">{employee?.department?.name || 'Collaborateur'}</p>
 
-          <input 
-            ref={fileInputRef}
-            type="file" 
-            accept="image/*" 
-            onChange={handlePhotoChange}
-            style={{ display: 'none' }}
-            id="photo-upload"
-            disabled={uploading}
-          />
-
-          <div style={{ marginTop: '24px', display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
-            <label 
-              htmlFor="photo-upload"
-              style={{
-                padding: '12px 24px',
-                backgroundColor: uploading ? '#94a3b8' : '#3b82f6',
-                color: 'white',
-                borderRadius: '8px',
-                cursor: uploading ? 'not-allowed' : 'pointer',
-                fontSize: '14px',
-                fontWeight: '600',
-                border: 'none',
-                transition: 'all 0.2s',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-              onMouseEnter={(e) => !uploading && (e.currentTarget.style.backgroundColor = '#2563eb')}
-              onMouseLeave={(e) => !uploading && (e.currentTarget.style.backgroundColor = '#3b82f6')}
-            >
-              📷 {uploading ? 'Upload en cours...' : 'Changer la photo'}
-            </label>
-
-            {previewUrl && !uploading && (
-              <button
-                onClick={handleDeletePhoto}
-                style={{
-                  padding: '12px 24px',
-                  backgroundColor: '#ef4444',
-                  color: 'white',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  border: 'none',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#dc2626')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#ef4444')}
+            <div className="d-grid gap-2 mb-4">
+              <input ref={fileInputRef} type="file" hidden accept="image/*" onChange={handlePhotoChange} disabled={uploading} />
+              <button 
+                onClick={() => fileInputRef.current?.click()} 
+                className="btn btn-primary btn-sm rounded-3 d-flex align-items-center justify-content-center gap-2 py-2"
+                disabled={uploading}
               >
-                🗑️ Supprimer
+                <IconCamera /> Modifier la photo
               </button>
-            )}
-          </div>
-
-          <p style={{ 
-            marginTop: '12px', 
-            fontSize: '12px', 
-            color: '#64748b',
-            textAlign: 'center'
-          }}>
-            JPG, PNG ou GIF • Maximum 2MB
-          </p>
-        </div>
-
-        {/* Informations du profil */}
-        <div style={{ marginBottom: '32px' }}>
-          <h3 style={sectionTitleStyle}>Informations personnelles</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-            <InfoField label="Prénom" value={employee?.first_name} icon="👤" />
-            <InfoField label="Nom" value={employee?.last_name} icon="👤" />
-            <InfoField label="Email" value={employee?.email} icon="✉️" />
-            <InfoField label="Téléphone" value={employee?.phone || 'Non renseigné'} icon="📱" />
-          </div>
-        </div>
-
-        {/* Informations professionnelles */}
-        <div style={{ marginBottom: '32px', paddingTop: '32px', borderTop: '1px solid #e2e8f0' }}>
-          <h3 style={sectionTitleStyle}>Informations professionnelles</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-            <InfoField label="Département" value={employee?.department?.name || 'Non assigné'} icon="🏢" />
-            <InfoField label="Type de contrat" value={employee?.contract_type || 'Non défini'} icon="📄" />
-            <InfoField 
-              label="Date d'embauche" 
-              value={employee?.hire_date ? new Date(employee.hire_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Non renseignée'} 
-              icon="📅"
-            />
-            <InfoField 
-              label="Salaire de base" 
-              value={employee?.salary_base ? `${new Intl.NumberFormat('fr-FR').format(employee.salary_base)} FCFA` : 'Non défini'} 
-              icon="💰"
-            />
-          </div>
-        </div>
-
-        {/* Rôles */}
-        {employee?.roles && employee.roles.length > 0 && (
-          <div style={{ paddingTop: '32px', borderTop: '1px solid #e2e8f0' }}>
-            <h3 style={sectionTitleStyle}>Rôles et permissions</h3>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {employee.roles.map((role: any) => (
-                <span 
-                  key={role.id}
-                  style={{
-                    padding: '8px 16px',
-                    backgroundColor: '#eff6ff',
-                    color: '#1e40af',
-                    borderRadius: '20px',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    border: '1px solid #bfdbfe',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}
+              {previewUrl && (
+                <button 
+                  onClick={handleDeletePhoto} 
+                  className="btn btn-outline-danger btn-sm rounded-3 d-flex align-items-center justify-content-center gap-2 py-2"
+                  disabled={uploading}
                 >
-                  🎯 {role.name}
-                </span>
-              ))}
+                  <IconTrash /> Supprimer
+                </button>
+              )}
+            </div>
+
+            <hr className="my-4 opacity-50" />
+
+            <div className="d-grid gap-2">
+              <Link to="/employee/tasks" className="btn btn-light btn-sm text-start py-2 px-3 border-0 rounded-3 d-flex align-items-center justify-content-between">
+                <span>Mes tâches</span>
+                <span className="badge bg-primary rounded-pill">Voir</span>
+              </Link>
+              <Link to="/employee/presences" className="btn btn-light btn-sm text-btn btn-light btn-sm text-start py-2 px-3 border-0 rounded-3 d-flex align-items-center justify-content-between py-2 px-3 border-0 rounded-3">
+                <span>Mes présences</span>
+                <span className="badge bg-primary rounded-pill">Voir</span>
+              </Link>
+              <Link to="/employee/leave-requests" className="btn btn-light btn-sm text-btn btn-light btn-sm text-start py-2 px-3 border-0 rounded-3 d-flex align-items-center justify-content-between py-2 px-3 border-0 rounded-3">
+                <span>Mes congés</span>
+                <span className="badge bg-primary rounded-pill">Voir</span>
+              </Link>
             </div>
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Actions rapides */}
-      <div style={{ 
-        marginTop: '30px', 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: '16px'
-      }}>
-        <Link to="/employee/tasks" style={quickActionStyle('#3b82f6')}>
-          ✅ Mes tâches
-        </Link>
-        <Link to="/employee/presences" style={quickActionStyle('#10b981')}>
-          🕐 Mes présences
-        </Link>
-        <Link to="/employee/leave_requests" style={quickActionStyle('#f59e0b')}>
-          🌴 Mes congés
-        </Link>
-      </div>
+        {/* Colonne Droite : Formulaire d'Infos */}
+        <div className="col-12 col-lg-8">
+          <div className="card border-0 shadow-sm rounded-4 h-100">
+            <div className="card-body p-4 p-md-5">
+              
+              <div className="mb-5">
+                <h5 className="fw-bold text-dark d-flex align-items-center gap-2 mb-4">
+                  <IconUser /> Informations Personnelles
+                </h5>
+                <div className="row g-3">
+                  <InfoItem label="Prénom" value={employee?.first_name} />
+                  <InfoItem label="Nom" value={employee?.last_name} />
+                  <InfoItem label="Email professionnel" value={employee?.email} icon={<IconMail />} fullWidth />
+                  <InfoItem label="Téléphone" value={employee?.phone || 'Non renseigné'} icon={<IconPhone />} />
+                </div>
+              </div>
 
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
+              <div className="pt-4 border-top">
+                <h5 className="fw-bold text-dark d-flex align-items-center gap-2 mb-4">
+                  <IconBriefcase /> Détails Professionnels
+                </h5>
+                <div className="row g-3">
+                  <InfoItem label="Département" value={employee?.department?.name} />
+                  <InfoItem label="Contrat" value={employee?.contract_type} />
+                  <InfoItem 
+                    label="Date d'embauche" 
+                    icon={<IconCalendar />}
+                    value={employee?.hire_date ? new Date(employee.hire_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'} 
+                  />
+                  <InfoItem 
+                    label="Rémunération" 
+                    value={employee?.salary_base ? `${new Intl.NumberFormat('fr-FR').format(employee.salary_base)} FCFA` : 'Non défini'} 
+                  />
+                </div>
+              </div>
+
+              {employee?.roles && employee.roles.length > 0 && (
+                <div className="pt-4 mt-4 border-top">
+                  <label className="form-label text-muted small fw-bold text-uppercase">Accès & Rôles</label>
+                  <div className="d-flex flex-wrap gap-2 mt-2">
+                    {employee.roles.map((role: any) => (
+                      <span key={role.id} className="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill fw-semibold">
+                        {role.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
-function InfoField({ label, value, icon }: { label: string; value: string | undefined; icon: string }) {
+function InfoItem({ label, value, icon, fullWidth = false }: { label: string; value: string | undefined; icon?: React.ReactNode; fullWidth?: boolean }) {
   return (
-    <div style={{
-      padding: '16px',
-      backgroundColor: '#f8fafc',
-      borderRadius: '12px',
-      border: '1px solid #e2e8f0'
-    }}>
-      <label style={{ 
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px',
-        fontSize: '12px', 
-        fontWeight: '600', 
-        color: '#64748b',
-        marginBottom: '8px',
-        textTransform: 'uppercase',
-        letterSpacing: '0.05em'
-      }}>
-        <span>{icon}</span>
-        {label}
-      </label>
-      <p style={{ 
-        margin: 0, 
-        fontSize: '15px', 
-        fontWeight: '600', 
-        color: '#1e293b',
-        wordBreak: 'break-word'
-      }}>
-        {value}
-      </p>
+    <div className={fullWidth ? "col-12" : "col-12 col-md-6"}>
+      <div className="p-3 bg-light rounded-3 border h-100 transition-hover">
+        <label className="text-muted small fw-bold text-uppercase d-flex align-items-center gap-2 mb-2">
+          {icon} {label}
+        </label>
+        <div className="text-dark fw-semibold">{value || '---'}</div>
+      </div>
     </div>
   );
 }
-
-// Styles
-const backLinkStyle = {
-  color: '#3b82f6',
-  textDecoration: 'none',
-  fontSize: '14px',
-  fontWeight: '600',
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '4px',
-  transition: 'color 0.2s'
-};
-
-const sectionTitleStyle = {
-  fontSize: '18px',
-  fontWeight: '700',
-  color: '#1e293b',
-  marginBottom: '20px',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '8px'
-};
-
-const quickActionStyle = (bgColor: string) => ({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: '8px',
-  padding: '16px',
-  backgroundColor: bgColor,
-  color: 'white',
-  textDecoration: 'none',
-  borderRadius: '12px',
-  fontSize: '14px',
-  fontWeight: '600',
-  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-  transition: 'transform 0.2s, box-shadow 0.2s'
-});

@@ -6,7 +6,8 @@ export interface User {
   id: number;
   name: string;
   email: string;
-  role: "admin" | "employee";
+  role: "admin" | "employee" | "manager";
+  employee?: Employee;
   needs_password_change: boolean; // Ajout crucial ici
 }
 

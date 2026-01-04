@@ -50,12 +50,12 @@ export default function AdminLayout() {
   };
 
   const menuItems = [
-    { label: "Dashboard", path: "/admin/dashboard", icon: Icons.Dashboard },
+    { label: "Tableau de Bord", path: "/admin/dashboard", icon: Icons.Dashboard },
     { label: "Employés", path: "/admin/employees", icon: Icons.Employees },
     { label: "Départements", path: "/admin/departments", icon: Icons.Departments },
     { label: "Présences", path: "/admin/presences", icon: Icons.Presences },
     { label: "Tâches", path: "/admin/tasks", icon: Icons.Tasks },
-    { label: "Congés", path: "/admin/leave_requests", icon: Icons.Leave },
+    { label: "Congés", path: "/admin/leave-requests", icon: Icons.Leave },
     { label: "Managers", path: "/admin/managers", icon: Icons.Managers },
     { label: "Rôles", path: "/admin/roles", icon: Icons.Roles },
     { label: "Communication", path: "/admin/announcements", icon: Icons.Announcements },
@@ -85,7 +85,7 @@ export default function AdminLayout() {
         <div style={{ padding: "32px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <div style={{ width: "35px", height: "35px", background: "#3b82f6", borderRadius: "10px", display: "flex", justifyContent: "center", alignItems: "center", fontWeight: "800", color: "#fff" }}>A</div>
-            <h1 style={{ margin: 0, fontSize: "19px", fontWeight: "700" }}>Admin Panel</h1>
+            <h1 style={{ margin: 0, fontSize: "19px", fontWeight: "700" }}>ADMIN SPACE</h1>
           </div>
           {window.innerWidth <= 1024 && (
             <button onClick={() => setSidebarOpen(false)} style={closeButtonStyle}><Icons.Close /></button>

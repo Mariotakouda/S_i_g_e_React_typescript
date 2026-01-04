@@ -9,6 +9,7 @@ import EmployeeLayout from "../components/layout/EmployeeLayout";
 
 // Home & Auth
 import Login from "../modules/auth/Login";
+import Home from "../Pages/Home";
 
 // Dashboards
 import AdminDashboard from "../modules/admin/dashboard";
@@ -35,6 +36,7 @@ import RoleEdit from "../modules/roles/edit";
 import RoleShow from "../modules/roles/show";
 import RoleList from "../modules/roles/list";
 
+// Tâches (Shared Modules)
 import TaskShow from "../modules/tasks/show";
 import TaskEdit from "../modules/tasks/edit";
 import TaskCreate from "../modules/tasks/create";
@@ -51,11 +53,13 @@ import AdminLeaveRequests from "../modules/admin/AdminLeaveRequests";
 import EmployeeLeaveHistory from "../modules/employee/EmployeeLeaveHistory"; 
 import LeaveRequestForm from "../modules/employee/LeaveRequestForm";
 import EditLeaveRequest from "../modules/employee/EditLeaveRequest";
-import EmployeeTaskList from "../modules/employee/TaskList";
 import EmployeePresencePage from "../modules/employee/EmployeePresencePage";
 import AdminPresencePage from "../modules/admin/AdminPresencePage";
 import EmployeeProfile from "../modules/employee/Profile";
-import Home from "../Pages/Home";
+import EmployeeTaskDetail from "../modules/employee/EmployeeTaskDetail";
+import ManagerTeamTasks from "../modules/employee/ManagerTeamTasks";
+
+// --- TÂCHES SPÉCIFIQUES EMPLOYÉ ---
 
 export default function AppRoutes() {
   const { user, loading } = useContext(AuthContext);
@@ -76,7 +80,6 @@ export default function AppRoutes() {
   return (
     <Routes>
       {/* ========== PAGE D'ACCUEIL PUBLIQUE ========== */}
-      {/* C'est ici que la page Home est affichée par défaut */}
       <Route path="/" element={<Home />} />
 
       {/* ========== LOGIN ========== */}
@@ -99,7 +102,7 @@ export default function AppRoutes() {
         }
       />
 
-      {/* ========== ROUTES ADMIN AVEC LAYOUT ========== */}
+      {/* ========== ROUTES ADMIN ========== */}
       <Route
         path="/admin"
         element={
@@ -123,7 +126,7 @@ export default function AppRoutes() {
         <Route path="departments/:id/edit" element={<DepartmentEdit />} />
         <Route path="departments/:id" element={<DepartmentShow />} />
 
-        {/* TASKS */}
+        {/* TASKS ADMIN */}
         <Route path="tasks" element={<TaskList />} />
         <Route path="tasks/create" element={<TaskCreate />} />
         <Route path="tasks/:id/edit" element={<TaskEdit />} />
@@ -141,10 +144,10 @@ export default function AppRoutes() {
         <Route path="managers/:id/edit" element={<ManagerEdit />} />
         <Route path="managers/:id" element={<ManagerShow />} />
 
-        {/* LEAVE REQUESTS */}
-        <Route path="leave_requests" element={<AdminLeaveRequests />} />
-        <Route path="leave_requests/create" element={<LeaveRequestForm />} />
-        <Route path="leave_requests/:id/edit" element={<LeaveRequestForm />} />
+        {/* LEAVES */}
+        <Route path="leave-requests" element={<AdminLeaveRequests />} />
+        <Route path="leave-requests/create" element={<LeaveRequestForm />} />
+        <Route path="leave-requests/:id/edit" element={<LeaveRequestForm />} /> 
 
         {/* ANNOUNCEMENTS */}
         <Route path="announcements" element={<AnnouncementList />} />
@@ -153,7 +156,7 @@ export default function AppRoutes() {
         <Route path="announcements/:id" element={<AnnouncementShow />} />
       </Route>
 
-      {/* ========== ROUTES EMPLOYEE AVEC LAYOUT ========== */}
+      {/* ========== ROUTES EMPLOYEE / MANAGER ========== */}
       <Route
         path="/employee"
         element={
@@ -162,18 +165,29 @@ export default function AppRoutes() {
           </ProtectedRoute>
         }
       >
+        
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<EmployeeDashboard />} />
+        
         <Route path="profile" element={<EmployeeProfile />} />
+
         <Route path="presences" element={<EmployeePresencePage />} />
 
         {/* LEAVE REQUESTS */}
-        <Route path="leave_requests" element={<EmployeeLeaveHistory />} />
-        <Route path="leave_requests/create" element={<LeaveRequestForm />} />
-        <Route path="leave_requests/edit/:id" element={<EditLeaveRequest />} />
+        <Route path="leave-requests" element={<EmployeeLeaveHistory />} />
+        <Route path="leave-requests/create" element={<LeaveRequestForm />} />
+        <Route path="leave-requests/edit/:id" element={<EditLeaveRequest />} />
 
-        {/* TASKS */}
-        <Route path="tasks" element={<EmployeeTaskList />} />
+        {/* TASKS (ACCÈS MANAGER & EMPLOYÉ) */}
+        <Route path="tasks" element={<TaskList />} /> 
+        <Route path="tasks/create" element={<TaskCreate />} /> 
+        <Route path="tasks/:id/edit" element={<TaskEdit />} />
+        <Route path="tasks/:id" element={<EmployeeTaskDetail />} />
+
+        <Route path="/employee/team-tasks" element={<ManagerTeamTasks />} />
+
+        
+        
 
         {/* ANNOUNCEMENTS */}
         <Route path="announcements" element={<AnnouncementList />} />
@@ -183,7 +197,6 @@ export default function AppRoutes() {
       </Route>
 
       {/* ========== REDIRECTION PAR DÉFAUT ========== */}
-      {/* Si l'URL n'existe pas, on renvoie à l'accueil */}
       <Route path="*" element={<Navigate to="/" replace />} /> 
     </Routes>
   );

@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/axios';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router';
 
 interface LeaveRequest {
   id: number;
   type: string;
   start_date: string;
   end_date: string;
-  status: 'pending' | 'approved' | 'rejected' | 'en attente' | 'approuvé' | 'refusé';
+  status: 'approved' | 'rejected' | 'en attente' | 'approuvé' | 'refusé';
   message: string;
   created_at: string;
 }
@@ -16,7 +16,7 @@ export default function EmployeeLeaveHistory() {
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
   useEffect(() => {
     fetchLeaveHistory();
@@ -26,7 +26,7 @@ export default function EmployeeLeaveHistory() {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get('/me/leave_requests');
+      const response = await api.get('/me/leave-requests');
       setLeaves(response.data);
     } catch (err: any) {
       setError(err.response?.data?.message || "Erreur lors du chargement de l'historique.");
@@ -60,7 +60,7 @@ export default function EmployeeLeaveHistory() {
         
         {/* Navigation & Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-          <div>
+          {/* <div>
             <button 
               onClick={() => navigate(-1)} 
               style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontWeight: '600', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '5px' }}
@@ -68,10 +68,10 @@ export default function EmployeeLeaveHistory() {
               ← Retour au Dashboard
             </button>
             <h1 style={{ fontSize: "28px", fontWeight: "800", color: "#0f172a", margin: 0 }}>Historique des absences</h1>
-          </div>
+          </div> */}
           
           <Link
-            to="/employee/leave_requests/create"
+            to="/employee/leave-requests/create"
             style={{ 
               padding: "12px 24px", 
               backgroundColor: "#3b82f6", 

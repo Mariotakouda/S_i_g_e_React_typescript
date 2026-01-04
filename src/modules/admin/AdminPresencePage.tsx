@@ -7,19 +7,20 @@ export default function AdminPresencePage() {
   const [selectedDate, setSelectedDate] = useState("");
 
   const loadAll = useCallback(async (dateFilter?: string) => {
-    try {
-      setLoading(true);
-      const response = await getAllPresences(dateFilter ? { date: dateFilter } : undefined);
-      // Adaptation selon la structure de retour de l'API (Laravel paginate ou simple array)
-      const data = response?.data?.data || response?.data || response;
-      setPresences(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error("Erreur lors du chargement des présences:", err);
-      setPresences([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  try {
+    setLoading(true);
+    const response = await getAllPresences(dateFilter ? { date: dateFilter } : undefined);
+    
+    // Laravel Paginate renvoie les données dans .data.data
+    const fetchedData = response.data?.data || response.data || [];
+    setPresences(fetchedData);
+  } catch (err) {
+    console.error("Erreur:", err);
+    setPresences([]);
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
   useEffect(() => {
     loadAll();

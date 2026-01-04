@@ -1,4 +1,3 @@
-// src/modules/announcements/edit.tsx
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { getAnnouncement, updateAnnouncement } from "./service";
@@ -39,50 +38,56 @@ export default function AnnouncementEdit() {
   });
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        const announcement = await getAnnouncement(Number(id));
-        
-        let type: "general" | "department" | "employee" = "general";
-        if (announcement.employee_id) type = "employee";
-        else if (announcement.department_id) type = "department";
-        
-        setTargetType(type);
-        setForm({
-          employee_id: announcement.employee_id || null,
-          department_id: announcement.department_id || null,
-          is_general: announcement.is_general || false,
-          title: announcement.title,
-          message: announcement.message,
-        });
+  async function loadData() {
+    try {
+      // On récupère les réponses
+      const [response, empData, deptResponse]: [any, Employee[], any] = await Promise.all([
+        getAnnouncement(Number(id)),
+        EmployeeService.fetchAllForSelect().catch(() => []),
+        DepartmentService.list().catch(() => ({ data: [] }))
+      ]);
+      
+      // ✅ Extraction sécurisée : On cherche la propriété 'data' 
+      // Si Laravel renvoie { data: { id: 1... } }, on prend response.data
+      const announcement = response.data ? response.data : response;
 
-        const [empData, deptResponse] = await Promise.all([
-          EmployeeService.fetchAllForSelect().catch(() => []),
-          DepartmentService.list().catch(() => ({ data: [] }))
-        ]);
-        setEmployees(empData);
-        setDepartments(deptResponse.data || []);
-        setLoading(false);
-      } catch (err) {
-        setError("Impossible de charger l'annonce");
-        setLoading(false);
-      }
+      // ... reste de la logique de mapping (setForm, setTargetType)
+      setForm({
+        employee_id: announcement.employee_id || null,
+        department_id: announcement.department_id || null,
+        is_general: !!announcement.is_general,
+        title: announcement.title || "",
+        message: announcement.message || "",
+      });
+
+      setEmployees(empData);
+      setDepartments(deptResponse.data || []);
+      setLoading(false);
+    } catch (err) {
+      setError("Impossible de charger l'annonce");
+      setLoading(false);
     }
-    loadData();
-  }, [id]);
+  }
+  loadData();
+}, [id]);
 
-  useEffect(() => {
-    if (targetType === "general") setForm(p => ({ ...p, is_general: true, employee_id: null, department_id: null }));
-    else if (targetType === "department") setForm(p => ({ ...p, is_general: false, employee_id: null }));
-    else if (targetType === "employee") setForm(p => ({ ...p, is_general: false, department_id: null }));
-  }, [targetType]);
+  // 2. Gestion du changement de type (uniquement suite à une action utilisateur)
+  const handleTypeChange = (newType: "general" | "department" | "employee") => {
+    setTargetType(newType);
+    setForm(prev => ({
+      ...prev,
+      is_general: newType === "general",
+      employee_id: null, // On réinitialise seulement lors d'un vrai changement manuel
+      department_id: null
+    }));
+  };
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
     const { name, value } = e.target;
-    setForm({
-      ...form,
+    setForm(prev => ({
+      ...prev,
       [name]: name.includes("_id") ? (value ? Number(value) : null) : value,
-    });
+    }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -103,7 +108,6 @@ export default function AnnouncementEdit() {
     <div className="bg-light min-vh-100 py-4 py-md-5">
       <div className="container-fluid px-3 px-lg-5" style={{ maxWidth: "1200px" }}>
         
-        {/* En-tête du formulaire */}
         <div className="d-flex justify-content-between align-items-end mb-4">
           <div>
             <nav aria-label="breadcrumb">
@@ -115,7 +119,7 @@ export default function AnnouncementEdit() {
             <h2 className="fw-bold text-dark mb-0">Modifier l'annonce <span className="text-primary">#{id}</span></h2>
           </div>
           <button type="button" onClick={() => nav(-1)} className="btn btn-outline-secondary border-0 fw-bold">
-            Annuler les changements
+            Annuler
           </button>
         </div>
 
@@ -124,17 +128,23 @@ export default function AnnouncementEdit() {
         <form onSubmit={handleSubmit} className="card border-0 shadow-sm rounded-4">
           <div className="card-body p-4 p-lg-5">
             
-            {/* Section : Cible de l'annonce */}
+            {/* Section : Cible */}
             <div className="row mb-5 align-items-center">
               <div className="col-lg-4">
                 <h5 className="fw-bold mb-1">Destinataires</h5>
-                <p className="text-muted small">Qui doit recevoir cette notification ?</p>
+                <p className="text-muted small">Sélectionnez la nouvelle cible si besoin.</p>
               </div>
               <div className="col-lg-8">
                 <div className="d-flex flex-wrap gap-3 p-3 bg-light rounded-3">
-                  {["general", "department", "employee"].map((type) => (
+                  {(["general", "department", "employee"] as const).map((type) => (
                     <label key={type} className={`btn btn-sm px-4 py-2 rounded-2 fw-bold transition-all ${targetType === type ? 'btn-dark' : 'btn-white border'}`}>
-                      <input type="radio" className="btn-check" checked={targetType === type} onChange={() => setTargetType(type as any)} />
+                      <input 
+                        type="radio" 
+                        name="targetType"
+                        className="btn-check" 
+                        checked={targetType === type} 
+                        onChange={() => handleTypeChange(type)} 
+                      />
                       {type === 'general' ? 'Tout le monde' : type === 'department' ? 'Département' : 'Employé spécifique'}
                     </label>
                   ))}
@@ -142,7 +152,7 @@ export default function AnnouncementEdit() {
               </div>
             </div>
 
-            {/* Section Dynamique : Sélections */}
+            {/* Sélections dynamiques */}
             {(targetType === "department" || targetType === "employee") && (
               <div className="row mb-5 animate-fade-in">
                 <div className="col-lg-4">
@@ -166,25 +176,23 @@ export default function AnnouncementEdit() {
 
             <hr className="my-5 opacity-10" />
 
-            {/* Section : Contenu */}
+            {/* Contenu */}
             <div className="row mb-4">
               <div className="col-lg-4">
                 <h5 className="fw-bold mb-1">Contenu du message</h5>
-                <p className="text-muted small">Soignez votre titre et votre message.</p>
               </div>
               <div className="col-lg-8">
                 <div className="mb-4">
                   <label className="form-label fw-bold small text-uppercase opacity-75">Titre de l'annonce</label>
-                  <input type="text" name="title" className="form-control form-control-lg border-2" value={form.title} onChange={handleChange} required placeholder="Ex: Maintenance prévue..." />
+                  <input type="text" name="title" className="form-control form-control-lg border-2" value={form.title} onChange={handleChange} required />
                 </div>
                 <div>
                   <label className="form-label fw-bold small text-uppercase opacity-75">Message</label>
-                  <textarea name="message" className="form-control border-2" rows={10} value={form.message} onChange={handleChange} required placeholder="Saisissez votre texte ici..." />
+                  <textarea name="message" className="form-control border-2" rows={10} value={form.message} onChange={handleChange} required />
                 </div>
               </div>
             </div>
 
-            {/* Boutons d'action */}
             <div className="row mt-5 pt-4 border-top">
               <div className="col-lg-8 offset-lg-4 d-flex gap-3">
                 <button type="submit" disabled={submitting} className="btn btn-primary btn-lg px-5 fw-bold shadow-sm rounded-3">

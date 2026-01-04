@@ -1,165 +1,339 @@
-import { useParams, Link } from "react-router-dom";
-import { TaskService } from "./service";
-import type { Task } from "./model";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { api } from "../../api/axios";
+import { AuthContext } from "../../context/AuthContext";
+
+interface Task {
+  id: number;
+  title: string;
+  description: string;
+  status: string;
+  due_date: string;
+  task_file: string | null;
+  report_file: string | null;
+  employee: {
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
+  creator: {
+    name: string;
+    role: string;
+  };
+}
 
 export default function TaskShow() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
   const [task, setTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState<string | null>(null);
+
+  const isAdmin = user?.role === "admin";
+  const routePrefix = isAdmin ? "/admin/tasks" : "/employee/tasks";
+  
+  const getStorageUrl = () => {
+    const apiUrl = import.meta.env.VITE_API_URL;
+    if (!apiUrl) {
+      console.error("❌ VITE_API_URL non défini");
+      return "http://localhost:8000/storage/";
+    }
+    const baseUrl = apiUrl.replace('/api', '');
+    return `${baseUrl}/storage/`;
+  };
+
+  const STORAGE_URL = getStorageUrl();
 
   useEffect(() => {
-    load();
+    console.log("🔧 Config Admin:", { STORAGE_URL });
+    loadTask();
   }, [id]);
 
-  const load = async () => {
+  const loadTask = async () => {
     try {
-      const data = await TaskService.get(Number(id));
-      setTask(data);
-    } catch (error) {
-      console.error("Erreur de chargement:", error);
+      setLoading(true);
+      const res = await api.get(`/tasks/${id}`);
+      setTask(res.data.data || res.data);
+    } catch (error: any) {
+      console.error("Erreur chargement:", error);
+      alert("Impossible de charger cette tâche");
+      navigate(routePrefix);
     } finally {
       setLoading(false);
     }
   };
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "pending": return "En attente";
-      case "in_progress": return "En cours";
-      case "completed": return "Terminée";
-      default: return status;
+  const handleDownloadPDF = async (e: React.MouseEvent, fileUrl: string, fileName: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const fullUrl = `${STORAGE_URL}${fileUrl}`;
+    console.log("📥 Admin télécharge:", fullUrl);
+    
+    if (fullUrl.includes('undefined')) {
+      alert("❌ Configuration VITE_API_URL manquante");
+      return;
+    }
+
+    setDownloading(fileUrl);
+
+    try {
+      const response = await fetch(fullUrl, {
+        method: 'GET',
+        headers: { 'Accept': 'application/pdf' },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fileName;
+      link.style.display = 'none';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 100);
+      
+    } catch (error: any) {
+      console.error("❌ Erreur:", error);
+      const newWindow = window.open('', '_blank');
+      if (newWindow) {
+        newWindow.location.href = fullUrl;
+      } else {
+        alert("❌ Impossible de télécharger. Vérifiez que le fichier existe.");
+      }
+    } finally {
+      setDownloading(null);
     }
   };
 
-  const getStatusStyle = (status: string) => {
-    switch (status) {
-      case "pending": return { bg: "#FFF7ED", text: "#C2410C", border: "#FFEDD5" };
-      case "in_progress": return { bg: "#EFF6FF", text: "#1D4ED8", border: "#DBEAFE" };
-      case "completed": return { bg: "#F0FDF4", text: "#15803D", border: "#DCFCE7" };
-      default: return { bg: "#F9FAFB", text: "#374151", border: "#E5E7EB" };
-    }
+  const getStatusBadge = (status: string) => {
+    const styles = {
+      pending: { bg: '#fef3c7', color: '#92400e', label: '⏳ En attente' },
+      in_progress: { bg: '#dbeafe', color: '#1e40af', label: '🔄 En cours' },
+      completed: { bg: '#d1fae5', color: '#065f46', label: '✅ Terminée' },
+      cancelled: { bg: '#fee2e2', color: '#991b1b', label: '❌ Annulée' }
+    };
+    return styles[status as keyof typeof styles] || styles.pending;
   };
 
-  // --- Icons SVG ---
-  const IconCalendar = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
-  const IconUser = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
-  const IconArrowLeft = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>;
-  const IconEdit = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
+  if (loading) {
+    return (
+      <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
+        Chargement de la tâche...
+      </div>
+    );
+  }
 
-  if (loading) return (
-    <div style={{ display: 'flex', justifyContent: 'center', padding: '100px', color: '#64748b' }}>
-      Chargement des détails...
-    </div>
-  );
-  
-  if (!task) return (
-    <div style={{ textAlign: 'center', padding: '50px', color: '#ef4444' }}>
-      Tâche non trouvée.
-    </div>
-  );
+  if (!task) return null;
 
-  const statusStyle = getStatusStyle(task.status);
+  const statusBadge = getStatusBadge(task.status);
+  const hasReport = !!task.report_file;
 
   return (
-    <div className="task-show-container">
-      <style>{`
-        .task-show-container { max-width: 900px; margin: 40px auto; padding: 0 20px; font-family: 'Inter', system-ui, sans-serif; }
-        .action-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
-        
-        .main-card { background: white; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow: hidden; }
-        .card-header { padding: 32px; border-bottom: 1px solid #f1f5f9; background: #ffffff; }
-        .card-body { padding: 32px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 32px; }
-        
-        .field-group { display: flex; flex-direction: column; gap: 8px; }
-        .full-width { grid-column: span 2; }
-        .label { font-size: 12px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
-        .value { font-size: 16px; color: #1e293b; font-weight: 500; margin: 0; }
-        .description-box { background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #f1f5f9; color: #475569; line-height: 1.6; }
-
-        .status-pill { display: inline-flex; align-items: center; padding: 6px 16px; border-radius: 9999px; font-size: 13px; font-weight: 700; border: 1px solid; }
-        
-        .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 10px; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.2s; cursor: pointer; border: none; }
-        .btn-back { background: #f1f5f9; color: #475569; }
-        .btn-back:hover { background: #e2e8f0; }
-        .btn-edit { background: #2563eb; color: white; }
-        .btn-edit:hover { background: #1d4ed8; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
-
-        @media (max-width: 640px) {
-          .card-body { grid-template-columns: 1fr; gap: 24px; padding: 24px; }
-          .full-width { grid-column: span 1; }
-          .card-header { padding: 24px; }
-          .action-bar { flex-direction: column; align-items: stretch; }
-          .btn { justify-content: center; }
-        }
-      `}</style>
-
-      <div className="action-bar">
-        <Link to="/admin/tasks" className="btn btn-back">
-          <IconArrowLeft /> Retour à la liste
-        </Link>
-        <Link to={`/admin/tasks/${task.id}/edit`} className="btn btn-edit">
-          <IconEdit /> Modifier la tâche
-        </Link>
+    <div style={{ maxWidth: '900px', margin: '30px auto', padding: '0 20px', fontFamily: 'system-ui, sans-serif' }}>
+      
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+        <h2 style={{ margin: 0, fontSize: '24px', fontWeight: '700', color: '#111827' }}>
+          Détails de la mission
+        </h2>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          {isAdmin && (
+            <button 
+              onClick={() => navigate(`${routePrefix}/${task.id}/edit`)}
+              style={{ 
+                background: '#f59e0b', 
+                color: 'white',
+                border: 'none', 
+                padding: '10px 18px', 
+                borderRadius: '8px', 
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}
+            >
+              ✏️ Modifier
+            </button>
+          )}
+          <button 
+            onClick={() => navigate(routePrefix)}
+            style={{ 
+              background: '#f3f4f6', 
+              border: 'none', 
+              padding: '10px 18px', 
+              borderRadius: '8px', 
+              cursor: 'pointer',
+              fontWeight: '600',
+              color: '#374151'
+            }}
+          >
+            ← Retour
+          </button>
+        </div>
       </div>
 
-      <div className="main-card">
-        <div className="card-header">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '20px' }}>
-            <div>
-              <span className="label">Tâche #{task.id}</span>
-              <h1 style={{ margin: '8px 0 0 0', fontSize: '24px', fontWeight: '800', color: '#0f172a' }}>
-                {task.title}
-              </h1>
+      <div style={{ 
+        background: 'white', 
+        borderRadius: '12px', 
+        border: '1px solid #e5e7eb', 
+        padding: '32px',
+        marginBottom: '20px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+      }}>
+        
+        <div style={{ marginBottom: '24px' }}>
+          <h3 style={{ fontSize: '22px', fontWeight: '700', color: '#111827', marginBottom: '12px' }}>
+            {task.title}
+          </h3>
+          <span style={{ 
+            display: 'inline-block',
+            padding: '6px 14px', 
+            borderRadius: '20px', 
+            fontSize: '13px', 
+            fontWeight: '600',
+            background: statusBadge.bg,
+            color: statusBadge.color
+          }}>
+            {statusBadge.label}
+          </span>
+        </div>
+
+        {task.description && (
+          <div style={{ marginBottom: '24px', padding: '16px', background: '#f9fafb', borderRadius: '8px' }}>
+            <div style={{ fontSize: '12px', fontWeight: '600', color: '#6b7280', marginBottom: '8px', textTransform: 'uppercase' }}>
+              📋 Consignes
             </div>
-            <span className="status-pill" style={{ 
-              backgroundColor: statusStyle.bg, 
-              color: statusStyle.text, 
-              borderColor: statusStyle.border 
-            }}>
-              {getStatusLabel(task.status)}
-            </span>
+            <p style={{ margin: 0, color: '#374151', lineHeight: '1.6' }}>
+              {task.description}
+            </p>
+          </div>
+        )}
+
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+          gap: '16px',
+          marginBottom: '24px'
+        }}>
+          <div>
+            <div style={{ fontSize: '12px', fontWeight: '600', color: '#6b7280', marginBottom: '4px' }}>
+              👤 Assigné à
+            </div>
+            <div style={{ fontSize: '14px', color: '#111827', fontWeight: '500' }}>
+              {task.employee.first_name} {task.employee.last_name}
+            </div>
+            <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
+              {task.employee.email}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '12px', fontWeight: '600', color: '#6b7280', marginBottom: '4px' }}>
+              📅 Date limite
+            </div>
+            <div style={{ fontSize: '14px', color: '#111827', fontWeight: '500' }}>
+              {task.due_date ? new Date(task.due_date).toLocaleDateString('fr-FR', { 
+                day: 'numeric', 
+                month: 'long', 
+                year: 'numeric' 
+              }) : 'Non définie'}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '12px', fontWeight: '600', color: '#6b7280', marginBottom: '4px' }}>
+              🔧 Créé par
+            </div>
+            <div style={{ fontSize: '14px', color: '#111827', fontWeight: '500' }}>
+              {task.creator.name}
+            </div>
+            <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
+              {task.creator.role === 'admin' ? 'Administrateur' : 'Manager'}
+            </div>
           </div>
         </div>
 
-        <div className="card-body">
-          <div className="field-group full-width">
-            <span className="label">Description</span>
-            <div className="value description-box">
-              {task.description || "Aucune description fournie pour cette tâche."}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div style={{ 
+            padding: '20px', 
+            background: task.task_file ? '#eff6ff' : '#f9fafb', 
+            borderRadius: '8px',
+            border: task.task_file ? '1px solid #bfdbfe' : '1px solid #e5e7eb'
+          }}>
+            <div style={{ fontSize: '12px', fontWeight: '600', color: '#6b7280', marginBottom: '12px' }}>
+              📄 Document de consignes
             </div>
+            {task.task_file ? (
+              <button
+                onClick={(e) => handleDownloadPDF(e, task.task_file!, 'consignes.pdf')}
+                disabled={downloading === task.task_file}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  background: downloading === task.task_file ? '#d1d5db' : '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: downloading === task.task_file ? 'wait' : 'pointer',
+                  fontWeight: '600',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+              >
+                {downloading === task.task_file ? '⏳ Téléchargement...' : '📥 Télécharger le PDF'}
+              </button>
+            ) : (
+              <p style={{ margin: 0, color: '#9ca3af', fontSize: '13px', textAlign: 'center' }}>
+                Aucun document joint
+              </p>
+            )}
           </div>
 
-          <div className="field-group">
-            <span className="label">Assignée à</span>
-            <div className="value" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ background: '#e0e7ff', color: '#4338ca', padding: '8px', borderRadius: '8px' }}>
-                <IconUser />
-              </div>
-              <span>
-                {task.employee ? `${task.employee.first_name} ${task.employee.last_name}` : "Non assignée"}
-              </span>
+          <div style={{ 
+            padding: '20px', 
+            background: hasReport ? '#ecfdf5' : '#f9fafb', 
+            borderRadius: '8px',
+            border: hasReport ? '1px solid #a7f3d0' : '1px solid #e5e7eb'
+          }}>
+            <div style={{ fontSize: '12px', fontWeight: '600', color: '#6b7280', marginBottom: '12px' }}>
+              📤 Rapport de l'employé
             </div>
+            {hasReport ? (
+              <button
+                onClick={(e) => handleDownloadPDF(e, task.report_file!, 'rapport.pdf')}
+                disabled={downloading === task.report_file}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  background: downloading === task.report_file ? '#d1d5db' : '#10b981',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: downloading === task.report_file ? 'wait' : 'pointer',
+                  fontWeight: '600',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+              >
+                {downloading === task.report_file ? '⏳ Téléchargement...' : '📥 Télécharger le rapport'}
+              </button>
+            ) : (
+              <p style={{ margin: 0, color: '#9ca3af', fontSize: '13px', textAlign: 'center' }}>
+                {task.status === 'completed' ? 'Rapport non disponible' : 'En attente de soumission'}
+              </p>
+            )}
           </div>
-
-          <div className="field-group">
-            <span className="label">Date limite</span>
-            <div className="value" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ background: '#fef2f2', color: '#b91c1c', padding: '8px', borderRadius: '8px' }}>
-                <IconCalendar />
-              </div>
-              <span style={{ fontWeight: '700' }}>{task.due_date || "Pas de date fixée"}</span>
-            </div>
-          </div>
-
-          {task.created_at && (
-            <div className="field-group full-width" style={{ borderTop: '1px solid #f1f5f9', paddingTop: '20px', marginTop: '8px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#94a3b8' }}>
-                <span>Date de création</span>
-                <span>{new Date(task.created_at).toLocaleDateString("fr-FR", { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

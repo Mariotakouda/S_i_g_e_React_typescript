@@ -44,9 +44,9 @@ export default function LeaveRequestForm() {
         }
 
         try {
-            await api.post('/me/leave_requests', formData); 
+            await api.post('/leave-requests', formData); 
             setMessage({ text: "Demande soumise avec succès !", type: 'success' });
-            setTimeout(() => navigate('/employee/leave_requests'), 2000);
+            setTimeout(() => navigate('/employee/leave-requests'), 2000);
         } catch (err: any) {
             const errorMsg = err.response?.data?.errors 
                 ? Object.values(err.response.data.errors).flat().join(' ') 

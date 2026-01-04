@@ -78,7 +78,7 @@ export default function AdminDashboard() {
         api.get("/employees").catch((err) => { console.error("Erreur employees:", err); return { data: [] }; }),
         api.get("/departments").catch((err) => { console.error("Erreur departments:", err); return { data: [] }; }),
         api.get("/tasks").catch((err) => { console.error("Erreur tasks:", err); return { data: [] }; }),
-        api.get("/leave-requests").catch((err) => { console.error("Erreur leave_requests:", err); return { data: [] }; }),
+        api.get("/leave-requests").catch((err) => { console.error("Erreur leave-requests:", err); return { data: [] }; }),
         api.get("/managers").catch((err) => { console.error("Erreur managers:", err); return { data: [] }; }),
         api.get("/roles").catch((err) => { console.error("Erreur roles:", err); return { data: [] }; }),
         api.get("/announcements").catch((err) => { console.error("Erreur announcements:", err); return { data: [] }; }),
@@ -151,7 +151,7 @@ export default function AdminDashboard() {
   return (
     <div className="admin-dashboard-container">
       <div className="dashboard-header">
-        <h1 className="dashboard-title">Admin Dashboard</h1>
+        <h1 className="dashboard-title">Adminitrator Dashboard</h1>
         <p className="dashboard-welcome">Bienvenue {user?.name}</p>
       </div>
 
@@ -159,7 +159,7 @@ export default function AdminDashboard() {
         <Card title="Employés" value={stats.total_employees || 0} link="/admin/employees" colorClass="text-blue" />
         <Card title="Départements" value={stats.total_departments || 0} link="/admin/departments" colorClass="text-purple" />
         <Card title="Tâches" value={stats.total_tasks || 0} link="/admin/tasks" colorClass="text-amber" />
-        <Card title="Demandes de congés" value={stats.total_leave_requests || 0} link="/admin/leave_requests" colorClass="text-red" />
+        <Card title="Demandes de congés" value={stats.total_leave_requests || 0} link="/admin/leave-requests" colorClass="text-red" />
         <Card title="Managers" value={stats.total_managers || 0} link="/admin/managers" colorClass="text-emerald" />
         <Card title="Rôles" value={stats.total_roles || 0} link="/admin/roles" colorClass="text-orange" />
         <Card title="Annonces" value={stats.total_announcements || 0} link="/admin/announcements" colorClass="text-indigo" />
@@ -217,7 +217,7 @@ export default function AdminDashboard() {
             <Link to="/admin/employees/create" className="bg-blue">+ Créer un employé</Link>
             <Link to="/admin/departments/create" className="bg-purple">+ Ajouter un département</Link>
             <Link to="/admin/tasks/create" className="bg-amber">+ Créer une tâche</Link>
-            <Link to="/admin/leave_requests" className="bg-red">Gérer les congés</Link>
+            <Link to="/admin/leave-requests" className="bg-red">Gérer les congés</Link>
             <Link to="/admin/roles/create" className="bg-orange">+ Créer un rôle</Link>
           </div>
         </Section>

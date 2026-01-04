@@ -7,12 +7,56 @@ export interface ManagerStatus {
   is_admin: boolean;
   department_id: number | null;
   department_name?: string;
+  debug?: {
+    user_role: string;
+    has_employee_profile: boolean;
+    employee_id: number | null;
+    roles: string[];
+  };
 }
 
-// Vérifier si l'utilisateur est un manager
+/**
+ * ✅ Vérifier si l'utilisateur est un manager
+ * Cette fonction est appelée par EmployeeLayout pour afficher les boutons manager
+ */
 export const checkManagerStatus = async (): Promise<ManagerStatus> => {
-  const response = await api.get("/check-manager-status");
-  return response.data;
+  try {
+    const response = await api.get("/check-manager-status");
+    
+    console.log("🔍 checkManagerStatus - Réponse brute:", response.data);
+    
+    // Vérifier la structure de la réponse
+    if (!response.data) {
+      console.error("❌ Réponse vide de checkManagerStatus");
+      return {
+        is_manager: false,
+        is_admin: false,
+        department_id: null
+      };
+    }
+    
+    const status = response.data;
+    
+    console.log("✅ Statut manager final:", {
+      is_manager: status.is_manager,
+      is_admin: status.is_admin,
+      department_id: status.department_id,
+      department_name: status.department_name,
+      debug: status.debug
+    });
+    
+    return status;
+  } catch (error: any) {
+    console.error("❌ Erreur checkManagerStatus:", error);
+    console.error("Détails:", error.response?.data);
+    
+    // Retourner un statut par défaut en cas d'erreur
+    return {
+      is_manager: false,
+      is_admin: false,
+      department_id: null
+    };
+  }
 };
 
 // Récupérer toutes les annonces (filtrées selon le rôle de l'utilisateur)
@@ -23,22 +67,26 @@ export const fetchAnnouncements = async (search: string = "", page: number = 1) 
   return response.data;
 };
 
-// Pour les employés - annonces qui les concernent
+// ✅ Pour les employés - annonces qui les concernent
 export const fetchMyAnnouncements = async (): Promise<Announcement[]> => {
-  const response = await api.get("/me/announcements");
-  return response.data;
+  try {
+    const response = await api.get("/me/announcements");
+    return response.data.data || response.data || [];
+  } catch (error: any) {
+    console.error("❌ Erreur fetchMyAnnouncements:", error);
+    return [];
+  }
 };
-// Optionnel: On s'assure que l'interface correspond bien à votre backend
+
 export interface CreateAnnouncementData {
   title: string;
-  message: string; // Vérifiez si votre backend attend 'message' ou 'content'
+  message: string;
   department_id?: number | null;
   is_general?: boolean;
 }
 
-// Créer une annonce (Adapté pour correspondre à votre formulaire)
+// Créer une annonce
 export const createAnnouncement = async (data: CreateAnnouncementData): Promise<Announcement> => {
-  // Si department_id est null et qu'il n'y a pas d'is_general, on peut forcer is_general à true
   const payload = {
     ...data,
     is_general: data.department_id === null

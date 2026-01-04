@@ -18,7 +18,7 @@ export default function EditLeaveRequest() {
   useEffect(() => {
     const fetchLeave = async () => {
       try {
-        const res = await api.get(`/me/leave_requests/${id}`);
+        const res = await api.get(`/me/leave-requests/${id}`);
         const leave = res.data;
         
         if (leave.status !== "pending" && leave.status !== "en attente") {
@@ -46,7 +46,7 @@ export default function EditLeaveRequest() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await api.put(`/me/leave_requests/${id}`, formData);
+      await api.put(`/me/leave-requests/${id}`, formData);
       alert("Demande mise à jour avec succès");
       navigate("/employee/dashboard");
     } catch (err) {
