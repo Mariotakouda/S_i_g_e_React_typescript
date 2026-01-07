@@ -59,8 +59,6 @@ import EmployeeProfile from "../modules/employee/Profile";
 import EmployeeTaskDetail from "../modules/employee/EmployeeTaskDetail";
 import ManagerTeamTasks from "../modules/employee/ManagerTeamTasks";
 
-// --- TÂCHES SPÉCIFIQUES EMPLOYÉ ---
-
 export default function AppRoutes() {
   const { user, loading } = useContext(AuthContext);
 
@@ -85,18 +83,35 @@ export default function AppRoutes() {
       {/* ========== LOGIN ========== */}
       <Route
         path="/login"
-        element={!user ? <Login /> : <Navigate to="/dashboard" replace />}
+        element={
+          user ? (
+            // ✅ CORRECTION : Redirection basée sur le rôle depuis /login
+            user.role === "admin" ? (
+              <Navigate to="/admin/dashboard" replace />
+            ) : user.role === "manager" || user.role === "employee" ? (
+              <Navigate to="/employee/dashboard" replace />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          ) : (
+            <Login />
+          )
+        }
       />
 
       {/* ========== REDIRECTION DASHBOARD SELON RÔLE ========== */}
       <Route
         path="/dashboard"
         element={
-          user?.role === "admin" ? (
+          // ✅ CORRECTION : Vérifier d'abord si user existe
+          !user ? (
+            <Navigate to="/login" replace />
+          ) : user.role === "admin" ? (
             <Navigate to="/admin/dashboard" replace />
-          ) : user?.role === "employee" ? (
+          ) : user.role === "employee" || user.role === "manager" ? (
             <Navigate to="/employee/dashboard" replace />
           ) : (
+            // ✅ CORRECTION : Fallback pour rôles inconnus
             <Navigate to="/login" replace />
           )
         }
@@ -165,7 +180,6 @@ export default function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<EmployeeDashboard />} />
         
@@ -184,10 +198,7 @@ export default function AppRoutes() {
         <Route path="tasks/:id/edit" element={<TaskEdit />} />
         <Route path="tasks/:id" element={<EmployeeTaskDetail />} />
 
-        <Route path="/employee/team-tasks" element={<ManagerTeamTasks />} />
-
-        
-        
+        <Route path="team-tasks" element={<ManagerTeamTasks />} />
 
         {/* ANNOUNCEMENTS */}
         <Route path="announcements" element={<AnnouncementList />} />

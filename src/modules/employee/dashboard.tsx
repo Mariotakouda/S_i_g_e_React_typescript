@@ -44,54 +44,84 @@ export default function EmployeeDashboard() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // ✅ CORRECTION : useEffect optimisé avec dépendance stable
   useEffect(() => {
-    if (employee?.id) loadDashboardData();
-  }, [employee?.id]);
+    let isMounted = true;
+    
+    async function loadDashboard() {
+      // ✅ Attendre que employee OU user soit disponible
+      if (!employee?.id && !user?.id) {
+        console.log("⏳ [Dashboard] En attente des données utilisateur...");
+        return;
+      }
 
-  const loadDashboardData = async () => {
-    try {
-      setLoading(true);
-      console.log("📊 Chargement du dashboard...");
+      // ✅ Si on a user mais pas employee, essayer de charger depuis /me
+      if (!employee?.id && user?.id) {
+        console.log("🔄 [Dashboard] Chargement des données employee depuis /me...");
+        try {
+          const meResponse = await api.get("/me");
+          if (meResponse.data.employee && setEmployee) {
+            setEmployee(meResponse.data.employee);
+            localStorage.setItem("employee", JSON.stringify(meResponse.data.employee));
+            return; // Le useEffect se redéclenchera avec employee.id
+          }
+        } catch (err) {
+          console.error("❌ [Dashboard] Erreur /me:", err);
+        }
+      }
+
+      if (!employee?.id) {
+        console.log("⚠️ [Dashboard] Impossible de charger les données sans employee.id");
+        return;
+      }
       
-      const endpoints = ["/me/presences", "/me/tasks", "/me/leave-requests", "/me/announcements"];
-      const responses = await Promise.all(
-        endpoints.map(url => 
-          api.get(url).catch(err => {
-            console.error(`❌ Erreur ${url}:`, err.response?.data || err.message);
-            return { data: [] };
-          })
-        )
-      );
-      
-      console.log("📢 Réponse annonces:", responses[3].data);
-      
-      setData({
-        presences: responses[0].data?.data || responses[0].data || [],
-        tasks: responses[1].data?.data || responses[1].data || [],
-        leaves: responses[2].data?.data || responses[2].data || [],
-        announcements: responses[3].data?.data || responses[3].data || [],
-      });
-      
-      console.log("✅ Dashboard chargé:", {
-        presences: responses[0].data?.data?.length || 0,
-        tasks: responses[1].data?.data?.length || 0,
-        leaves: responses[2].data?.data?.length || 0,
-        announcements: responses[3].data?.data?.length || 0
-      });
-      
-    } catch (err) {
-      console.error("❌ Erreur critique dashboard:", err);
-      setError("Erreur lors de la synchronisation des données.");
-    } finally {
-      setLoading(false);
+      try {
+        setLoading(true);
+        console.log("📊 [Dashboard] Chargement pour employee.id:", employee.id);
+        
+        const endpoints = ["/me/presences", "/me/tasks", "/me/leave-requests", "/me/announcements"];
+        const responses = await Promise.all(
+          endpoints.map(url => 
+            api.get(url).catch(err => {
+              console.error(`❌ Erreur ${url}:`, err.response?.data || err.message);
+              return { data: [] };
+            })
+          )
+        );
+        
+        if (isMounted) {
+          setData({
+            presences: responses[0].data?.data || responses[0].data || [],
+            tasks: responses[1].data?.data || responses[1].data || [],
+            leaves: responses[2].data?.data || responses[2].data || [],
+            announcements: responses[3].data?.data || responses[3].data || [],
+          });
+          
+          console.log("✅ [Dashboard] Données chargées avec succès");
+        }
+        
+      } catch (err) {
+        console.error("❌ [Dashboard] Erreur critique:", err);
+        if (isMounted) {
+          setError("Erreur lors de la synchronisation des données.");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
     }
-  };
+    
+    loadDashboard();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [employee?.id, user?.id, setEmployee]); // ✅ Dépendances : employee.id, user.id et setEmployee
 
   const handlePhotoUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !employee) return;
-
-    console.log("📸 Tentative d'upload de photo:", file.name, file.size, "bytes");
 
     const formData = new FormData();
     formData.append("profile_photo", file);
@@ -100,42 +130,27 @@ export default function EmployeeDashboard() {
       setUploading(true);
       setError(null);
       
-      console.log("⬆️ Envoi vers /me/profile-photo...");
-      
       const response = await api.post("/me/profile-photo", formData, {
-        headers: { 
-          "Content-Type": "multipart/form-data" 
-        }
+        headers: { "Content-Type": "multipart/form-data" }
       });
       
-      console.log("✅ Réponse serveur:", response.data);
-      
-      // Mettre à jour le contexte avec la nouvelle URL
+      // ✅ CORRECTION 3 : Mise à jour unique et propre
       if (setEmployee && response.data.url) {
         const updatedEmployee = {
           ...employee,
           profile_photo_url: response.data.url
         };
         setEmployee(updatedEmployee as any);
-        console.log("✅ Photo mise à jour dans le contexte");
+        localStorage.setItem("employee", JSON.stringify(updatedEmployee));
       }
       
-      alert("✅ Photo de profil mise à jour avec succès !");
-      
-      // Recharger les données du profil
-      const meResponse = await api.get("/me");
-      if (meResponse.data.employee && setEmployee) {
-        setEmployee(meResponse.data.employee);
-      }
-      
+      alert("✅ Photo de profil mise à jour !");
+
     } catch (err: any) {
-      console.error("❌ Erreur upload photo:", err.response?.data || err.message);
-      const errorMsg = err.response?.data?.message || err.response?.data?.errors || "Erreur lors de l'envoi de la photo";
-      setError(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
-      alert(`❌ ${typeof errorMsg === 'string' ? errorMsg : "Erreur lors de l'envoi de la photo"}`);
+      console.error("❌ Erreur upload photo:", err);
+      setError("Erreur lors de l'envoi de la photo");
     } finally {
       setUploading(false);
-      // Réinitialiser l'input pour permettre de réessayer avec le même fichier
       e.target.value = '';
     }
   };

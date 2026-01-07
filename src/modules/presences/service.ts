@@ -1,5 +1,3 @@
-// src/modules/employee/presences/service.ts
-
 import { api } from "../../api/axios";
 
 export interface EmployeePresence {
@@ -10,7 +8,6 @@ export interface EmployeePresence {
   check_out: string | null;
   total_hours: number | null;
   status: string;
-  // ✅ Ajoutez cette partie :
   employee?: {
     id: number;
     first_name: string;
@@ -18,114 +15,71 @@ export interface EmployeePresence {
     profile_picture?: string;
   };
 }
+
 /**
- * Récupérer la liste globale pour l'admin
+ * NOUVEAU : Exporter les présences en CSV
  */
+export async function exportPresences(): Promise<void> {
+  try {
+    const response = await api.get("/presences/export", { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `export_presences_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error("Erreur export:", error);
+    throw error;
+  }
+}
+
 export async function getAllPresences(filters?: { date?: string; month?: string }): Promise<any> {
   try {
     const response = await api.get("/presences", { params: filters });
     return response.data;
-  } catch (error) {
-    throw error;
-  }
+  } catch (error) { throw error; }
 }
 
-/**
- * Récupérer toutes les présences de l'employé connecté
- */
 export async function getMyPresences(): Promise<EmployeePresence[]> {
   try {
     const response = await api.get("/me/presences");
-    
-    // IMPORTANT: Laravel Paginate renvoie les données dans response.data.data
-    // Si ce n'est pas paginé, c'est response.data.
-    const rawData = response.data.data || response.data;
-    const data = Array.isArray(rawData) ? rawData : [];
-    
-    return data;
-  } catch (error: any) {
-    console.error("❌ Erreur getMyPresences:", error.response?.data || error.message);
-    throw error;
-  }
+    const data = response.data.data || response.data;
+    return Array.isArray(data) ? data : [];
+  } catch (error) { throw error; }
 }
 
-/**
- * Vérifier s'il y a un check-in actif aujourd'hui
- */
 export async function hasActiveCheckIn(): Promise<{ active: boolean; presence?: EmployeePresence }> {
   try {
     const presences = await getMyPresences();
     const today = new Date().toISOString().split('T')[0];
-    
-    const activePresence = presences.find(p => {
-      // On compare la date (YYYY-MM-DD) et on vérifie que le check_out est vide
-      return p.date === today && (!p.check_out || p.check_out === null);
-    });
-    
-    return {
-      active: !!activePresence,
-      presence: activePresence
-    };
-  } catch (error) {
-    return { active: false };
-  }
+    const active = presences.find(p => p.date === today && !p.check_out);
+    return { active: !!active, presence: active };
+  } catch (error) { return { active: false }; }
 }
 
-/**
- * Pointer l'arrivée (Check-in)
- * Note: L'employeeId est géré côté backend via le token, 
- * mais on le garde en paramètre si votre controller en a besoin.
- */
 export async function checkIn(): Promise<EmployeePresence> {
-  try {
-    // Utilisation de la nouvelle route définie dans api.php
-    const response = await api.post("/presences/check-in");
-    return response.data;
-  } catch (error: any) {
-    if (error.response?.status === 409) {
-      throw new Error("Un pointage est déjà actif pour aujourd'hui.");
-    }
-    throw error;
-  }
+  const response = await api.post("/presences/check-in");
+  return response.data;
 }
 
-/**
- * Pointer la sortie (Check-out)
- */
 export async function checkOut(presenceId: number): Promise<EmployeePresence> {
-  try {
-    const data = {
-      check_out: new Date().toISOString()
-    };
-    // Cette URL doit correspondre à la route API définie plus haut
-    const response = await api.put(`/presences/${presenceId}/check-out`, data);
-    return response.data;
-  } catch (error: any) {
-    console.error("❌ Erreur checkOut:", error.response?.data || error.message);
-    throw error;
-  }
+  const response = await api.put(`/presences/${presenceId}/check-out`);
+  return response.data;
 }
 
-/**
- * Obtenir les statistiques de présence (Frontend)
- */
 export function getPresenceStats(presences: EmployeePresence[]) {
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
-  
-  const monthlyPresences = presences.filter(p => {
-    const presenceDate = new Date(p.date);
-    return presenceDate.getMonth() === currentMonth && 
-           presenceDate.getFullYear() === currentYear;
+  const now = new Date();
+  const monthly = presences.filter(p => {
+    const d = new Date(p.date);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   });
-  
-  const totalHours = monthlyPresences.reduce((sum, p) => sum + (Number(p.total_hours) || 0), 0);
-  const daysPresent = monthlyPresences.length;
-  const averageHours = daysPresent > 0 ? totalHours / daysPresent : 0;
-  
+  const total = monthly.reduce((sum, p) => sum + (Number(p.total_hours) || 0), 0);
   return {
-    totalHours: totalHours.toFixed(2),
-    daysPresent,
-    averageHours: averageHours.toFixed(2)
+    totalHours: total.toFixed(2),
+    daysPresent: monthly.length,
+    averageHours: (monthly.length > 0 ? total / monthly.length : 0).toFixed(2)
   };
 }

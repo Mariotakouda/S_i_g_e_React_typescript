@@ -1,6 +1,4 @@
-/* modules/home/home.css */
-
-/* CRUCIAL : Supprime les marges par défaut qui créent des bandes blanches */
+/* --- RESET & BASE --- */
 html, body {
   margin: 0;
   padding: 0;
@@ -9,8 +7,8 @@ html, body {
 }
 
 .hero-container {
-  min-height: 100vh; /* Utilise min-height pour la flexibilité */
-  width: 100vw;      /* Force la largeur totale de la fenêtre */
+  min-height: 100vh;
+  width: 100vw;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -19,11 +17,11 @@ html, body {
   color: white;
   overflow: hidden;
   
-  /* Image de fond corrigée */
+  /* Image de fond */
   background-image: url('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80');
   background-repeat: no-repeat;
   background-position: center center;
-  background-size: cover; /* Remplit tout l'espace sans déformation */
+  background-size: cover;
   
   font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
@@ -38,6 +36,7 @@ html, body {
   z-index: 1;
 }
 
+/* --- NAVIGATION & LOGO --- */
 .hero-nav {
   position: absolute;
   top: 0;
@@ -50,11 +49,24 @@ html, body {
   box-sizing: border-box;
 }
 
-.logo {
-  font-size: 24px;
-  font-weight: 800;
-  letter-spacing: 2px;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+/* Conteneur du logo */
+.logo-wrapper {
+  display: flex;
+  align-items: center;
+  transition: transform 0.3s ease;
+}
+
+.logo-wrapper:hover {
+  transform: scale(1.05); /* Petit effet de zoom au survol */
+}
+
+/* L'image du logo HODO */
+.hero-logo {
+  height: 60px; /* Taille idéale pour un logo de navigation */
+  width: auto;  /* Préserve le ratio de l'image */
+  object-fit: contain;
+  /* Ombre portée pour détacher le logo du fond bleu */
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); 
 }
 
 .nav-login-btn {
@@ -75,6 +87,7 @@ html, body {
   transform: translateY(-2px);
 }
 
+/* --- CONTENU PRINCIPAL --- */
 .hero-content {
   position: relative;
   z-index: 2;
@@ -92,12 +105,11 @@ html, body {
 }
 
 .highlight {
-background: linear-gradient(to right, #fefeff, #1f1cd8);
-background-clip: text;
+  background: linear-gradient(to right, #fefeff, #1f1cd8);
+  background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
   -webkit-text-fill-color: transparent;
-  
   font-weight: 900;
 }
 
@@ -141,27 +153,14 @@ background-clip: text;
 }
 
 /* --- ANIMATIONS --- */
-
 @keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeIn {
@@ -169,25 +168,23 @@ background-clip: text;
   to { opacity: 1; }
 }
 
-.fade-in-up {
-  animation: fadeInUp 0.8s ease-out forwards;
-}
-
-.fade-in-down {
-  animation: fadeInDown 0.8s ease-out forwards;
-}
-
-.fade-in {
-  animation: fadeIn 1.2s ease-out forwards;
-}
+.fade-in-up { animation: fadeInUp 0.8s ease-out forwards; }
+.fade-in-down { animation: fadeInDown 0.8s ease-out forwards; }
+.fade-in { animation: fadeIn 1.2s ease-out forwards; }
 
 .delay-1 { animation-delay: 0.2s; opacity: 0; }
 .delay-2 { animation-delay: 0.4s; opacity: 0; }
 
-/* Responsive */
+/* --- RESPONSIVE --- */
 @media (max-width: 768px) {
-  .hero-nav { padding: 20px; }
-  .logo { font-size: 20px; }
-  .nav-login-btn { padding: 8px 16px; font-size: 14px; }
-  .hero-container { width: 100%; } /* Évite le scroll horizontal sur mobile */
+  .hero-nav { 
+    padding: 20px; 
+  }
+  .hero-logo { 
+    height: 40px; /* Logo plus petit sur téléphone */
+  }
+  .nav-login-btn { 
+    padding: 8px 16px; 
+    font-size: 14px; 
+  }
 }

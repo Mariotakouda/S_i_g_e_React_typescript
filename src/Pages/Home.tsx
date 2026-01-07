@@ -1,4 +1,3 @@
-// modules/home/Home.tsx
 import { useNavigate } from "react-router-dom";
 import "./home.css";
 
@@ -10,7 +9,10 @@ export default function Home() {
       <div className="hero-overlay"></div>
 
       <nav className="hero-nav fade-in-down">
-        <div className="logo">SIGE</div>
+        <div className="logo-wrapper" onClick={() => navigate("/")} style={{cursor: 'pointer'}}>
+          {/* Chemin direct depuis le dossier public */}
+          <img src="/images/HODO.png" alt="HODO" className="hero-logo" />
+        </div>
         <button onClick={() => navigate("/login")} className="nav-login-btn">
           Connexion
         </button>
@@ -21,7 +23,7 @@ export default function Home() {
           Optimisez la gestion de votre <span className="highlight">entreprise</span>
         </h1>
         <p className="hero-description fade-in-up delay-1">
-          La plateforme centralisée SIGE vous permet de piloter vos activités, 
+          La plateforme centralisée HODO vous permet de piloter vos activités, 
           gérer vos équipes et suivre vos performances en temps réel.
         </p>
         
@@ -37,7 +39,7 @@ export default function Home() {
       </main>
 
       <footer className="hero-footer fade-in">
-        © 2025 S-I-G-E. Tous droits réservés.
+        © 2025 HODO. Tous droits réservés.
       </footer>
     </div>
   );

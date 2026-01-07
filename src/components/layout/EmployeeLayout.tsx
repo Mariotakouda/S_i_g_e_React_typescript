@@ -34,6 +34,7 @@ export default function EmployeeLayout() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // ✅ CORRECTION 1 : useEffect pour le resize (OK - pas de problème ici)
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth > 1024) setSidebarOpen(true);
@@ -41,21 +42,43 @@ export default function EmployeeLayout() {
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, []); // Pas de dépendances - OK
 
+  // ✅ CORRECTION 2 : Fermer sidebar sur mobile au changement de page (OK)
   useEffect(() => {
     if (window.innerWidth <= 1024) setSidebarOpen(false);
-  }, [location.pathname]);
+  }, [location.pathname]); // Dépendance stable - OK
 
+  // ✅ CORRECTION 3 : Charger le statut manager UNE SEULE FOIS avec stabilité
   useEffect(() => {
+    let isMounted = true;
+    
     async function loadStatus() {
+      // Vérifier que l'utilisateur existe et a un ID
+      if (!user?.id) {
+        console.log("⏳ [EmployeeLayout] En attente de user.id...");
+        return;
+      }
+      
+      console.log("🔍 [EmployeeLayout] Chargement statut manager pour user.id:", user.id);
+      
       try {
         const status = await checkManagerStatus();
-        setManagerStatus(status);
-      } catch (e) { console.error(e); }
+        if (isMounted) {
+          console.log("✅ [EmployeeLayout] Statut manager reçu:", status);
+          setManagerStatus(status);
+        }
+      } catch (e) { 
+        console.error("❌ [EmployeeLayout] Erreur chargement statut:", e); 
+      }
     }
-    if (user) loadStatus();
-  }, [user]);
+    
+    loadStatus();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id]); // ✅ Dépendance stable : seulement user?.id
 
   const handleLogout = async () => {
     if (window.confirm("Se déconnecter ?")) {
@@ -135,8 +158,6 @@ export default function EmployeeLayout() {
                 >
                     <Icons.Tasks /> <span>Assigner mission</span>
                 </Link>
-
-                
             </div>
           )}
         </nav>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../api/axios";
 import { type EmployeeFormData } from "./model";
+import { toast } from "react-hot-toast"; // 1. Importation du toast
 
 export default function EmployeeCreate() {
     const navigate = useNavigate();
@@ -10,7 +11,6 @@ export default function EmployeeCreate() {
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
-    // État local du formulaire (plus flexible pour la saisie HTML)
     const [form, setForm] = useState({
         first_name: "",
         last_name: "",
@@ -19,7 +19,7 @@ export default function EmployeeCreate() {
         contract_type: "CDI",
         hire_date: "",
         salary_base: 0,
-        department_id: "" as string | number, // Permet la chaîne vide du <select>
+        department_id: "" as string | number,
         role_ids: [] as number[]
     });
 
@@ -50,13 +50,16 @@ export default function EmployeeCreate() {
 
         setLoading(true);
         try {
-            // Transformation pour correspondre à EmployeeFormData (Typescript strict)
             const payload: EmployeeFormData = {
                 ...form,
                 department_id: form.department_id === "" ? undefined : Number(form.department_id)
             };
 
             await api.post("/employees", payload);
+            
+            // 2. Message de succès avant la redirection
+            toast.success(`Le recrutement de ${form.first_name} ${form.last_name} a été finalisé avec succès !`);
+            
             navigate("/admin/employees");
         } catch (err: any) {
             if (err.response?.data?.errors) {
@@ -64,6 +67,8 @@ export default function EmployeeCreate() {
                     Object.entries(err.response.data.errors).map(([k, v]: any) => [k, v[0]])
                 ));
             }
+            // 3. Optionnel : Message d'erreur en cas d'échec serveur
+            toast.error("Une erreur est survenue lors du recrutement.");
         } finally {
             setLoading(false);
         }

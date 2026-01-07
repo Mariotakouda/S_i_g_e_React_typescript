@@ -42,14 +42,17 @@ export default function EmployeeTaskDetail() {
       setLoading(true);
       const res = await api.get(`/tasks/${id}`);
       setTask(res.data.data || res.data);
-    } catch {
+    } catch (err) {
+      console.error("Erreur chargement mission:", err);
       navigate(-1); 
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { loadTask(); }, [id]);
+  useEffect(() => { 
+    if (id) loadTask(); 
+  }, [id]);
 
   const handleDownloadPDF = async (e: React.MouseEvent, fileUrl: string, fileName: string) => {
     e.preventDefault();
@@ -64,6 +67,7 @@ export default function EmployeeTaskDetail() {
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
     } catch {
       window.open(`${getStorageUrl()}${fileUrl}`, '_blank');
     } finally {
@@ -71,19 +75,36 @@ export default function EmployeeTaskDetail() {
     }
   };
 
+  /**
+   * ✅ CORRECTION : Gestion de l'envoi du rapport avec FormData et Headers explicites
+   */
   const handleSubmitReport = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file) return;
+    if (!file) {
+      alert("Veuillez sélectionner un fichier PDF.");
+      return;
+    }
+
     const formData = new FormData();
+    // Le nom du champ 'report_file' doit correspondre exactement à la validation Backend
     formData.append('report_file', file);
+
     setUploading(true);
     try {
-      await api.post(`/tasks/${id}/submit-report`, formData);
-      alert("Rapport envoyé !");
+      await api.post(`/tasks/${id}/submit-report`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        }
+      });
+      
+      alert("✅ Rapport envoyé avec succès !");
       setFile(null);
-      loadTask();
-    } catch {
-      alert("Erreur d'envoi");
+      // Réinitialiser l'input file manuellement si nécessaire via un ID ou une ref
+      loadTask(); // Recharger pour mettre à jour l'affichage (statut, bouton téléchargement)
+    } catch (err: any) {
+      console.error("Erreur upload rapport:", err.response?.data || err.message);
+      const errorMsg = err.response?.data?.message || "Erreur lors de l'envoi du rapport.";
+      alert(`❌ ${errorMsg}`);
     } finally {
       setUploading(false);
     }
@@ -164,28 +185,37 @@ export default function EmployeeTaskDetail() {
           </h4>
 
           {task.report_file ? (
-            <button 
-              onClick={(e) => handleDownloadPDF(e, task.report_file!, 'mon-rapport.pdf')}
-              disabled={downloading === task.report_file}
-              className="btn btn-success d-flex align-items-center gap-2"
-            >
-              <IconFile /> {downloading === task.report_file ? 'Ouverture...' : 'Voir mon rapport soumis'}
-            </button>
+            <div className="d-flex flex-column gap-3">
+              <p className="text-muted mb-0">Vous avez déjà soumis un rapport pour cette mission.</p>
+              <button 
+                onClick={(e) => handleDownloadPDF(e, task.report_file!, 'mon-rapport.pdf')}
+                disabled={downloading === task.report_file}
+                className="btn btn-success d-flex align-items-center gap-2 align-self-start"
+              >
+                <IconFile /> {downloading === task.report_file ? 'Ouverture...' : 'Voir mon rapport soumis'}
+              </button>
+            </div>
           ) : (
             <form onSubmit={handleSubmitReport}>
               <div className="mb-4">
+                <label className="form-label small fw-bold text-muted">Fichier du rapport (PDF uniquement)</label>
                 <input 
                   type="file" 
                   accept=".pdf" 
                   onChange={e => setFile(e.target.files?.[0] || null)}
-                  className="form-control border-2 border-dashed shadow-none" 
+                  className={`form-control border-2 border-dashed shadow-none ${file ? 'border-primary' : ''}`} 
                   disabled={uploading}
                 />
+                {file && (
+                   <div className="mt-2 small text-primary fw-bold d-flex align-items-center gap-1">
+                     <IconFile /> {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                   </div>
+                )}
               </div>
               <button 
                 type="submit" 
                 disabled={!file || uploading} 
-                className="btn btn-primary w-100 py-3 fw-bold d-flex align-items-center justify-content-center gap-2"
+                className="btn btn-primary w-100 py-3 fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm"
               >
                 {uploading ? <span className="spinner-border spinner-border-sm"></span> : <IconUpload />}
                 {uploading ? 'Envoi en cours...' : 'Confirmer et terminer la mission'}

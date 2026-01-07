@@ -112,7 +112,7 @@ export default function ManagerList() {
               <div className="d-grid gap-2">
                 {/* EMOJI UTILISÉ ICI POUR LE BOUTON MOBILE */}
                 <Link to={`/admin/managers/${manager.id}`} className="btn btn-sm btn-light fw-bold py-2 border shadow-sm rounded-3">
-                   👁️ Voir les détails
+                    Voir les détails
                 </Link>
                 <div className="d-flex gap-2">
                     <Link to={`/admin/managers/${manager.id}/edit`} className="btn btn-sm btn-outline-warning flex-grow-1 py-2">

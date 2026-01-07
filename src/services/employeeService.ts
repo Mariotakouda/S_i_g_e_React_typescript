@@ -37,9 +37,7 @@ export interface Announcement {
     // ...
 }
 
-// -----------------------------------------------------------------
 // FONCTIONS DE SERVICE
-// -----------------------------------------------------------------
 
 /**
  * Récupère le profil complet de l'employé connecté (API /employee/me).
@@ -74,4 +72,3 @@ export const fetchMyAnnouncements = async (): Promise<Announcement[]> => {
     return response.data;
 };
 
-// ... Ajoutez d'autres fonctions pour myLeaves, myRoles, etc. si nécessaire
