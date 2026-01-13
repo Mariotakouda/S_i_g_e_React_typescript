@@ -2,19 +2,18 @@ import React, { useContext, useState, useEffect } from "react";
 import { Link, useNavigate, useLocation, Outlet } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 
-// --- ICONES ---
+// --- ICONES (Inchangées) ---
 const Icons = {
-  Dashboard: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>,
-  Employees: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
-  Departments: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/></svg>,
-  Presences: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>,
-  Tasks: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>,
-  Leave: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
-  Managers: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
-  Roles: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
-  Announcements: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
-  Logout: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
-  Close: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+  Dashboard: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>,
+  Employees: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+  Departments: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/></svg>,
+  Presences: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>,
+  Tasks: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>,
+  Leave: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+  Managers: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  Roles: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+  Announcements: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
+  Logout: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
   MenuIcon: () => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
@@ -29,6 +28,9 @@ export default function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Définir la largeur selon l'état
+  const sidebarWidth = sidebarOpen ? "280px" : "80px";
+
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth > 1024) setSidebarOpen(true);
@@ -37,10 +39,6 @@ export default function AdminLayout() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  useEffect(() => {
-    if (window.innerWidth <= 1024) setSidebarOpen(false);
-  }, [location.pathname]);
 
   const handleLogout = async () => {
     if (window.confirm("Voulez-vous vraiment vous déconnecter ?")) {
@@ -67,33 +65,41 @@ export default function AdminLayout() {
       {/* SIDEBAR */}
       <aside 
         style={{
-          width: "280px",
-          minWidth: "280px",
+          width: sidebarWidth,
+          minWidth: sidebarWidth,
           backgroundColor: "#0f172a", 
           color: "#fff",
           position: "fixed",
           top: 0,
           bottom: 0,
-          left: sidebarOpen ? "0" : "-280px",
+          left: 0, // Toujours visible à gauche
           zIndex: 1000,
-          transition: "left 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          transition: "width 0.3s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.3s",
           display: "flex",
           flexDirection: "column",
-          boxShadow: "4px 0 15px rgba(0,0,0,0.1)"
+          boxShadow: "4px 0 15px rgba(0,0,0,0.1)",
+          overflow: "hidden" // Empêche le texte de dépasser pendant l'animation
         }}
       >
-        <div style={{ padding: "32px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div style={{ width: "35px", height: "35px", background: "#3b82f6", borderRadius: "10px", display: "flex", justifyContent: "center", alignItems: "center", fontWeight: "800", color: "#fff" }}>A</div>
-            <h1 style={{ margin: 0, fontSize: "19px", fontWeight: "700" }}>ADMIN SPACE</h1>
-          </div>
-          {window.innerWidth <= 1024 && (
-            <button onClick={() => setSidebarOpen(false)} style={closeButtonStyle}><Icons.Close /></button>
+        {/* LOGO SECTION */}
+        <div style={{ padding: "32px 20px", display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{ 
+            width: "40px", height: "40px", minWidth: "40px", 
+            background: "#3b82f6", borderRadius: "10px", 
+            display: "flex", justifyContent: "center", alignItems: "center", 
+            fontWeight: "800", color: "#fff" 
+          }}>A</div>
+          {sidebarOpen && (
+            <h1 style={{ margin: 0, fontSize: "18px", fontWeight: "700", whiteSpace: "nowrap" }}>ADMIN SPACE</h1>
           )}
         </div>
 
-        <nav style={{ flex: 1, padding: "0 16px", overflowY: "auto" }}>
-          <p style={{ fontSize: "11px", color: "#475569", textTransform: "uppercase", paddingLeft: "12px", marginBottom: "16px", letterSpacing: "1px" }}>Menu Principal</p>
+        {/* NAVIGATION */}
+        <nav style={{ flex: 1, padding: "0 12px", overflowY: "auto", overflowX: "hidden" }}>
+          {sidebarOpen && (
+             <p style={{ fontSize: "10px", color: "#475569", textTransform: "uppercase", paddingLeft: "12px", marginBottom: "16px", letterSpacing: "1px" }}>Menu</p>
+          )}
+          
           {menuItems.map((item) => {
             const isActive = location.pathname.startsWith(item.path);
             const Icon = item.icon;
@@ -101,20 +107,33 @@ export default function AdminLayout() {
               <Link
                 key={item.path} to={item.path}
                 style={{
-                  display: "flex", alignItems: "center", gap: "14px", padding: "12px 16px", marginBottom: "6px",
+                  display: "flex", alignItems: "center", 
+                  justifyContent: sidebarOpen ? "flex-start" : "center",
+                  gap: sidebarOpen ? "14px" : "0", 
+                  padding: "12px", marginBottom: "6px",
                   color: isActive ? "#fff" : "#94a3b8", textDecoration: "none",
                   backgroundColor: isActive ? "#3b82f6" : "transparent", borderRadius: "10px",
                   fontSize: "14px", fontWeight: isActive ? "600" : "500", transition: "all 0.2s"
                 }}
+                title={!sidebarOpen ? item.label : ""} // Tooltip si replié
               >
-                <Icon /> {item.label}
+                <Icon />
+                {sidebarOpen && <span style={{ whiteSpace: "nowrap" }}>{item.label}</span>}
               </Link>
             );
           })}
         </nav>
 
-        <div style={{ padding: "20px", borderTop: "1px solid #1e293b", background: "rgba(0,0,0,0.2)" }}>
-          <button onClick={handleLogout} style={logoutButtonStyle}><Icons.Logout /> <span>Déconnexion</span></button>
+        {/* LOGOUT */}
+        <div style={{ padding: "20px 12px", borderTop: "1px solid #1e293b", background: "rgba(0,0,0,0.2)" }}>
+          <button onClick={handleLogout} style={{
+            ...logoutButtonStyle,
+            justifyContent: sidebarOpen ? "center" : "center",
+            padding: sidebarOpen ? "12px" : "12px 0"
+          }}>
+            <Icons.Logout /> 
+            {sidebarOpen && <span style={{ marginLeft: "8px" }}>Déconnexion</span>}
+          </button>
         </div>
       </aside>
 
@@ -123,12 +142,11 @@ export default function AdminLayout() {
         flex: 1, 
         display: "flex", 
         flexDirection: "column",
-        marginLeft: (window.innerWidth > 1024 && sidebarOpen) ? "280px" : "0",
+        marginLeft: sidebarWidth, // La marge s'adapte automatiquement à la largeur du menu
         transition: "margin-left 0.3s ease",
         width: "100%"
       }}>
         <header style={headerStyle}>
-          {/* BOUTON TOGGLE MODERNE (BLEU DOUX) */}
           <button 
             onMouseEnter={() => setBtnHover(true)}
             onMouseLeave={() => setBtnHover(false)}
@@ -152,7 +170,7 @@ export default function AdminLayout() {
           </div>
         </header>
         
-        <main style={{ flex: 1, overflowY: "auto", padding: "32px", boxSizing: "border-box" }}>
+        <main style={{ flex: 1, overflowY: "auto", padding: "24px", boxSizing: "border-box" }}>
           <Outlet />
         </main>
       </div>
@@ -160,12 +178,12 @@ export default function AdminLayout() {
   );
 }
 
-// --- STYLES ---
+// --- STYLES (Inchangés sauf ajustements mineurs) ---
 const headerStyle: React.CSSProperties = {
   height: "72px",
   display: "flex",
   alignItems: "center",
-  padding: "0 32px",
+  padding: "0 24px",
   backgroundColor: "#fff",
   borderBottom: "1px solid #e2e8f0",
   position: "sticky",
@@ -174,19 +192,11 @@ const headerStyle: React.CSSProperties = {
   gap: "20px"
 };
 
-// NOUVEAU STYLE DU BOUTON
 const toggleButtonStyle: React.CSSProperties = { 
   border: "1px solid rgba(59, 130, 246, 0.15)",
-  width: "42px", 
-  height: "42px", 
-  borderRadius: "10px", 
-  cursor: "pointer", 
-  display: "flex", 
-  alignItems: "center", 
-  justifyContent: "center",
-  transition: "all 0.2s ease",
-  flexShrink: 0,
-  outline: "none"
+  width: "42px", height: "42px", borderRadius: "10px", 
+  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+  transition: "all 0.2s ease", flexShrink: 0, outline: "none"
 };
 
 const avatarStyle: React.CSSProperties = {
@@ -194,5 +204,8 @@ const avatarStyle: React.CSSProperties = {
   display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold", color: "#fff"
 };
 
-const closeButtonStyle = { background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", width: "32px", height: "32px", borderRadius: "8px", cursor: "pointer" };
-const logoutButtonStyle: React.CSSProperties = { width: "100%", padding: "12px", backgroundColor: "rgba(239, 68, 68, 0.1)", color: "#f87171", border: "none", borderRadius: "10px", cursor: "pointer", fontWeight: "600", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" };
+const logoutButtonStyle: React.CSSProperties = { 
+  width: "100%", backgroundColor: "rgba(239, 68, 68, 0.1)", color: "#f87171", 
+  border: "none", borderRadius: "10px", cursor: "pointer", fontWeight: "600", 
+  display: "flex", alignItems: "center" 
+};

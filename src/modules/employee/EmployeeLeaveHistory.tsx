@@ -16,7 +16,6 @@ export default function EmployeeLeaveHistory() {
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // const navigate = useNavigate();
 
   useEffect(() => {
     fetchLeaveHistory();
@@ -35,7 +34,6 @@ export default function EmployeeLeaveHistory() {
     }
   };
 
-  // Helper pour les badges de statut
   const getStatusStyle = (status: string) => {
     const s = status.toLowerCase();
     if (s === 'approved' || s === 'approuvé') return { bg: "#ecfdf5", color: "#10b981", label: "Approuvé" };
@@ -53,25 +51,50 @@ export default function EmployeeLeaveHistory() {
     <div style={{ 
       backgroundColor: "#f8fafc", 
       minHeight: "100vh", 
-      padding: "40px 20px", 
+      padding: "20px 15px", // Réduit pour mobile
       fontFamily: "'Inter', sans-serif" 
     }}>
+      {/* Injection CSS pour le responsive 425px */}
+      <style>{`
+        @media (max-width: 425px) {
+          .responsive-table thead { display: none; }
+          .responsive-table tr { 
+            display: block; 
+            margin-bottom: 15px; 
+            padding: 15px;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 12px;
+          }
+          .responsive-table td { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            padding: 8px 0 !important;
+            border: none !important;
+            width: 100% !important;
+            font-size: 14px;
+          }
+          .responsive-table td::before {
+            content: attr(data-label);
+            font-weight: 700;
+            color: #64748b;
+            font-size: 11px;
+            text-transform: uppercase;
+          }
+          .header-container { flex-direction: column; gap: 15px; align-items: flex-start !important; }
+          .btn-new { width: 100%; text-align: center; }
+        }
+      `}</style>
+
       <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
         
         {/* Navigation & Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-          {/* <div>
-            <button 
-              onClick={() => navigate(-1)} 
-              style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontWeight: '600', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '5px' }}
-            >
-              ← Retour au Dashboard
-            </button>
-            <h1 style={{ fontSize: "28px", fontWeight: "800", color: "#0f172a", margin: 0 }}>Historique des absences</h1>
-          </div> */}
+        <div className="header-container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+          <h1 style={{ fontSize: "24px", fontWeight: "800", color: "#0f172a", margin: 0 }}>Mes absences</h1>
           
           <Link
             to="/employee/leave-requests/create"
+            className="btn-new"
             style={{ 
               padding: "12px 24px", 
               backgroundColor: "#3b82f6", 
@@ -90,23 +113,23 @@ export default function EmployeeLeaveHistory() {
 
         {/* Table Card */}
         <div style={{ 
-          backgroundColor: "#fff", 
+          backgroundColor: leaves.length === 0 ? "transparent" : "#fff", 
           borderRadius: "16px", 
-          boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", 
-          border: "1px solid #e2e8f0",
+          boxShadow: leaves.length === 0 ? "none" : "0 4px 6px -1px rgba(0,0,0,0.05)", 
+          border: leaves.length === 0 ? "none" : "1px solid #e2e8f0",
           overflow: "hidden"
         }}>
           {leaves.length === 0 ? (
             <div style={{ padding: "60px", textAlign: "center", color: "#94a3b8" }}>
-              <p style={{ fontSize: "18px" }}>Aucune demande de congé trouvée dans vos archives.</p>
+              <p style={{ fontSize: "16px" }}>Aucune demande de congé trouvée.</p>
             </div>
           ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+            <table className="responsive-table" style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
               <thead>
                 <tr style={{ backgroundColor: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
                   <th style={thStyle}>TYPE</th>
-                  <th style={thStyle}>PÉRIODE D'ABSENCE</th>
-                  <th style={thStyle}>DATE DE SOUMISSION</th>
+                  <th style={thStyle}>PÉRIODE</th>
+                  <th style={thStyle}>SOUMIS LE</th>
                   <th style={thStyle}>STATUT</th>
                 </tr>
               </thead>
@@ -115,32 +138,26 @@ export default function EmployeeLeaveHistory() {
                   const status = getStatusStyle(l.status);
                   return (
                     <tr key={l.id} style={{ 
-                      borderBottom: index === leaves.length - 1 ? "none" : "1px solid #f1f5f9",
-                      transition: "background-color 0.2s"
+                      borderBottom: index === leaves.length - 1 ? "none" : "1px solid #f1f5f9"
                     }}>
-                      <td style={tdStyle}>
+                      <td style={tdStyle} data-label="Type">
                         <div style={{ fontWeight: "700", color: "#1e293b" }}>
                           {l.type.toUpperCase()}
                         </div>
                         {l.message && <div style={{ fontSize: "12px", color: "#64748b", marginTop: "4px" }}>{l.message}</div>}
                       </td>
-                      <tr>
-                        <td style={tdStyle}>
-                          <div style={{ color: "#334155", fontWeight: "500" }}>
-                            Du {new Date(l.start_date).toLocaleDateString('fr-FR')}
-                          </div>
-                        </td> 
-                        <td style={tdStyle}>
-                          <div style={{ color: "#334155", fontWeight: "500" }}>
-                            Au {new Date(l.end_date).toLocaleDateString('fr-FR')}
-                          </div>
-                        </td>
-                      </tr>
 
-                      <td style={tdStyle}>
-                        <span style={{ color: "#64748b" }}>{new Date(l.created_at).toLocaleDateString('fr-FR')}</span>
+                      <td style={tdStyle} data-label="Période">
+                        <div style={{ color: "#334155", fontWeight: "500", fontSize: "13px" }}>
+                          {new Date(l.start_date).toLocaleDateString('fr-FR')} → {new Date(l.end_date).toLocaleDateString('fr-FR')}
+                        </div>
                       </td>
-                      <td style={tdStyle}>
+
+                      <td style={tdStyle} data-label="Soumis le">
+                        <span style={{ color: "#64748b", fontSize: "13px" }}>{new Date(l.created_at).toLocaleDateString('fr-FR')}</span>
+                      </td>
+
+                      <td style={tdStyle} data-label="Statut">
                         <span style={{
                           backgroundColor: status.bg,
                           color: status.color,
@@ -165,16 +182,15 @@ export default function EmployeeLeaveHistory() {
   );
 }
 
-// Styles constants
 const thStyle: React.CSSProperties = {
   padding: "16px 24px",
-  fontSize: "12px",
+  fontSize: "11px",
   fontWeight: "700",
   color: "#64748b",
   letterSpacing: "0.05em"
 };
 
 const tdStyle: React.CSSProperties = {
-  padding: "20px 24px",
-  verticalAlign: "top"
+  padding: "16px 24px",
+  verticalAlign: "middle"
 };

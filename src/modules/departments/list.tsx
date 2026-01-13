@@ -50,7 +50,7 @@ export default function DepartmentList() {
   return (
     <div className="container-fluid py-4 px-3 px-md-5" style={{ minHeight: "100vh", backgroundColor: "#f8fafc" }}>
       
-      {/* HEADER SECTION: Responsive Flex */}
+      {/* HEADER SECTION */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
           <h2 className="fw-bold text-dark m-0 d-flex align-items-center gap-2">
@@ -71,7 +71,7 @@ export default function DepartmentList() {
         </Link>
       </div>
 
-      {/* SEARCH BAR: Full width on mobile */}
+      {/* SEARCH BAR */}
       <div className="bg-white p-2 p-md-3 rounded-4 shadow-sm border mb-4">
         <form onSubmit={(e) => { e.preventDefault(); setPage(1); load(); }} className="row g-2">
           <div className="col-12 col-md-10 position-relative">
@@ -100,27 +100,24 @@ export default function DepartmentList() {
 
       {error && <div className="alert alert-danger border-0 shadow-sm rounded-3 mb-4">{error}</div>}
 
-      {/* CONTENT: Desktop Table vs Mobile Cards */}
       <div className="bg-white rounded-4 shadow-sm border overflow-hidden">
         
-        {/* DESKTOP TABLE VIEW */}
+        {/* DESKTOP TABLE VIEW - ID REMOVED */}
         <div className="d-none d-md-block">
           <table className="table table-hover align-middle mb-0">
             <thead className="table-light">
               <tr className="small text-muted uppercase">
-                <th className="ps-4 py-3">ID</th>
-                <th className="py-3">Nom</th>
+                <th className="ps-4 py-3">Nom</th>
                 <th className="py-3">Manager</th>
                 <th className="py-3 text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={4} className="text-center py-5">Chargement...</td></tr>
+                <tr><td colSpan={3} className="text-center py-5">Chargement...</td></tr>
               ) : departments.map((d) => (
                 <tr key={d.id}>
-                  <td className="ps-4 text-muted small">#{d.id}</td>
-                  <td className="fw-bold text-dark">{d.name}</td>
+                  <td className="ps-4 fw-bold text-dark">{d.name}</td>
                   <td>
                     {d.manager ? (
                        <span className="badge bg-blue-soft text-primary px-2 py-1 fw-normal" style={{ backgroundColor: "#eff6ff" }}>
@@ -139,7 +136,7 @@ export default function DepartmentList() {
           </table>
         </div>
 
-        {/* MOBILE CARDS VIEW */}
+        {/* MOBILE CARDS VIEW - ID REMOVED */}
         <div className="d-md-none">
           {loading ? (
             <div className="p-5 text-center text-muted">Chargement...</div>
@@ -147,7 +144,6 @@ export default function DepartmentList() {
             <div key={d.id} className="p-3 border-bottom">
               <div className="d-flex justify-content-between align-items-start mb-2">
                 <div>
-                  <span className="text-muted small">#{d.id}</span>
                   <h6 className="fw-bold m-0 text-dark">{d.name}</h6>
                 </div>
                 <div className="d-flex gap-2">
@@ -182,7 +178,6 @@ export default function DepartmentList() {
   );
 }
 
-// Composant interne pour les boutons d'action (évite la répétition)
 function ActionButtons({ d, remove, isMobile = false }: { d: any, remove: any, isMobile?: boolean }) {
   const size = isMobile ? 18 : 16;
   return (

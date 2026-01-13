@@ -2,14 +2,23 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../api/axios";
 
+// Composant Icone pour la cohérence visuelle
+const Icon = ({ name }: { name: 'eye' | 'edit' | 'trash' | 'plus' }) => {
+    const icons = {
+        eye: <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>,
+        edit: <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>,
+        trash: <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>,
+        plus: <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M12 4v16m8-8H4" /></svg>
+    };
+    return icons[name];
+};
+
 export default function EmployeeList() {
     const [employees, setEmployees] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        loadEmployees();
-    }, []);
+    useEffect(() => { loadEmployees(); }, []);
 
     const loadEmployees = () => {
         setLoading(true);
@@ -31,97 +40,123 @@ export default function EmployeeList() {
     };
 
     return (
-        <div className="container-fluid py-3 py-md-5 px-2 px-md-4 bg-light min-vh-100">
-            {/* Header Section - Stacked on mobile, row on desktop */}
-            <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4 gap-3">
+        <div className="container-fluid py-4 py-md-5 px-3 px-md-5 bg-light min-vh-100">
+            
+            {/* HEADER SECTION */}
+            <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
                 <div>
-                    <h2 className="fw-bold text-dark mb-1 h4 h2-md">Annuaire</h2>
-                    <p className="text-muted small mb-0">Gestion de l'équipe</p>
+                    <h1 className="display-6 fw-bold text-dark mb-1">Équipe</h1>
+                    <p className="text-muted mb-0 fs-5">Gestion des collaborateurs ({employees.length})</p>
                 </div>
                 <button 
                     onClick={() => navigate("/admin/employees/create")} 
-                    className="btn btn-primary w-100 w-sm-auto d-flex align-items-center justify-content-center shadow-sm border-0 px-4 py-2"
-                    style={{ borderRadius: '10px' }}
+                    className="btn btn-primary shadow px-4 py-3 rounded-4 d-flex align-items-center justify-content-center"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="me-2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                    </svg>
-                    <span className="fw-medium">Nouveau</span>
+                    <Icon name="plus" />
+                    <span className="fw-bold ms-2 fs-5">Ajouter un employé</span>
                 </button>
             </div>
 
-            {/* Table Card */}
-            <div className="card border-0 shadow-sm" style={{ borderRadius: '15px' }}>
-                <div className="table-responsive">
-                    <table className="table table-hover align-middle mb-0">
-                        <thead className="bg-light">
-                            <tr>
-                                <th className="ps-3 py-3 text-muted small fw-bold" style={{ width: '60px' }}>Profil</th>
-                                <th className="py-3 text-muted small fw-bold">Employé</th>
-                                {/* Hidden on Mobile, Visible on Tablet (md) and up */}
-                                <th className="py-3 text-muted small fw-bold d-none d-md-table-cell">Contact</th>
-                                <th className="py-3 text-muted small fw-bold d-none d-sm-table-cell">Département</th>
-                                <th className="py-3 text-muted small fw-bold text-end pe-3">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {loading ? (
-                                <tr>
-                                    <td colSpan={5} className="text-center py-5 text-muted">
-                                        <div className="spinner-border spinner-border-sm text-primary" />
-                                    </td>
-                                </tr>
-                            ) : (
-                                employees.map(emp => (
-                                    <tr key={emp.id}>
-                                        <td className="ps-3">
+            {loading ? (
+                <div className="text-center py-5"><div className="spinner-border text-primary" style={{ width: '3rem', height: '3rem' }}></div></div>
+            ) : employees.length === 0 ? (
+                <div className="text-center py-5 bg-white rounded-5 shadow-sm text-muted fs-4">Aucun employé trouvé.</div>
+            ) : (
+                <>
+                    {/* VUE MOBILE (Cartes) - Visible uniquement sur petit écran */}
+                    <div className="d-md-none">
+                        {employees.map(emp => (
+                            <div key={emp.id} className="card border-0 shadow-sm mb-4 rounded-5 overflow-hidden">
+                                <div className="card-body p-4">
+                                    <div className="d-flex align-items-center mb-4">
+                                        <div className="me-3">
                                             {emp.profile_photo_url ? (
-                                                <img src={emp.profile_photo_url} className="rounded-circle border" style={{ width: '40px', height: '40px', objectFit: 'cover' }} alt="Avatar" />
+                                                <img src={emp.profile_photo_url} className="rounded-circle border" style={{ width: '65px', height: '65px', objectFit: 'cover' }} alt="" />
                                             ) : (
                                                 <div className="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white shadow-sm"
-                                                     style={{ width: '40px', height: '40px', fontSize: '12px', background: 'linear-gradient(45deg, #4e73df, #224abe)' }}>
+                                                     style={{ width: '65px', height: '65px', fontSize: '20px', background: 'linear-gradient(45deg, #4e73df, #224abe)' }}>
                                                     {getInitials(emp.first_name, emp.last_name)}
                                                 </div>
                                             )}
-                                        </td>
-                                        <td>
-                                            <div className="fw-bold text-dark text-truncate" style={{ maxWidth: '150px' }}>
-                                                {emp.first_name} {emp.last_name}
-                                            </div>
-                                            {/* Visible only on small screens to replace the hidden email column */}
-                                            <div className="d-md-none text-muted x-small" style={{ fontSize: '0.75rem' }}>{emp.email}</div>
-                                        </td>
-                                        <td className="d-none d-md-table-cell text-secondary small">
-                                            {emp.email}
-                                        </td>
-                                        <td className="d-none d-sm-table-cell">
-                                            <span className="badge rounded-pill bg-light text-primary border border-primary-subtle fw-medium">
-                                                {emp.department?.name || "N/A"}
+                                        </div>
+                                        <div>
+                                            <h2 className="fw-bold text-dark mb-1" style={{ fontSize: '20px' }}>{emp.first_name} {emp.last_name}</h2>
+                                            <span className="badge bg-primary-subtle text-primary rounded-pill px-3 py-2" style={{ fontSize: '13px' }}>
+                                                {emp.department?.name || "Sans département"}
                                             </span>
-                                        </td>
-                                        <td className="text-end pe-3">
-                                            <div className="d-flex justify-content-end gap-1 gap-md-2">
-                                                <button onClick={() => navigate(`/admin/employees/${emp.id}`)} className="btn btn-sm btn-light border-0 p-2 text-primary shadow-xs">
-                                                    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                                                </button>
-                                                <button onClick={() => navigate(`/admin/employees/${emp.id}/edit`)} className="btn btn-sm btn-light border-0 p-2 text-warning shadow-xs">
-                                                    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                                                </button>
-                                                <button onClick={() => handleDelete(emp.id)} className="btn btn-sm btn-light border-0 p-2 text-danger shadow-xs">
-                                                    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                                </button>
-                                            </div>
-                                        </td>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="mb-4">
+                                        <div className="text-muted small text-uppercase fw-bold mb-1">Contact</div>
+                                        <div className="fs-6 text-dark">{emp.email}</div>
+                                    </div>
+
+                                    <div className="d-flex gap-3">
+                                        <button onClick={() => navigate(`/admin/employees/${emp.id}`)} className="btn btn-light flex-grow-1 py-3 rounded-4 border shadow-sm">
+                                            <Icon name="eye" />
+                                        </button>
+                                        <button onClick={() => navigate(`/admin/employees/${emp.id}/edit`)} className="btn btn-light px-4 rounded-4 border shadow-sm text-warning">
+                                            <Icon name="edit" />
+                                        </button>
+                                        <button onClick={() => handleDelete(emp.id)} className="btn btn-light px-4 rounded-4 border shadow-sm text-danger">
+                                            <Icon name="trash" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* VUE DESKTOP (Tableau) - Masqué sur mobile */}
+                    <div className="card border-0 shadow-sm d-none d-md-block rounded-5 overflow-hidden bg-white">
+                        <div className="table-responsive">
+                            <table className="table table-hover align-middle mb-0">
+                                <thead className="bg-light border-bottom">
+                                    <tr style={{ fontSize: '13px', textTransform: 'uppercase', color: '#666', letterSpacing: '1px' }}>
+                                        <th className="px-5 py-4">Collaborateur</th>
+                                        <th className="py-4">Contact</th>
+                                        <th className="py-4">Département</th>
+                                        <th className="py-4 text-center px-5">Actions</th>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div className="mt-3 px-2 text-center text-md-start">
-                <span className="text-muted small">Total: <strong>{employees.length}</strong> employés</span>
-            </div>
+                                </thead>
+                                <tbody style={{ fontSize: '17px' }}>
+                                    {employees.map(emp => (
+                                        <tr key={emp.id}>
+                                            <td className="px-5 py-5">
+                                                <div className="d-flex align-items-center">
+                                                    {emp.profile_photo_url ? (
+                                                        <img src={emp.profile_photo_url} className="rounded-circle border me-3" style={{ width: '55px', height: '55px', objectFit: 'cover' }} alt="" />
+                                                    ) : (
+                                                        <div className="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white shadow-sm me-3"
+                                                             style={{ width: '55px', height: '55px', fontSize: '16px', background: 'linear-gradient(45deg, #4e73df, #224abe)' }}>
+                                                            {getInitials(emp.first_name, emp.last_name)}
+                                                        </div>
+                                                    )}
+                                                    <div className="fw-bold text-dark">{emp.first_name} {emp.last_name}</div>
+                                                </div>
+                                            </td>
+                                            <td className="py-5 text-muted">{emp.email}</td>
+                                            <td className="py-5">
+                                                <span className="fw-bold px-4 py-2 bg-light rounded-pill text-primary border" style={{ fontSize: '14px' }}>
+                                                    {emp.department?.name || "N/A"}
+                                                </span>
+                                            </td>
+                                            <td className="text-center px-5">
+                                                <div className="d-inline-flex gap-3">
+                                                    <button onClick={() => navigate(`/admin/employees/${emp.id}`)} className="btn btn-outline-primary rounded-4 p-3 shadow-sm" title="Voir"><Icon name="eye" /></button>
+                                                    <button onClick={() => navigate(`/admin/employees/${emp.id}/edit`)} className="btn btn-outline-warning rounded-4 p-3 shadow-sm" title="Modifier"><Icon name="edit" /></button>
+                                                    <button onClick={() => handleDelete(emp.id)} className="btn btn-outline-danger rounded-4 p-3 shadow-sm" title="Supprimer"><Icon name="trash" /></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </>
+            )}
         </div>
     );
 }

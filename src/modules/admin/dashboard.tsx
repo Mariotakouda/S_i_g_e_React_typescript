@@ -1,246 +1,197 @@
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState, useContext, useCallback } from "react";
 import { api } from "../../api/axios";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
-import "./Dashboard.css"; 
+import "./Dashboard.css";
+
+const Icons = {
+  Users: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+  Building: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/></svg>,
+  Check: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>,
+  Calendar: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+  Shield: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  Alert: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
+  Plus: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+};
 
 interface Stats {
-  total_employees?: number;
-  total_departments?: number;
-  total_tasks?: number;
-  total_leave_requests?: number;
-  total_managers?: number;
-  total_roles?: number;
-  total_announcements?: number;
-  total_presences?: number; 
-}
-
-interface Employee {
-  id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-  department?: { name: string };
-}
-
-interface Presence {
-  id: number;
-  date: string;
-  status: string;
-  employee?: Employee;
-}
-
-interface Announcement {
-  id: number;
-  title: string;
-  message?: string;
-  created_at: string;
+  emp: number; dep: number; task: number; leave: number;
+  managers: number; roles: number; announcements: number; presences: number;
 }
 
 export default function AdminDashboard() {
   const { user } = useContext(AuthContext);
-
-  const [stats, setStats] = useState<Stats>({
-    total_employees: 0,
-    total_departments: 0,
-    total_tasks: 0,
-    total_leave_requests: 0,
-    total_managers: 0,
-    total_roles: 0,
-    total_announcements: 0,
-    total_presences: 0, 
-  });
-  const [recentEmployees, setRecentEmployees] = useState<Employee[]>([]);
-  const [recentPresences, setRecentPresences] = useState<Presence[]>([]);
-  const [recentAnnouncements, setRecentAnnouncements] = useState<Announcement[]>([]);
+  const [stats, setStats] = useState<Stats>({ emp: 0, dep: 0, task: 0, leave: 0, managers: 0, roles: 0, announcements: 0, presences: 0 });
+  const [recentEmployees, setRecentEmployees] = useState<any[]>([]);
+  const [recentPresences, setRecentPresences] = useState<any[]>([]);
+  const [recentAnnouncements, setRecentAnnouncements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-
-      const [
-        employeesRes,
-        departmentsRes,
-        tasksRes,
-        leaveRequestsRes,
-        managersRes,
-        rolesRes,
-        announcementsRes,
-        presencesRes,
-      ] = await Promise.all([
-        api.get("/employees").catch((err) => { console.error("Erreur employees:", err); return { data: [] }; }),
-        api.get("/departments").catch((err) => { console.error("Erreur departments:", err); return { data: [] }; }),
-        api.get("/tasks").catch((err) => { console.error("Erreur tasks:", err); return { data: [] }; }),
-        api.get("/leave-requests").catch((err) => { console.error("Erreur leave-requests:", err); return { data: [] }; }),
-        api.get("/managers").catch((err) => { console.error("Erreur managers:", err); return { data: [] }; }),
-        api.get("/roles").catch((err) => { console.error("Erreur roles:", err); return { data: [] }; }),
-        api.get("/announcements").catch((err) => { console.error("Erreur announcements:", err); return { data: [] }; }),
-        api.get("/presences").catch((err) => { console.error("Erreur presences:", err); return { data: [] }; }),
+      const [empR, depR, taskR, leaveR, mangR, roleR, annR, presR] = await Promise.all([
+        api.get("/employees").catch(() => ({ data: [] })),
+        api.get("/departments").catch(() => ({ data: [] })),
+        api.get("/tasks").catch(() => ({ data: [] })),
+        api.get("/leave-requests").catch(() => ({ data: [] })),
+        api.get("/managers").catch(() => ({ data: [] })),
+        api.get("/roles").catch(() => ({ data: [] })),
+        api.get("/announcements").catch(() => ({ data: [] })),
+        api.get("/presences").catch(() => ({ data: [] })),
       ]);
 
-      const getTotal = (response: any): number => {
-        if (Array.isArray(response.data)) return response.data.length;
-        if (response.data?.total !== undefined) return response.data.total;
-        if (Array.isArray(response.data?.data)) return response.data.data.length;
-        if (response.data?.meta?.total !== undefined) return response.data.meta.total;
+      const getT = (res: any) => {
+        const d = res.data;
+        if (!d) return 0;
+        if (Array.isArray(d)) return d.length;
+        if (d.total !== undefined) return d.total;
+        if (Array.isArray(d.data)) return d.data.length;
         return 0;
       };
 
-      const newStats = {
-        total_employees: getTotal(employeesRes),
-        total_departments: getTotal(departmentsRes),
-        total_tasks: getTotal(tasksRes),
-        total_leave_requests: getTotal(leaveRequestsRes),
-        total_managers: getTotal(managersRes),
-        total_roles: getTotal(rolesRes),
-        total_announcements: getTotal(announcementsRes),
-        total_presences: getTotal(presencesRes),
-      };
+      const getL = (res: any) => (Array.isArray(res.data) ? res.data : res.data?.data || []);
 
-      setStats(newStats);
+      setStats({
+        emp: getT(empR), dep: getT(depR), task: getT(taskR), leave: getT(leaveR),
+        managers: getT(mangR), roles: getT(roleR), announcements: getT(annR), presences: getT(presR)
+      });
 
-      const getData = (response: any): any[] => {
-        if (Array.isArray(response.data)) return response.data;
-        if (Array.isArray(response.data?.data)) return response.data.data;
-        return [];
-      };
-
-      setRecentEmployees(getData(employeesRes).slice(0, 5));
-      setRecentAnnouncements(getData(announcementsRes).slice(0, 5));
-      setRecentPresences(getData(presencesRes).slice(0, 5));
-
+      setRecentEmployees(getL(empR).slice(0, 5));
+      setRecentAnnouncements(getL(annR).slice(0, 5));
+      setRecentPresences(getL(presR).slice(0, 5));
     } catch (err: any) {
-      setError(err.response?.data?.message || "Erreur de chargement");
+      setError("Erreur lors de la récupération des données.");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  if (loading) {
-    return (
-      <div className="admin-dashboard-container loading-message">
-          <div className="three-body">
-            <div className="three-body__dot"></div>
-            <div className="three-body__dot"></div>
-            <div className="three-body__dot"></div>
-          </div>
+  useEffect(() => { loadDashboardData(); }, [loadDashboardData]);
+
+  if (loading) return (
+    <div className="admin-dashboard-container loading-message">
+      <div className="three-body">
+        <div className="three-body__dot"></div>
+        <div className="three-body__dot"></div>
+        <div className="three-body__dot"></div>
       </div>
-    );
-  }
+    </div>
+  );
 
-  if (error) {
-    return (
-      <div className="admin-dashboard-container">
-        <div className="error-message">
-          <p style={{ margin: 0 }}>{error}</p>
+  if (error) return (
+    <div className="admin-dashboard-container">
+      <div className="error-alert-box">
+        <Icons.Alert />
+        <div className="error-content">
+          <strong>Erreur système</strong>
+          <p>{error}</p>
         </div>
-        <button onClick={loadDashboardData} className="bg-blue-dark btn-retry">
-          Réessayer
-        </button>
+        <button onClick={loadDashboardData} className="btn-retry-modern">Réessayer</button>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
     <div className="admin-dashboard-container">
-      <div className="dashboard-header">
-        <h1 className="dashboard-title">Adminitrator Dashboard</h1>
-        <p className="dashboard-welcome">Bienvenue {user?.name}</p>
-      </div>
+      <header className="dashboard-header">
+        <h1 className="dashboard-title">Tableau de bord administrateur</h1>
+        <p className="dashboard-welcome">Bienvenue, {user?.name}</p>
+      </header>
 
+      {/* 1. Grille de Statistiques */}
       <div className="dashboard-stats-grid">
-        <Card title="Employés" value={stats.total_employees || 0} link="/admin/employees" colorClass="text-blue" />
-        <Card title="Départements" value={stats.total_departments || 0} link="/admin/departments" colorClass="text-purple" />
-        <Card title="Tâches" value={stats.total_tasks || 0} link="/admin/tasks" colorClass="text-amber" />
-        <Card title="Demandes de congés" value={stats.total_leave_requests || 0} link="/admin/leave-requests" colorClass="text-red" />
-        <Card title="Managers" value={stats.total_managers || 0} link="/admin/managers" colorClass="text-emerald" />
-        <Card title="Rôles" value={stats.total_roles || 0} link="/admin/roles" colorClass="text-orange" />
-        <Card title="Annonces" value={stats.total_announcements || 0} link="/admin/announcements" colorClass="text-indigo" />
-        <Card title="Présences enregistrées" value={stats.total_presences || 0} link="/admin/presences" colorClass="text-cyan" />
+        <Card title="Employés" value={stats.emp} link="/admin/employees" color="blue" icon={<Icons.Users />} />
+        <Card title="Départements" value={stats.dep} link="/admin/departments" color="purple" icon={<Icons.Building />} />
+        <Card title="Tâches" value={stats.task} link="/admin/tasks" color="amber" icon={<Icons.Check />} />
+        <Card title="Congés" value={stats.leave} link="/admin/leave-requests" color="red" icon={<Icons.Calendar />} />
+        <Card title="Managers" value={stats.managers} link="/admin/managers" color="emerald" icon={<Icons.Shield />} />
+        <Card title="Rôles" value={stats.roles} link="/admin/roles" color="orange" icon={<Icons.Shield />} />
+        <Card title="Annonces" value={stats.announcements} link="/admin/announcements" color="indigo" icon={<Icons.Calendar />} />
+        <Card title="Présences" value={stats.presences} link="/admin/presences" color="cyan" icon={<Icons.Check />} />
       </div>
 
-      <div className="dashboard-content-grid">
-        <Section title="Derniers employés ajoutés">
-          {recentEmployees.length === 0 ? <p className="text-muted">Aucun employé.</p> : (
-            <ul className="section-list">
-              {recentEmployees.map(e => (
-                <li key={e.id}>
-                  <strong>{e.first_name} {e.last_name}</strong><br />
-                  <small className="text-muted">{e.email} {e.department && ` • ${e.department.name}`}</small>
-                </li>
-              ))}
-            </ul>
-          )}
-          <Link to="/admin/employees" className="section-link">Voir tous les employés →</Link>
+      {/* 2. Actions Rapides (4 colonnes horizontales) */}
+      <div className="quick-actions-section">
+        <h2 className="section-title-small">Actions rapides</h2>
+        <div className="quick-actions-row">
+          <Link to="/admin/employees/create" className="q-btn bg-blue"><Icons.Plus /> Employé</Link>
+          <Link to="/admin/announcements/create" className="q-btn bg-indigo"><Icons.Plus /> Annonce</Link>
+          <Link to="/admin/tasks/create" className="q-btn bg-amber"><Icons.Plus /> Tâche</Link>
+          <Link to="/admin/leave-requests" className="q-btn bg-red"><Icons.Calendar /> Congés</Link>
+        </div>
+      </div>
+
+      {/* 3. Données Récentes (3 colonnes) */}
+      <div className="dashboard-recent-grid">
+        <Section title="Derniers employés" link="/admin/employees">
+          {recentEmployees.length === 0 ? <p className="empty-text">Aucun employé.</p> : 
+            recentEmployees.map(e => (
+              <div key={e.id} className="item-row">
+                <div className="item-avatar">{e.first_name[0]}</div>
+                <div className="item-info">
+                  <span className="item-main">{e.first_name} {e.last_name}</span>
+                  <span className="item-sub">{e.email}</span>
+                </div>
+              </div>
+            ))
+          }
         </Section>
 
-        <Section title="Présences récentes">
-          {recentPresences.length === 0 ? <p className="text-muted">Aucune présence.</p> : (
-            <ul className="section-list">
-              {recentPresences.map(p => (
-                <li key={p.id}>
-                  <strong>{p.employee ? `${p.employee.first_name} ${p.employee.last_name}` : "Inconnu"}</strong><br />
-                  <small className="text-muted">{p.date} — <span className={`badge-status ${p.status === "présent" ? "present" : "absent"}`}>{p.status}</span></small>
-                </li>
-              ))}
-            </ul>
-          )}
-          <Link to="/admin/presences" className="section-link">Gérer les présences →</Link>
+        <Section title="Présences récentes" link="/admin/presences">
+          {recentPresences.length === 0 ? <p className="empty-text">Aucune présence.</p> :
+            recentPresences.map(p => (
+              <div key={p.id} className="item-row space-between">
+                <div className="item-info">
+                  <span className="item-main">{p.employee?.first_name} {p.employee?.last_name}</span>
+                  <span className="item-sub">{p.date}</span>
+                </div>
+                <span className={`status-badge ${p.status === 'présent' ? 'st-green' : 'st-red'}`}>{p.status}</span>
+              </div>
+            ))
+          }
         </Section>
 
-        <Section title="Dernières annonces">
-          {recentAnnouncements.length === 0 ? <p className="text-muted">Aucune annonce.</p> : (
-            <ul className="section-list">
-              {recentAnnouncements.map(a => (
-                <li key={a.id}>
-                  <strong>{a.title}</strong>
-                  {a.message && <><br /><small className="text-muted">{a.message.substring(0, 80)}...</small></>}
-                </li>
-              ))}
-            </ul>
-          )}
-          <div className="mt-2">
-            <Link to="/admin/announcements/create" className="bg-blue-dark btn-small"> + Publier</Link>
-            <Link to="/admin/announcements" className="section-link ml-2">Voir toutes →</Link>
-          </div>
-        </Section>
-
-        <Section title="Actions rapides">
-          <div className="quick-actions-list">
-            <Link to="/admin/employees/create" className="bg-blue">+ Créer un employé</Link>
-            <Link to="/admin/departments/create" className="bg-purple">+ Ajouter un département</Link>
-            <Link to="/admin/tasks/create" className="bg-amber">+ Créer une tâche</Link>
-            <Link to="/admin/leave-requests" className="bg-red">Gérer les congés</Link>
-            <Link to="/admin/roles/create" className="bg-orange">+ Créer un rôle</Link>
-          </div>
+        <Section title="Dernières annonces" link="/admin/announcements">
+          {recentAnnouncements.length === 0 ? <p className="empty-text">Aucune annonce.</p> :
+            recentAnnouncements.map(a => (
+              <div key={a.id} className="item-row">
+                <div className="item-info">
+                  <span className="item-main">{a.title}</span>
+                  <span className="item-sub">{a.message?.substring(0, 40)}...</span>
+                </div>
+              </div>
+            ))
+          }
         </Section>
       </div>
     </div>
   );
 }
 
-function Card({ title, value, link, colorClass }: any) {
+function Card({ title, value, link, color, icon }: any) {
   return (
-    <div className="stat-card">
-      <h3>{title}</h3>
-      <p className={colorClass}>{value}</p>
-      <Link to={link} className={colorClass}>Gérer →</Link>
+    <div className={`stat-card-premium ${color}`}>
+      <div className="stat-icon-wrapper">{icon}</div>
+      <div className="stat-details">
+        <span className="stat-label">{title}</span>
+        <span className="stat-val">{value}</span>
+        <Link to={link} className="stat-link">Gérer</Link>
+      </div>
     </div>
   );
 }
 
-function Section({ title, children }: any) {
+function Section({ title, children, link }: any) {
   return (
-    <div className="dashboard-section">
-      <h2>{title}</h2>
-      {children}
+    <div className="content-section-premium">
+      <div className="section-header">
+        <h2>{title}</h2>
+        {link && <Link to={link}>Voir tout</Link>}
+      </div>
+      <div className="section-content">{children}</div>
     </div>
   );
 }

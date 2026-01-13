@@ -172,9 +172,9 @@ export default function EmployeeShow() {
                 </div>
             </div>
 
-            <div className="text-center mt-5 text-muted small">
+            {/* <div className="text-center mt-5 text-muted small">
                 <p>Identifiant interne : <strong>#EMP-{employee.id}</strong> — Profil synchronisé avec l'authentification.</p>
-            </div>
+            </div> */}
         </div>
     );
 }

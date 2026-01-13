@@ -4,7 +4,7 @@ import { AuthContext } from "../../context/AuthContext";
 import { checkManagerStatus } from "../../modules/announcements/service";
 import type { ManagerStatus } from "../../modules/announcements/service";
 
-// --- 1. ICONES SVG ---
+// --- 1. ICONES SVG (Gardées telles quelles) ---
 const Icons = {
   Dashboard: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>,
   User: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
@@ -34,7 +34,9 @@ export default function EmployeeLayout() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // ✅ CORRECTION 1 : useEffect pour le resize (OK - pas de problème ici)
+  // Détection mobile pour le mode mini-sidebar
+  const isMobile = window.innerWidth <= 1024;
+
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth > 1024) setSidebarOpen(true);
@@ -42,43 +44,24 @@ export default function EmployeeLayout() {
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []); // Pas de dépendances - OK
+  }, []);
 
-  // ✅ CORRECTION 2 : Fermer sidebar sur mobile au changement de page (OK)
   useEffect(() => {
-    if (window.innerWidth <= 1024) setSidebarOpen(false);
-  }, [location.pathname]); // Dépendance stable - OK
+    if (isMobile) setSidebarOpen(false);
+  }, [location.pathname, isMobile]);
 
-  // ✅ CORRECTION 3 : Charger le statut manager UNE SEULE FOIS avec stabilité
   useEffect(() => {
     let isMounted = true;
-    
     async function loadStatus() {
-      // Vérifier que l'utilisateur existe et a un ID
-      if (!user?.id) {
-        console.log("⏳ [EmployeeLayout] En attente de user.id...");
-        return;
-      }
-      
-      console.log("🔍 [EmployeeLayout] Chargement statut manager pour user.id:", user.id);
-      
+      if (!user?.id) return;
       try {
         const status = await checkManagerStatus();
-        if (isMounted) {
-          console.log("✅ [EmployeeLayout] Statut manager reçu:", status);
-          setManagerStatus(status);
-        }
-      } catch (e) { 
-        console.error("❌ [EmployeeLayout] Erreur chargement statut:", e); 
-      }
+        if (isMounted) setManagerStatus(status);
+      } catch (e) { console.error(e); }
     }
-    
     loadStatus();
-    
-    return () => {
-      isMounted = false;
-    };
-  }, [user?.id]); // ✅ Dépendance stable : seulement user?.id
+    return () => { isMounted = false; };
+  }, [user?.id]);
 
   const handleLogout = async () => {
     if (window.confirm("Se déconnecter ?")) {
@@ -93,78 +76,83 @@ export default function EmployeeLayout() {
     { label: "Consulter mes tâches", path: "/employee/tasks", icon: Icons.Tasks }, 
     { label: "Pointer ma présence", path: "/employee/presences", icon: Icons.Presence },
     { label: "Mes Congés", path: "/employee/leave-requests", icon: Icons.Leave },
-    { label: "Les annonces", path: "/employee/announcements", icon: Icons.Announcements, badge: managerStatus?.is_manager ? "Manager" : null },
+    { label: "Les annonces", path: "/employee/announcements", icon: Icons.Announcements, badge: managerStatus?.is_manager ? "M" : null },
   ];
+
+  // Calcul dynamique de la largeur
+  const currentSidebarWidth = sidebarOpen ? "280px" : (isMobile ? "70px" : "0px");
 
   return (
     <div style={{ display: "flex", width: "100vw", height: "100vh", overflow: "hidden", backgroundColor: "#f8fafc" }}>
       
       {/* SIDEBAR */}
-      <aside style={{ ...sidebarStyle, left: sidebarOpen ? "0" : "-280px" }}>
-        <div style={{ padding: "32px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+      <aside style={{ 
+        ...sidebarStyle, 
+        width: currentSidebarWidth,
+        left: "0", // On ne cache plus la sidebar à gauche, on réduit sa largeur
+        overflowX: "hidden"
+      }}>
+        <div style={{ padding: "32px 0", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "0 24px" }}>
             <div style={logoBoxStyle}>E</div>
-            <span style={{ fontWeight: "700", fontSize: "19px", color: "white" }}>ESPACE EMPLOYE</span>
+            {sidebarOpen && <span style={{ fontWeight: "700", fontSize: "19px", color: "white", whiteSpace: "nowrap" }}>ESPACE EMPLOYE</span>}
           </div>
-          {window.innerWidth <= 1024 && (
-            <button onClick={() => setSidebarOpen(false)} style={closeBtnStyle}><Icons.Close /></button>
-          )}
         </div>
 
-        <nav style={{ flex: 1, padding: "0 16px", overflowY: "auto" }}>
-          <p style={menuTitleStyle}>Menu Principal</p>
+        <nav style={{ flex: 1, padding: "0 12px", overflowY: "auto", overflowX: "hidden" }}>
+          {sidebarOpen && <p style={menuTitleStyle}>Menu Principal</p>}
           {menuItems.map((item) => {
             const isActive = location.pathname === item.path;
             const Icon = item.icon;
             return (
               <Link key={item.path} to={item.path} style={{
                 ...navLinkStyle,
+                justifyContent: sidebarOpen ? "flex-start" : "center",
                 backgroundColor: isActive ? "rgba(255,255,255,0.1)" : "transparent",
                 color: isActive ? "#fff" : "#94a3b8",
+                padding: sidebarOpen ? "12px 16px" : "12px 0",
               }}>
-                <Icon /> <span style={{ flex: 1 }}>{item.label}</span>
-                {item.badge && <span style={badgeStyle}>{item.badge}</span>}
+                <Icon /> 
+                {sidebarOpen && <span style={{ flex: 1, whiteSpace: "nowrap" }}>{item.label}</span>}
+                {sidebarOpen && item.badge && <span style={badgeStyle}>{item.badge}</span>}
               </Link>
             );
           })}
 
           {managerStatus?.is_manager && (
             <div style={{ marginTop: '24px' }}>
-                <p style={menuTitleStyle}>Gestion d'équipe</p>
+                {sidebarOpen && <p style={menuTitleStyle}>Gestion d'équipe</p>}
 
-                <Link 
-                  to="/employee/team-tasks" 
-                  style={{
+                <Link to="/employee/team-tasks" style={{
                     ...navLinkStyle,
+                    justifyContent: sidebarOpen ? "flex-start" : "center",
                     color: location.pathname === "/employee/team-tasks" ? "#fff" : "#10b981",
                     backgroundColor: location.pathname === "/employee/team-tasks" ? "rgba(16, 185, 129, 0.2)" : "transparent",
-                  }}
-                >
-                  <Icons.Team /> <span>Tâches de l'équipe</span>
+                    padding: sidebarOpen ? "12px 16px" : "12px 0",
+                  }}>
+                  <Icons.Team /> {sidebarOpen && <span style={{whiteSpace: "nowrap"}}>Tâches équipe</span>}
                 </Link>
                 
-                <Link to="/employee/announcements/create" style={{...createBtnStyle, marginBottom: '8px'}}>
-                    <Icons.Create /> <span>Créer annonce</span>
+                <Link to="/employee/announcements/create" style={{...createBtnStyle, justifyContent: sidebarOpen ? "flex-start" : "center", padding: sidebarOpen ? "12px 16px" : "12px 0", marginBottom: '8px'}}>
+                    <Icons.Create /> {sidebarOpen && <span style={{whiteSpace: "nowrap"}}>Annonce</span>}
                 </Link>
 
-                <Link 
-                    to="/employee/tasks/create" 
-                    style={{
+                <Link to="/employee/tasks/create" style={{
                         ...createBtnStyle, 
+                        justifyContent: sidebarOpen ? "flex-start" : "center",
+                        padding: sidebarOpen ? "12px 16px" : "12px 0",
                         backgroundColor: "#6366f1", 
-                        boxShadow: "0 4px 6px -1px rgba(99, 102, 241, 0.2)",
                         marginBottom: '8px'
-                    }}
-                >
-                    <Icons.Tasks /> <span>Assigner mission</span>
+                    }}>
+                    <Icons.Tasks /> {sidebarOpen && <span style={{whiteSpace: "nowrap"}}>Assigner</span>}
                 </Link>
             </div>
           )}
         </nav>
 
-        <div style={sidebarFooterStyle}>
+        <div style={{...sidebarFooterStyle, padding: sidebarOpen ? "20px" : "20px 0", textAlign: "center"}}>
           <Link to="/employee/profile" style={{ textDecoration: 'none', color: 'inherit' }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px", cursor: "pointer" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: sidebarOpen ? "flex-start" : "center", gap: "12px", marginBottom: "16px" }}>
               <div style={avatarCircleStyle}>
                 {employee?.profile_photo_url ? (
                   <img src={employee.profile_photo_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="P" />
@@ -172,38 +160,33 @@ export default function EmployeeLayout() {
                   employee?.first_name?.charAt(0) || user?.name?.charAt(0)
                 )}
               </div>
-              <div style={{ overflow: "hidden" }}>
-                <p style={userNameStyle}>{employee?.first_name || "Utilisateur"}</p>
-                <p style={{ ...userRoleStyle, color: managerStatus?.is_manager ? "#10b981" : "#818cf8" }}>
-                  {managerStatus?.is_manager ? "MANAGER" : "EMPLOYÉ"}
-                </p>
-              </div>
+              {sidebarOpen && (
+                <div style={{ overflow: "hidden", textAlign: "left" }}>
+                  <p style={userNameStyle}>{employee?.first_name || "User"}</p>
+                  <p style={{ ...userRoleStyle, color: managerStatus?.is_manager ? "#10b981" : "#818cf8" }}>{managerStatus?.is_manager ? "MANAGER" : "EMPLOYÉ"}</p>
+                </div>
+              )}
             </div>
           </Link>
-          <button onClick={handleLogout} style={logoutButtonStyle}>Déconnexion</button>
+          <button onClick={handleLogout} style={{...logoutButtonStyle, fontSize: sidebarOpen ? "14px" : "10px"}}>
+            {sidebarOpen ? "Déconnexion" : "Exit"}
+          </button>
         </div>
       </aside>
-
-      {/* OVERLAY MOBILE */}
-      {sidebarOpen && window.innerWidth <= 1024 && (
-        <div onClick={() => setSidebarOpen(false)} style={overlayStyle} />
-      )}
 
       {/* MAIN CONTENT AREA */}
       <div style={{ 
         flex: 1, display: "flex", flexDirection: "column",
-        marginLeft: (window.innerWidth > 1024 && sidebarOpen) ? "280px" : "0",
+        marginLeft: currentSidebarWidth,
         transition: "margin-left 0.3s ease", minWidth: 0, width: "100%"
       }}>
-        <header style={headerStyle}>
-          {!sidebarOpen && (
-            <button onClick={() => setSidebarOpen(true)} style={menuBtnStyle}>
-              <Icons.MenuWhite />
-            </button>
-          )}
+        <header style={{...headerStyle, padding: isMobile ? "0 15px" : "0 32px"}}>
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} style={menuBtnStyle}>
+            <Icons.MenuWhite />
+          </button>
 
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "16px" }}>
-            {managerStatus?.is_manager && (
+            {managerStatus?.is_manager && !isMobile && (
                <div style={managerTagStyle}>
                  <Icons.ManagerBadge /> <span>Mode Responsable</span>
                </div>
@@ -220,7 +203,7 @@ export default function EmployeeLayout() {
           </div>
         </header>
 
-        <main style={{ flex: 1, overflowY: "auto", padding: "32px", boxSizing: "border-box" }}>
+        <main style={{ flex: 1, overflowY: "auto", padding: isMobile ? "16px" : "32px", boxSizing: "border-box" }}>
           <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
             <Outlet />
           </div>
@@ -230,21 +213,21 @@ export default function EmployeeLayout() {
   );
 }
 
-// --- STYLES ---
+// --- STYLES (Modifiés pour supporter la rétractation) ---
 const sidebarStyle: React.CSSProperties = {
-  width: "280px", backgroundColor: "#1e1b4b", color: "#fff", position: "fixed",
-  height: "100vh", transition: "left 0.3s ease", zIndex: 1000, display: "flex", flexDirection: "column"
+  backgroundColor: "#1e1b4b", color: "#fff", position: "fixed",
+  height: "100vh", transition: "width 0.3s ease, left 0.3s ease", zIndex: 1000, display: "flex", flexDirection: "column"
 };
 const logoBoxStyle: React.CSSProperties = {
   width: "36px", height: "36px", background: "linear-gradient(135deg, #6366f1, #4f46e5)",
-  borderRadius: "10px", display: "flex", justifyContent: "center", alignItems: "center", fontWeight: "800"
+  borderRadius: "10px", display: "flex", justifyContent: "center", alignItems: "center", fontWeight: "800", flexShrink: 0
 };
 const menuTitleStyle: React.CSSProperties = {
   fontSize: "11px", color: "#818cf8", fontWeight: "700", textTransform: "uppercase",
-  paddingLeft: "12px", marginBottom: "12px", letterSpacing: "1px"
+  paddingLeft: "12px", marginBottom: "12px", letterSpacing: "1px", whiteSpace: "nowrap"
 };
 const navLinkStyle: React.CSSProperties = {
-  display: "flex", alignItems: "center", gap: "12px", padding: "12px 16px", marginBottom: "4px",
+  display: "flex", alignItems: "center", gap: "12px", marginBottom: "4px",
   textDecoration: "none", borderRadius: "10px", fontSize: "14px", fontWeight: "600", transition: "0.2s"
 };
 const createBtnStyle: React.CSSProperties = {
@@ -252,20 +235,20 @@ const createBtnStyle: React.CSSProperties = {
   backgroundColor: "#10b981", color: "#fff", textDecoration: "none", borderRadius: "10px", fontWeight: "700", fontSize: "14px"
 };
 const sidebarFooterStyle: React.CSSProperties = {
-  padding: "20px", borderTop: "1px solid rgba(255,255,255,0.08)", background: "rgba(0,0,0,0.15)"
+  borderTop: "1px solid rgba(255,255,255,0.08)", background: "rgba(0,0,0,0.15)"
 };
 const avatarCircleStyle: React.CSSProperties = {
   width: "40px", height: "40px", borderRadius: "10px", background: "#312e81",
-  display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "700", overflow: 'hidden'
+  display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "700", overflow: 'hidden', flexShrink: 0
 };
 const headerStyle: React.CSSProperties = {
-  height: "72px", display: "flex", alignItems: "center", padding: "0 32px",
+  height: "72px", display: "flex", alignItems: "center",
   backgroundColor: "#fff", borderBottom: "1px solid #e2e8f0", position: "sticky", top: 0, zIndex: 10
 };
 const menuBtnStyle: React.CSSProperties = {
-  background: "#4f46e5", border: "none", padding: 0, width: "42px", height: "42px", 
+  background: "#4f46e5", border: "none", padding: 0, width: "38px", height: "38px", 
   borderRadius: "10px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-  boxShadow: "0 4px 12px rgba(79, 70, 229, 0.3)"
+  boxShadow: "0 4px 12px rgba(79, 70, 229, 0.3)", flexShrink: 0
 };
 const managerTagStyle: React.CSSProperties = {
   display: "flex", alignItems: "center", gap: "6px", padding: "6px 12px",
@@ -275,9 +258,7 @@ const headerAvatarStyle: React.CSSProperties = {
   width: "38px", height: "38px", background: "#f1f5f9", borderRadius: "10px",
   display: "flex", alignItems: "center", justifyContent: "center", color: "#4f46e5", fontWeight: "bold", overflow: 'hidden'
 };
-const userNameStyle = { margin: 0, fontSize: "14px", fontWeight: "600", color: "#fff" };
-const userRoleStyle = { margin: 0, fontSize: "10px", fontWeight: "700" };
-const overlayStyle: React.CSSProperties = { position: "fixed", inset: 0, backgroundColor: "rgba(15, 23, 42, 0.5)", zIndex: 999, backdropFilter: "blur(4px)" };
-const badgeStyle = { fontSize: "10px", background: "#4f46e5", color: "#fff", padding: "2px 8px", borderRadius: "6px" };
-const closeBtnStyle = { background: "none", border: "none", color: "#94a3b8", cursor: "pointer" };
-const logoutButtonStyle: React.CSSProperties = { width: "100%", padding: "10px", background: "rgba(239, 68, 68, 0.1)", color: "#f87171", border: "1px solid rgba(239, 68, 68, 0.2)", borderRadius: "10px", cursor: "pointer", fontWeight: "700" };
+const userNameStyle = { margin: 0, fontSize: "14px", fontWeight: "600", color: "#fff", whiteSpace: "nowrap" };
+const userRoleStyle = { margin: 0, fontSize: "10px", fontWeight: "700", whiteSpace: "nowrap" };
+const badgeStyle = { fontSize: "10px", background: "#4f46e5", color: "#fff", padding: "2px 6px", borderRadius: "6px" };
+const logoutButtonStyle: React.CSSProperties = { width: "80%", margin: "0 auto", padding: "8px", background: "rgba(239, 68, 68, 0.1)", color: "#f87171", border: "1px solid rgba(239, 68, 68, 0.2)", borderRadius: "10px", cursor: "pointer", fontWeight: "700" };

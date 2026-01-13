@@ -67,15 +67,12 @@ export default function ManagerTeamTasks() {
         if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette mission ? Cette action est irréversible.")) {
             return;
         }
-
         try {
-            // CORRECTION DE L'URL ICI : On utilise /tasks/ selon tes routes Laravel
             await api.delete(`/tasks/${taskId}`);
-            
             setTasks(prevTasks => prevTasks.filter(t => t.id !== taskId));
             fetchTeamTasks(); 
         } catch (err: any) {
-            alert(err.response?.data?.message || "Erreur lors de la suppression. Vérifiez vos droits d'accès.");
+            alert(err.response?.data?.message || "Erreur lors de la suppression.");
         }
     };
 
@@ -101,21 +98,46 @@ export default function ManagerTeamTasks() {
     }
 
     return (
-        <div style={{ padding: '20px', maxWidth: '1400px', margin: '0 auto', color: '#1e293b' }}>
-            
+        <div style={{ padding: '15px', maxWidth: '1400px', margin: '0 auto', color: '#1e293b' }}>
+            <style>{`
+                @media (max-width: 425px) {
+                    .responsive-table thead { display: none; }
+                    .responsive-table tr { 
+                        display: block; 
+                        border-bottom: 2px solid #f1f5f9;
+                        padding: 15px 0;
+                    }
+                    .responsive-table td { 
+                        display: block; 
+                        padding: 8px 15px !important; 
+                        text-align: left !important;
+                    }
+                    .responsive-table td:last-child {
+                        text-align: center !important;
+                        border-top: 1px dashed #e2e8f0;
+                        margin-top: 10px;
+                        padding-top: 15px !important;
+                    }
+                    .stats-card { padding: 15px !important; }
+                    .stats-card div:last-child { font-size: 1.25rem !important; }
+                    .filter-bar { overflow-x: auto; white-space: nowrap; padding-bottom: 10px !important; }
+                    .header-title { font-size: 1.35rem !important; }
+                }
+            `}</style>
+
             <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
                 <div>
-                    <h2 style={{ fontWeight: 800, fontSize: '1.75rem', margin: 0, display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <Icons.Users /> Tâches de l'Équipe
+                    <h2 className="header-title" style={{ fontWeight: 800, fontSize: '1.75rem', margin: 0, display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Icons.Users /> Tâches Équipe
                     </h2>
-                    <p style={{ color: '#64748b', margin: '4px 0 0 0' }}>Supervision et suivi des performances collectives</p>
+                    <p style={{ color: '#64748b', margin: '4px 0 0 0', fontSize: '0.9rem' }}>Suivi des performances collectives</p>
                 </div>
-                <Link to="/employee/tasks/create" className="btn btn-primary d-inline-flex align-items-center gap-2" style={{ padding: '10px 20px', borderRadius: '10px', fontWeight: 600 }}>
+                <Link to="/employee/tasks/create" className="btn btn-primary d-flex align-items-center justify-content-center gap-2" style={{ padding: '10px 20px', borderRadius: '10px', fontWeight: 600 }}>
                     <Icons.Plus /> Nouvelle mission
                 </Link>
             </div>
 
-            <div className="row g-3 mb-4">
+            <div className="row g-2 g-md-3 mb-4">
                 {[
                     { label: 'Total', value: stats.total, color: '#475569' },
                     { label: 'En attente', value: stats.pending, color: '#d97706' },
@@ -123,15 +145,15 @@ export default function ManagerTeamTasks() {
                     { label: 'Terminées', value: stats.completed, color: '#059669' }
                 ].map((s, i) => (
                     <div className="col-6 col-md-3" key={i}>
-                        <div style={{ background: '#fff', border: '1px solid #e2e8f0', padding: '20px', borderRadius: '12px' }}>
-                            <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', marginBottom: '8px' }}>{s.label}</div>
+                        <div className="stats-card" style={{ background: '#fff', border: '1px solid #e2e8f0', padding: '20px', borderRadius: '12px' }}>
+                            <div style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>{s.label}</div>
                             <div style={{ fontSize: '1.5rem', fontWeight: 800, color: s.color }}>{s.value}</div>
                         </div>
                     </div>
                 ))}
             </div>
 
-            <div className="d-flex flex-wrap gap-2 mb-4 p-2" style={{ background: '#f1f5f9', borderRadius: '12px' }}>
+            <div className="filter-bar d-flex gap-2 mb-4 p-2" style={{ background: '#f1f5f9', borderRadius: '12px' }}>
                 {['all', 'pending', 'in_progress', 'completed', 'cancelled'].map(k => (
                     <button 
                         key={k}
@@ -145,25 +167,26 @@ export default function ManagerTeamTasks() {
                             backgroundColor: filter === k ? '#fff' : 'transparent',
                             color: filter === k ? '#2563eb' : '#64748b',
                             boxShadow: filter === k ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
-                            transition: '0.2s'
+                            transition: '0.2s',
+                            flexShrink: 0
                         }}
                     >
-                        {k === 'all' ? 'Tout voir' : k.replace('_', ' ')}
+                        {k === 'all' ? 'Tout' : k.replace('_', ' ')}
                     </button>
                 ))}
             </div>
 
-            {error && <div className="alert alert-danger border-0 mb-4">{error}</div>}
+            {error && <div className="alert alert-danger border-0 mb-4" style={{ fontSize: '0.85rem' }}>{error}</div>}
 
             <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
                 {filteredTasks.length === 0 ? (
-                    <div style={{ padding: '80px 20px', textAlign: 'center' }}>
+                    <div style={{ padding: '60px 20px', textAlign: 'center' }}>
                         <Icons.Empty />
-                        <h5 className="mt-3 text-muted">Aucune mission trouvée</h5>
+                        <h5 className="mt-3 text-muted">Aucune mission</h5>
                     </div>
                 ) : (
                     <div className="table-responsive">
-                        <table className="table table-hover align-middle mb-0">
+                        <table className="table table-hover align-middle mb-0 responsive-table">
                             <thead style={{ background: '#f8fafc' }}>
                                 <tr>
                                     <th style={{ border: 0, padding: '16px', fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b' }}>Mission</th>
@@ -180,7 +203,7 @@ export default function ManagerTeamTasks() {
                                         <tr key={task.id}>
                                             <td style={{ padding: '16px' }}>
                                                 <div style={{ fontWeight: 700, color: '#0f172a' }}>{task.title}</div>
-                                                <div style={{ fontSize: '0.8rem', color: '#64748b', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: '250px' }}>
+                                                <div className="d-md-block" style={{ fontSize: '0.8rem', color: '#64748b', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: '250px' }}>
                                                     {task.description}
                                                 </div>
                                             </td>
@@ -197,24 +220,14 @@ export default function ManagerTeamTasks() {
                                                 </span>
                                             </td>
                                             <td style={{ padding: '16px', fontSize: '0.85rem', color: '#475569' }}>
+                                                <span className="d-md-none text-muted" style={{ fontSize: '0.7rem', fontWeight: 700 }}>ÉCHÉANCE: </span>
                                                 {task.due_date ? new Date(task.due_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '--'}
                                             </td>
                                             <td style={{ padding: '16px', textAlign: 'right' }}>
                                                 <div className="d-flex justify-content-end gap-2">
-                                                    <Link to={`/employee/tasks/${task.id}`} className="btn btn-light btn-sm" title="Voir">
-                                                        <Icons.Eye />
-                                                    </Link>
-                                                    <Link to={`/employee/tasks/${task.id}/edit`} className="btn btn-light btn-sm" style={{ color: '#f59e0b' }} title="Modifier">
-                                                        <Icons.Edit />
-                                                    </Link>
-                                                    <button 
-                                                        onClick={() => handleDelete(task.id)}
-                                                        className="btn btn-light btn-sm" 
-                                                        style={{ color: '#ef4444' }} 
-                                                        title="Supprimer"
-                                                    >
-                                                        <Icons.Trash />
-                                                    </button>
+                                                    <Link to={`/employee/tasks/${task.id}`} className="btn btn-light btn-sm"><Icons.Eye /></Link>
+                                                    <Link to={`/employee/tasks/${task.id}/edit`} className="btn btn-light btn-sm" style={{ color: '#f59e0b' }}><Icons.Edit /></Link>
+                                                    <button onClick={() => handleDelete(task.id)} className="btn btn-light btn-sm" style={{ color: '#ef4444' }}><Icons.Trash /></button>
                                                 </div>
                                             </td>
                                         </tr>

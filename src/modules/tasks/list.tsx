@@ -4,12 +4,10 @@ import type { Task } from "./model";
 import { AuthContext } from "../../context/AuthContext";
 import { useContext, useEffect, useState } from "react";
 
-// --- Composants Icônes SVG ---
-const IconPlus = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
-const IconEdit = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>;
-const IconTrash = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>;
-const IconUser = () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="me-1"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>;
-const IconEye = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>;
+// --- Icônes SVG ---
+const IconPlus = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
+const IconUser = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="me-1"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>;
+const IconTrash = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
 
 export default function TaskList() {
   const { user } = useContext(AuthContext);
@@ -27,15 +25,10 @@ export default function TaskList() {
       if (user?.role === "employee") {
         try {
           const res = await api.get("/me");
-          const employee = res.data.employee;
-          const hasManagerRole = employee?.roles?.some((r: any) => r.name === "manager");
+          const hasManagerRole = res.data.employee?.roles?.some((r: any) => r.name === "manager");
           setIsManager(hasManagerRole || false);
-        } catch (e) {
-          console.error("Erreur vérification manager:", e);
-        }
-      } else {
-        setIsManager(user?.role === "manager");
-      }
+        } catch (e) { console.error(e); }
+      } else { setIsManager(user?.role === "manager"); }
     };
     checkManagerStatus();
   }, [user]);
@@ -45,26 +38,16 @@ export default function TaskList() {
   const load = async () => {
     setLoading(true);
     try {
-      let res;
-      if (canManage) {
-        res = await api.get(`/tasks?page=${page}`);
-      } else {
-        res = await api.get(`/me/tasks`);
-      }
+      const endpoint = canManage ? `/tasks?page=${page}` : `/me/tasks`;
+      const res = await api.get(endpoint);
       const data = res.data.data || res.data;
       setTasks(Array.isArray(data) ? data : []);
       setMeta(res.data.meta || {});
-    } catch (error: any) {
-      console.error("Erreur chargement tâches:", error);
-      setTasks([]);
-    } finally {
-      setLoading(false);
-    }
+    } catch (error) { setTasks([]); }
+    finally { setLoading(false); }
   };
 
-  useEffect(() => {
-    load();
-  }, [page, canManage]);
+  useEffect(() => { load(); }, [page, canManage]);
 
   const handleDelete = async (id: number) => {
     if (!window.confirm("Supprimer cette mission ?")) return;
@@ -77,136 +60,145 @@ export default function TaskList() {
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'completed': return <span className="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3">Terminée</span>;
-      case 'pending': return <span className="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-3">En attente</span>;
-      case 'in_progress': return <span className="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3">En cours</span>;
-      default: return <span className="badge bg-light text-dark border rounded-pill px-3">{status}</span>;
-    }
+    const s = status.toLowerCase();
+    const colors = s === 'completed' ? 'st-green' : s === 'in_progress' ? 'st-blue' : 'st-amber';
+    const label = s === 'completed' ? 'Terminée' : s === 'in_progress' ? 'En cours' : 'En attente';
+    return <span className={`status-pill ${colors}`}>{label}</span>;
   };
 
-  if (loading && tasks.length === 0) {
-    return (
-      <div className="d-flex justify-content-center align-items-center p-5">
-        <div className="spinner-border text-primary me-2" role="status"></div>
-        <span className="text-muted fw-medium">Chargement des missions...</span>
-      </div>
-    );
-  }
+  if (loading && tasks.length === 0) return <div className="loader-p">Chargement...</div>;
 
   return (
-    <div className="container-fluid p-4">
-      {/* Header Section */}
-      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
-        <div>
-          <h2 className="h3 fw-bold text-dark mb-1">Gestion des Missions</h2>
-          <p className="text-muted small mb-0">Suivi et administration des tâches opérationnelles</p>
+    <div className="task-page-container">
+      {/* HEADER ADAPTATIF */}
+      <div className="task-header">
+        <div className="header-text">
+          <h2>Gestion des Missions</h2>
+          <p>Suivi des tâches opérationnelles</p>
         </div>
-        
         {canManage && (
-          <Link to={`${routePrefix}/create`} className="btn btn-success d-flex align-items-center gap-2 shadow-sm fw-bold px-4 py-2 text-decoration-none">
-            <IconPlus /> Nouvelle mission
+          <Link to={`${routePrefix}/create`} className="add-task-btn">
+            <IconPlus /> <span>Nouvelle mission</span>
           </Link>
         )}
       </div>
 
-      {/* Table Container */}
-      <div className="card shadow-sm border-0 rounded-3 overflow-hidden">
-        <div className="table-responsive">
-          <table className="table table-hover align-middle mb-0">
-            <thead className="bg-light border-bottom text-nowrap">
-              <tr>
-                <th className="ps-4 py-3 text-muted fw-bold small text-uppercase" style={{ width: '35%' }}>Mission</th>
-                <th className="py-3 text-muted fw-bold small text-uppercase">Assignée à</th>
-                <th className="py-3 text-muted fw-bold small text-uppercase">Statut</th>
-                <th className="pe-4 py-3 text-end text-muted fw-bold small text-uppercase">Actions</th>
+      {/* VUE TABLEAU (DESKTOP) */}
+      <div className="desktop-view shadow-sm">
+        <table className="task-table">
+          <thead>
+            <tr>
+              <th>Mission</th>
+              <th>Assignée à</th>
+              <th>Statut</th>
+              <th className="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tasks.map(t => (
+              <tr key={t.id}>
+                <td className="fw-bold">{t.title}</td>
+                <td><IconUser /> {t.employee ? `${t.employee.first_name} ${t.employee.last_name}` : 'Non assignée'}</td>
+                <td>{getStatusBadge(t.status)}</td>
+                <td className="text-end">
+                  <div className="action-group">
+                    <Link to={`${routePrefix}/${t.id}`} className="btn-v">Voir</Link>
+                    {canManage && <Link to={`${routePrefix}/${t.id}/edit`} className="btn-e">Modifier</Link>}
+                    {isAdmin && (
+                      <button onClick={() => handleDelete(t.id)} className="btn-d" title="Supprimer">
+                        <IconTrash />
+                      </button>
+                    )}
+                  </div>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {tasks.length > 0 ? (
-                tasks.map(t => (
-                  <tr key={t.id}>
-                    <td className="ps-4 py-3 text-dark fw-medium">
-                      {t.title}
-                    </td>
-                    <td className="py-3">
-                      <div className="d-flex align-items-center text-dark">
-                        <IconUser />
-                        {t.employee ? `${t.employee.first_name} ${t.employee.last_name}` : <span className="text-muted fst-italic">Non assignée</span>}
-                      </div>
-                    </td>
-                    <td className="py-3">
-                      {getStatusBadge(t.status)}
-                    </td>
-                    <td className="pe-4 py-3 text-end text-nowrap">
-                      <div className="d-flex justify-content-end gap-2">
-                        {/* Bouton VOIR */}
-                        <Link to={`${routePrefix}/${t.id}`} className="btn btn-sm btn-outline-primary d-flex align-items-center gap-1 px-3 text-decoration-none">
-                          <IconEye /> <span className="d-none d-lg-inline">Voir</span>
-                        </Link>
-
-                        {/* Bouton MODIFIER */}
-                        {canManage && (
-                          <Link to={`${routePrefix}/${t.id}/edit`} className="btn btn-sm btn-outline-warning d-flex align-items-center gap-1 px-3 text-decoration-none">
-                            <IconEdit /> <span className="d-none d-lg-inline">Modifier</span>
-                          </Link>
-                        )}
-
-                        {/* Bouton SUPPRIMER */}
-                        {isAdmin && (
-                          <button onClick={() => handleDelete(t.id)} className="btn btn-sm btn-outline-danger d-flex align-items-center gap-1 px-3">
-                            <IconTrash /> <span className="d-none d-lg-inline">Supprimer</span>
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={4} className="text-center py-5 text-muted fst-italic">
-                    {!canManage ? "Aucune tâche ne vous a été assignée." : "Aucune mission trouvée."}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        {canManage && meta.last_page > 1 && (
-          <div className="card-footer bg-white border-top py-3 px-4 d-flex justify-content-between align-items-center">
-            <button 
-              className="btn btn-sm btn-outline-secondary px-3 shadow-none"
-              disabled={page === 1} 
-              onClick={() => setPage(p => p - 1)}
-            >
-              Précédent
-            </button>
-            <span className="small text-muted">
-              Page <strong>{meta.current_page || 1}</strong> sur {meta.last_page || 1}
-            </span>
-            <button 
-              className="btn btn-sm btn-outline-secondary px-3 shadow-none"
-              disabled={page === meta.last_page} 
-              onClick={() => setPage(p => p + 1)}
-            >
-              Suivant
-            </button>
-          </div>
-        )}
+            ))}
+          </tbody>
+        </table>
       </div>
 
+      {/* VUE MOBILE (CARTES) */}
+      <div className="mobile-view">
+        {tasks.map(t => (
+          <div key={t.id} className="task-mobile-card">
+            <div className="card-top">
+              <span className="card-title">{t.title}</span>
+              {getStatusBadge(t.status)}
+            </div>
+            <div className="card-body">
+              <IconUser /> {t.employee ? `${t.employee.first_name} ${t.employee.last_name}` : 'Non assignée'}
+            </div>
+            <div className="card-actions">
+              <Link to={`${routePrefix}/${t.id}`} className="m-btn view">Voir</Link>
+              {canManage && <Link to={`${routePrefix}/${t.id}/edit`} className="m-btn edit">Modifier</Link>}
+              {isAdmin && (
+                <button onClick={() => handleDelete(t.id)} className="m-btn delete">
+                  <IconTrash /> Supprimer
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* PAGINATION */}
+      {canManage && meta.last_page > 1 && (
+        <div className="pagination-box shadow-sm">
+          <button disabled={page === 1} onClick={() => setPage(p => p - 1)}>Précédent</button>
+          <span className="page-info">{page} / {meta.last_page}</span>
+          <button disabled={page === meta.last_page} onClick={() => setPage(p => p + 1)}>Suivant</button>
+        </div>
+      )}
+
       <style>{`
-        .table thead th { letter-spacing: 0.05em; border-bottom-width: 0; }
-        .btn-success { background-color: #059669; border-color: #059669; }
-        .btn-success:hover { background-color: #047857; border-color: #047857; }
-        .bg-success-subtle { background-color: #dcfce7 !important; color: #166534 !important; }
-        .bg-primary-subtle { background-color: #eff6ff !important; color: #1e40af !important; }
-        .bg-warning-subtle { background-color: #fffbeb !important; color: #92400e !important; }
-        .btn-outline-primary { color: #2563eb; border-color: #2563eb; }
-        .btn-outline-primary:hover { background-color: #2563eb; color: white; }
-        .text-nowrap { white-space: nowrap; }
+        .task-page-container { padding: 20px; background: #f8fafc; min-height: 100vh; font-family: 'Plus Jakarta Sans', sans-serif; }
+        .task-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; gap: 15px; }
+        .header-text h2 { font-weight: 800; color: #1e293b; margin: 0; font-size: 1.5rem; }
+        .header-text p { color: #64748b; margin: 0; font-size: 0.9rem; }
+        .add-task-btn { background: #059669; color: white; padding: 10px 20px; border-radius: 12px; text-decoration: none; font-weight: 700; display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+
+        .desktop-view { display: block; background: white; border-radius: 16px; overflow: hidden; }
+        .mobile-view { display: none; }
+
+        .task-table { width: 100%; border-collapse: collapse; }
+        .task-table th { background: #f1f5f9; padding: 15px 20px; text-align: left; font-size: 0.8rem; text-transform: uppercase; color: #64748b; }
+        .task-table td { padding: 15px 20px; border-bottom: 1px solid #f1f5f9; color: #1e293b; font-size: 0.95rem; }
+        
+        .status-pill { padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+        .st-green { background: #dcfce7; color: #166534; }
+        .st-blue { background: #e0f2fe; color: #0369a1; }
+        .st-amber { background: #fef3c7; color: #92400e; }
+
+        .action-group { display: flex; gap: 8px; justify-content: flex-end; align-items: center; }
+        .btn-v, .btn-e, .btn-d { padding: 8px 12px; border-radius: 8px; text-decoration: none; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+        .btn-v { border: 1px solid #e2e8f0; color: #1e293b; }
+        .btn-e { background: #f59e0b; color: white; }
+        .btn-d { background: #fee2e2; color: #ef4444; border: none; cursor: pointer; }
+        .btn-d:hover { background: #ef4444; color: white; }
+
+        .task-mobile-card { background: white; padding: 18px; border-radius: 16px; margin-bottom: 15px; border: 1px solid #f1f5f9; }
+        .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .card-title { font-weight: 800; color: #1e293b; font-size: 1.05rem; }
+        .card-body { color: #64748b; font-size: 0.9rem; margin-bottom: 18px; display: flex; align-items: center; }
+        
+        .card-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 10px; }
+        .m-btn { border: none; text-align: center; padding: 10px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .m-btn.view { background: #f1f5f9; color: #1e293b; }
+        .m-btn.edit { background: #fef3c7; color: #92400e; }
+        .m-btn.delete { background: #fee2e2; color: #ef4444; width: 100%; grid-column: span 2; }
+
+        .pagination-box { margin-top: 20px; background: white; padding: 15px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .pagination-box button { border: 1px solid #e2e8f0; background: white; padding: 8px 16px; border-radius: 10px; cursor: pointer; font-weight: 600; }
+        .pagination-box button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .page-info { font-weight: 700; color: #1e293b; }
+
+        @media (max-width: 768px) {
+          .desktop-view { display: none; }
+          .mobile-view { display: block; }
+          .task-header { flex-direction: column; align-items: flex-start; margin-bottom: 20px; }
+          .add-task-btn { width: 100%; justify-content: center; padding: 14px; }
+          .m-btn.delete { grid-column: span 2; }
+        }
       `}</style>
     </div>
   );
