@@ -21,6 +21,10 @@ export default function AnnouncementShow() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // 🔥 CORRECTION : Détection dynamique du chemin de retour selon le rôle
+  const backPath = user?.role === 'admin' ? '/admin/announcements' : '/employee/announcements';
+  const editPath = user?.role === 'admin' ? `/admin/announcements/${id}/edit` : `/employee/announcements/${id}/edit`;
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -44,7 +48,7 @@ export default function AnnouncementShow() {
     if (!confirm("Cette action est irréversible. Supprimer cette annonce ?")) return;
     try {
       await deleteAnnouncement(Number(id));
-      nav("/admin/announcements");
+      nav(backPath); // 🔥 Utilisation du chemin dynamique
     } catch (err: any) {
       alert("Erreur lors de la suppression");
     }
@@ -79,7 +83,7 @@ export default function AnnouncementShow() {
            <svg width="48" height="48" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         </div>
         <h5 className="fw-bold">{error || "Annonce introuvable"}</h5>
-        <button onClick={() => nav("/admin/announcements")} className="btn btn-dark w-100 mt-3 rounded-3">Retour à la liste</button>
+        <button onClick={() => nav(backPath)} className="btn btn-dark w-100 mt-3 rounded-3">Retour à la liste</button>
       </div>
     </div>
   );
@@ -91,9 +95,9 @@ export default function AnnouncementShow() {
     <div className="bg-light min-vh-100 py-4 py-lg-5">
       <div className="container" style={{ maxWidth: '1100px' }}> 
         
-        {/* Header Navigation */}
+        {/* Header Navigation - 🔥 CORRECTION : Lien dynamique */}
         <div className="mb-4">
-          <Link to="/admin/announcements" className="text-decoration-none text-muted fw-semibold d-inline-flex align-items-center gap-2 hover-dark-link transition-all">
+          <Link to={backPath} className="text-decoration-none text-muted fw-semibold d-inline-flex align-items-center gap-2 hover-dark-link transition-all">
             <IconArrowLeft /> <span>Toutes les annonces</span>
           </Link>
         </div>
@@ -131,8 +135,9 @@ export default function AnnouncementShow() {
 
                   {canManage && (
                     <div className="d-flex flex-column gap-2 mt-2">
+                      {/* 🔥 CORRECTION : Lien d'édition dynamique */}
                       <Link 
-                        to={`/admin/announcements/${id}/edit`} 
+                        to={editPath}
                         className="btn btn-dark w-100 py-2 rounded-3 d-flex align-items-center justify-content-center gap-2 shadow-sm btn-hover-scale"
                       >
                         <IconEdit /> Modifier

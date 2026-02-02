@@ -1,7 +1,9 @@
 // src/modules/announcements/model.ts
 
 export interface Announcement {
+  data: Announcement;
   id: number;
+  user_id: number;
   employee_id?: number | null;
   department_id?: number | null;
   is_general?: boolean;

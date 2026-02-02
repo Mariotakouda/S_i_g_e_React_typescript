@@ -22,6 +22,21 @@ export default function EmployeeShow() {
         return `${employee?.first_name?.charAt(0) || ''}${employee?.last_name?.charAt(0) || ''}`.toUpperCase();
     };
 
+    const getStatusBadge = (status: string) => {
+        const configs: Record<string, { label: string, class: string }> = {
+            actif: { label: 'En poste', class: 'bg-success text-success border-success' },
+            demission: { label: 'Démission', class: 'bg-warning text-dark border-warning' },
+            renvoyer: { label: 'Renvoyé', class: 'bg-danger text-danger border-danger' },
+            retraite: { label: 'Retraité', class: 'bg-info text-info border-info' }
+        };
+        const config = configs[status] || configs.actif;
+        return (
+            <span className={`badge rounded-pill px-3 py-2 bg-opacity-10 border ${config.class}`}>
+                {config.label}
+            </span>
+        );
+    };
+
     if (loading) {
         return (
             <div className="d-flex justify-content-center align-items-center vh-100">
@@ -43,7 +58,7 @@ export default function EmployeeShow() {
         <div className="container-fluid py-4 px-md-5 bg-light min-vh-100">
             {/* Barre de navigation haute */}
             <div className="mb-4">
-                <Link to="/admin/employees" className="text-decoration-none d-inline-flex align-items-center text-muted fw-medium hover-primary">
+                <Link to="/admin/employees" className="text-decoration-none d-inline-flex align-items-center text-muted fw-medium">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="me-2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                     </svg>
@@ -74,11 +89,14 @@ export default function EmployeeShow() {
 
                         {/* Infos principales */}
                         <div className="text-center text-md-start flex-grow-1">
-                            <div className="d-flex flex-column flex-md-row align-items-md-center gap-2 mb-2">
+                            <div className="d-flex flex-column flex-md-row align-items-md-center gap-3 mb-2">
                                 <h1 className="h2 fw-bold text-dark mb-0">{employee.first_name} {employee.last_name}</h1>
-                                <span className={`badge rounded-pill px-3 py-2 ${employee.contract_type === 'CDI' ? 'bg-success bg-opacity-10 text-success' : 'bg-warning bg-opacity-10 text-warning'}`}>
-                                    {employee.contract_type || 'Type non défini'}
-                                </span>
+                                <div className="d-flex gap-2">
+                                    {getStatusBadge(employee.status)}
+                                    <span className="badge bg-light text-secondary border rounded-pill px-3 py-2">
+                                        {employee.contract_type || 'Type non défini'}
+                                    </span>
+                                </div>
                             </div>
                             <p className="text-muted d-flex align-items-center justify-content-center justify-content-md-start mb-0">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="me-2 text-primary">
@@ -103,7 +121,6 @@ export default function EmployeeShow() {
 
             {/* Grille d'informations détaillée */}
             <div className="row g-4">
-                {/* Colonne Gauche : Contact */}
                 <div className="col-12 col-lg-6">
                     <div className="card border-0 shadow-sm h-100" style={{ borderRadius: '15px' }}>
                         <div className="card-body p-4">
@@ -127,7 +144,6 @@ export default function EmployeeShow() {
                     </div>
                 </div>
 
-                {/* Colonne Droite : Contrat */}
                 <div className="col-12 col-lg-6">
                     <div className="card border-0 shadow-sm h-100" style={{ borderRadius: '15px' }}>
                         <div className="card-body p-4">
@@ -171,10 +187,6 @@ export default function EmployeeShow() {
                     </div>
                 </div>
             </div>
-
-            {/* <div className="text-center mt-5 text-muted small">
-                <p>Identifiant interne : <strong>#EMP-{employee.id}</strong> — Profil synchronisé avec l'authentification.</p>
-            </div> */}
         </div>
     );
 }

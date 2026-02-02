@@ -6,7 +6,7 @@ export interface Presence {
   date: string;
   check_in?: string;
   check_out?: string;
-  status: string; // present, absent, late...
+  status: string;
   created_at?: string;
   updated_at?: string;
 }

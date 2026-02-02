@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { getAnnouncement, updateAnnouncement } from "./service";
+import { AuthContext } from "../../context/AuthContext";
 import { EmployeeService } from "../employees/service";
 import { DepartmentService } from "../departments/service";
 import type { Employee } from "../employees/model";
@@ -21,6 +22,7 @@ interface AnnouncementForm {
 export default function AnnouncementEdit() {
   const { id } = useParams();
   const nav = useNavigate();
+  const { user } = useContext(AuthContext);
   
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [departments, setDepartments] = useState<DepartmentListItem[]>([]);
@@ -37,6 +39,10 @@ export default function AnnouncementEdit() {
     message: "",
   });
 
+  // 🔥 CORRECTION : Chemins dynamiques selon le rôle
+  const backPath = user?.role === 'admin' ? '/admin/announcements' : '/employee/announcements';
+  const detailPath = user?.role === 'admin' ? `/admin/announcements/${id}` : `/employee/announcements/${id}`;
+
   useEffect(() => {
   async function loadData() {
     try {
@@ -48,10 +54,17 @@ export default function AnnouncementEdit() {
       ]);
       
       // ✅ Extraction sécurisée : On cherche la propriété 'data' 
-      // Si Laravel renvoie { data: { id: 1... } }, on prend response.data
       const announcement = response.data ? response.data : response;
 
-      // ... reste de la logique de mapping (setForm, setTargetType)
+      // Déterminer le type initial
+      if (announcement.is_general) {
+        setTargetType("general");
+      } else if (announcement.department_id) {
+        setTargetType("department");
+      } else if (announcement.employee_id) {
+        setTargetType("employee");
+      }
+
       setForm({
         employee_id: announcement.employee_id || null,
         department_id: announcement.department_id || null,
@@ -71,13 +84,13 @@ export default function AnnouncementEdit() {
   loadData();
 }, [id]);
 
-  // 2. Gestion du changement de type (uniquement suite à une action utilisateur)
+  // Gestion du changement de type (uniquement suite à une action utilisateur)
   const handleTypeChange = (newType: "general" | "department" | "employee") => {
     setTargetType(newType);
     setForm(prev => ({
       ...prev,
       is_general: newType === "general",
-      employee_id: null, // On réinitialise seulement lors d'un vrai changement manuel
+      employee_id: null,
       department_id: null
     }));
   };
@@ -95,7 +108,7 @@ export default function AnnouncementEdit() {
     setSubmitting(true);
     try {
       await updateAnnouncement(Number(id), form);
-      nav(`/admin/announcements/${id}`);
+      nav(detailPath); // 🔥 Redirection dynamique
     } catch (err: any) {
       setError(err.response?.data?.message || "Erreur lors de la modification");
       setSubmitting(false);
@@ -112,7 +125,8 @@ export default function AnnouncementEdit() {
           <div>
             <nav aria-label="breadcrumb">
               <ol className="breadcrumb mb-2">
-                <li className="breadcrumb-item"><Link to="/admin/announcements" className="text-decoration-none">Annonces</Link></li>
+                {/* 🔥 CORRECTION : Lien dynamique */}
+                <li className="breadcrumb-item"><Link to={backPath} className="text-decoration-none">Annonces</Link></li>
                 <li className="breadcrumb-item active">Édition</li>
               </ol>
             </nav>

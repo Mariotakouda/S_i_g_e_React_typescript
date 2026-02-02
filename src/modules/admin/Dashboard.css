@@ -9,7 +9,7 @@
   --border: #f1f5f9;
   --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   --uib-size: 70px;
-  --uib-color: #0066cc;
+  --uib-color: #6366f1;
   --uib-speed: 0.8s;
 }
 
@@ -145,7 +145,7 @@ body {
   font-size: 0.9rem;
 }
 
-/* --- STATS CARTES (TOUJOURS 1 COLONNE SUR MOBILE) --- */
+/* --- STATS CARTES (Nettoyées pour être Pro) --- */
 .dashboard-stats-grid {
   display: flex;
   flex-direction: column;
@@ -175,20 +175,22 @@ body {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  /* Harmonisation : fond gris très léger, icône indigo */
+  background: #f1f5f9 !important;
+  color: #6366f1 !important;
 }
 
-.blue .stat-icon-wrapper { background: #eff6ff; color: #3b82f6; }
-.purple .stat-icon-wrapper { background: #f5f3ff; color: #8b5cf6; }
-.amber .stat-icon-wrapper { background: #fffbeb; color: #f59e0b; }
-.red .stat-icon-wrapper { background: #fef2f2; color: #ef4444; }
-.emerald .stat-icon-wrapper { background: #ecfdf5; color: #10b981; }
-.orange .stat-icon-wrapper { background: #fff7ed; color: #f97316; }
-.indigo .stat-icon-wrapper { background: #eef2ff; color: #6366f1; }
-.cyan .stat-icon-wrapper { background: #ecfeff; color: #06b6d4; }
+/* Suppression de l'arc-en-ciel sur les icônes de stats */
+.blue .stat-icon-wrapper, .purple .stat-icon-wrapper, .amber .stat-icon-wrapper, 
+.red .stat-icon-wrapper, .emerald .stat-icon-wrapper, .orange .stat-icon-wrapper, 
+.indigo .stat-icon-wrapper, .cyan .stat-icon-wrapper {
+  background: #f1f5f9;
+  color: #6366f1;
+}
 
 .stat-details {
   flex: 1;
-  min-width: 0; /* IMPORTANT pour éviter le débordement */
+  min-width: 0;
 }
 
 .stat-label {
@@ -219,7 +221,7 @@ body {
   align-items: center;
 }
 
-/* --- ACTIONS RAPIDES (1 COLONNE) --- */
+/* --- ACTIONS RAPIDES (COULEURS PRÉSERVÉES) --- */
 .quick-actions-section {
   margin-bottom: 30px;
   width: 100%;
@@ -260,6 +262,7 @@ body {
   box-shadow: 0 8px 15px -3px rgba(0,0,0,0.1);
 }
 
+/* On garde tes couleurs d'origine ici */
 .bg-blue { background: #3b82f6; }
 .bg-indigo { background: #6366f1; }
 .bg-amber { background: #f59e0b; }
@@ -270,7 +273,7 @@ body {
   flex-shrink: 0;
 }
 
-/* --- DONNÉES RÉCENTES (1 COLONNE) --- */
+/* --- DONNÉES RÉCENTES --- */
 .dashboard-recent-grid {
   display: flex;
   flex-direction: column;
@@ -319,35 +322,26 @@ body {
   padding-right: 5px;
 }
 
-.items-list::-webkit-scrollbar {
-  width: 4px;
-}
-
-.items-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-.items-list::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
-}
-
 .item-row {
   display: flex;
   align-items: center;
   padding: 14px;
-  background: #f8fafc;
-  border-radius: 12px;
-  margin-bottom: 10px;
+  background: #ffffff; /* Fond blanc pour plus de clarté */
+  border-bottom: 1px solid #f1f5f9;
+  border-radius: 0px;
+  margin-bottom: 0px;
   width: 100%;
+}
+
+.item-row:last-child {
+  border-bottom: none;
 }
 
 .item-avatar {
   width: 40px;
   height: 40px;
-  background: var(--primary);
-  color: white;
+  background: #f1f5f9; /* Avatar neutre */
+  color: #6366f1;
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -360,7 +354,7 @@ body {
 
 .item-details {
   flex: 1;
-  min-width: 0; /* CRITIQUE pour empêcher le débordement */
+  min-width: 0; 
 }
 
 .item-main {
@@ -393,144 +387,47 @@ body {
   white-space: nowrap;
 }
 
-.st-green { background: #dcfce7; color: #166534; }
-.st-red { background: #fee2e2; color: #991b1b; }
+/* Badges de statuts plus doux */
+.st-green { background: #f0fdf4; color: #166534; }
+.st-red { background: #fef2f2; color: #991b1b; }
 
-/* --- MEDIA QUERIES POUR TABLETTE ET DESKTOP --- */
+/* --- MEDIA QUERIES (IDENTIQUES À L'ORIGINE) --- */
 
-/* À partir de 768px (tablette) */
 @media (min-width: 768px) {
-  .admin-dashboard-container {
-    padding: 25px 30px;
-  }
-  
-  .dashboard-title {
-    font-size: 1.8rem;
-  }
-  
-  .dashboard-welcome {
-    font-size: 1rem;
-  }
-  
-  /* Stats en 2 colonnes sur tablette */
-  .dashboard-stats-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-  }
-  
-  /* Actions rapides en 2 colonnes */
-  .quick-actions-row {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
-  }
-  
-  /* Sections récentes en 2 colonnes */
-  .dashboard-recent-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 25px;
-  }
+  .admin-dashboard-container { padding: 25px 30px; }
+  .dashboard-title { font-size: 1.8rem; }
+  .dashboard-welcome { font-size: 1rem; }
+  .dashboard-stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .quick-actions-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+  .dashboard-recent-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 25px; }
 }
 
-/* À partir de 1024px (desktop) */
 @media (min-width: 1024px) {
-  .admin-dashboard-container {
-    padding: 30px 40px;
-    max-width: 1400px;
-    margin: 0 auto;
-  }
-  
-  /* Stats en 4 colonnes */
-  .dashboard-stats-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-  
-  /* Actions rapides en 4 colonnes */
-  .quick-actions-row {
-    grid-template-columns: repeat(4, 1fr);
-  }
-  
-  /* Sections récentes en 3 colonnes */
-  .dashboard-recent-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
+  .admin-dashboard-container { padding: 30px 40px; max-width: 1400px; margin: 0 auto; }
+  .dashboard-stats-grid { grid-template-columns: repeat(4, 1fr); }
+  .quick-actions-row { grid-template-columns: repeat(4, 1fr); }
+  .dashboard-recent-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
-/* À partir de 1200px (grand écran) */
 @media (min-width: 1200px) {
-  .admin-dashboard-container {
-    padding: 40px 50px;
-  }
+  .admin-dashboard-container { padding: 40px 50px; }
 }
 
-/* Correction pour les très petits écrans */
 @media (max-width: 360px) {
-  .admin-dashboard-container {
-    padding: 15px 10px;
-  }
-  
-  .stat-card-premium {
-    padding: 15px;
-    gap: 12px;
-  }
-  
-  .stat-icon-wrapper {
-    width: 40px;
-    height: 40px;
-  }
-  
-  .stat-val {
-    font-size: 1.2rem;
-  }
-  
-  .q-btn {
-    padding: 14px 16px;
-    font-size: 0.9rem;
-  }
-  
-  .item-avatar {
-    width: 36px;
-    height: 36px;
-    font-size: 0.9rem;
-    margin-right: 12px;
-  }
-  
-  .item-main {
-    font-size: 0.9rem;
-  }
+  .admin-dashboard-container { padding: 15px 10px; }
+  .stat-card-premium { padding: 15px; gap: 12px; }
+  .stat-icon-wrapper { width: 40px; height: 40px; }
+  .stat-val { font-size: 1.2rem; }
+  .q-btn { padding: 14px 16px; font-size: 0.9rem; }
+  .item-avatar { width: 36px; height: 36px; font-size: 0.9rem; margin-right: 12px; }
+  .item-main { font-size: 0.9rem; }
 }
 
-/* Mode paysage sur mobile */
 @media (max-height: 500px) and (orientation: landscape) {
-  .admin-dashboard-container {
-    padding: 15px;
-  }
-  
-  .dashboard-stats-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-  }
-  
-  .quick-actions-row {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-  }
+  .admin-dashboard-container { padding: 15px; }
+  .dashboard-stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .quick-actions-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 }
 
-/* Fix pour éviter tout débordement */
-.no-overflow {
-  max-width: 100%;
-  overflow: hidden;
-}
-
-/* Pour les textes longs */
-.text-truncate {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: block;
-}
+.no-overflow { max-width: 100%; overflow: hidden; }
+.text-truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }

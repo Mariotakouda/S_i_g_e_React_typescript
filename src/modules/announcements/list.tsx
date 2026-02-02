@@ -1,8 +1,9 @@
 import { useEffect, useState, useContext } from "react";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
-import { fetchAnnouncements, deleteAnnouncement } from "./service";
+import { fetchAnnouncements, deleteAnnouncement, checkManagerStatus } from "./service";
 import type { Announcement } from "./model";
+import type { ManagerStatus } from "./service";
 
 // --- Composant d'icône réutilisable et lisible ---
 const Icon = ({ name }: { name: 'eye' | 'edit' | 'trash' | 'plus' | 'search' }) => {
@@ -29,8 +30,23 @@ export default function AnnouncementList() {
   const [meta, setMeta] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [managerStatus, setManagerStatus] = useState<ManagerStatus | null>(null);
 
-  const canManage = user?.role === 'admin' || user?.role === 'manager';
+  // 🔥 CORRECTION : Déterminer si l'utilisateur peut gérer les annonces
+  const canManage = user?.role === 'admin' || managerStatus?.is_manager || false;
+
+  useEffect(() => {
+    loadManagerStatus();
+  }, []);
+
+  async function loadManagerStatus() {
+    try {
+      const status = await checkManagerStatus();
+      setManagerStatus(status);
+    } catch (err) {
+      console.error("Erreur chargement statut manager:", err);
+    }
+  }
 
   async function load() {
     try {
@@ -65,6 +81,18 @@ export default function AnnouncementList() {
     return { label: "Public", class: "bg-light text-dark border" };
   }
 
+  // 🔥 Fonction pour déterminer si un manager peut modifier/supprimer une annonce spécifique
+  function canManageAnnouncement(announcement: Announcement): boolean {
+    if (user?.role === 'admin') return true;
+    if (!managerStatus?.is_manager) return false;
+    
+    // Le manager peut gérer si:
+    // 1. C'est son annonce
+    // 2. L'annonce concerne son département
+    return announcement.user_id === user?.id || 
+           announcement.department_id === managerStatus.department_id;
+  }
+
   return (
     <div className="container-fluid py-4 py-md-5 px-3 px-md-5 bg-light min-vh-100">
       
@@ -76,6 +104,8 @@ export default function AnnouncementList() {
             TOTAL: <span className="fw-bold">{meta?.total || 0}</span>
           </p>
         </div>
+        
+        {/* 🔥 CORRECTION : Bouton créer uniquement pour admin/manager */}
         {canManage && (
           <Link to="create" className="btn btn-primary d-inline-flex align-items-center shadow-sm px-4 py-2 rounded-3">
             <Icon name="plus" /> 
@@ -83,6 +113,16 @@ export default function AnnouncementList() {
           </Link>
         )}
       </div>
+
+      {/* 🔥 Info pour les employés simples */}
+      {!canManage && (
+        <div className="alert alert-info border-0 shadow-sm rounded-3 mb-4">
+          <div className="d-flex align-items-center gap-2">
+            <span style={{ fontSize: '20px' }}>ℹ️</span>
+            <span>Vous consultez les annonces. Seuls les managers et administrateurs peuvent en créer ou les modifier.</span>
+          </div>
+        </div>
+      )}
 
       {/* --- RECHERCHE --- */}
       <div className="card border-0 shadow-sm rounded-3 mb-4">
@@ -110,6 +150,8 @@ export default function AnnouncementList() {
           <div className="text-center py-5"><div className="spinner-border spinner-border-sm text-primary"></div></div>
         ) : announcements.map((a) => {
           const dest = getDestinataireLabel(a);
+          const canManageThis = canManageAnnouncement(a);
+          
           return (
             <div key={a.id} className="card border-0 shadow-sm mb-3 rounded-4">
               <div className="card-body p-3">
@@ -123,7 +165,7 @@ export default function AnnouncementList() {
                   <Link to={`${a.id}`} className="btn btn-white btn-sm flex-grow-1 border shadow-sm d-flex align-items-center justify-content-center py-2 px-3">
                     <Icon name="eye" /><span className="ms-2 fw-bold" style={{ fontSize: '13px' }}>Détails</span>
                   </Link>
-                  {canManage && (
+                  {canManageThis && (
                     <>
                       <Link to={`${a.id}/edit`} className="btn btn-white btn-sm border shadow-sm px-3 text-warning d-flex align-items-center"><Icon name="edit" /></Link>
                       <button onClick={() => handleDelete(a.id)} className="btn btn-white btn-sm border shadow-sm px-3 text-danger d-flex align-items-center"><Icon name="trash" /></button>
@@ -151,6 +193,8 @@ export default function AnnouncementList() {
             <tbody style={{ fontSize: '14.5px' }}>
               {!loading && announcements.map((a) => {
                 const dest = getDestinataireLabel(a);
+                const canManageThis = canManageAnnouncement(a);
+                
                 return (
                   <tr key={a.id}>
                     <td className="px-4 py-4">
@@ -170,7 +214,7 @@ export default function AnnouncementList() {
                     <td className="text-center px-4">
                       <div className="d-inline-flex gap-2">
                         <Link to={`${a.id}`} className="btn btn-outline-primary btn-sm rounded-3 p-2 d-flex shadow-sm" title="Voir"><Icon name="eye" /></Link>
-                        {canManage && (
+                        {canManageThis && (
                           <>
                             <Link to={`${a.id}/edit`} className="btn btn-outline-warning btn-sm rounded-3 p-2 d-flex shadow-sm" title="Modifier"><Icon name="edit" /></Link>
                             <button onClick={() => handleDelete(a.id)} className="btn btn-outline-danger btn-sm rounded-3 p-2 d-flex shadow-sm" title="Supprimer"><Icon name="trash" /></button>

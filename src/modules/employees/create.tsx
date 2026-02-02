@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../api/axios";
 import { type EmployeeFormData } from "./model";
-import { toast } from "react-hot-toast"; // 1. Importation du toast
+import { toast } from "react-hot-toast";
 
 export default function EmployeeCreate() {
     const navigate = useNavigate();
@@ -20,7 +20,8 @@ export default function EmployeeCreate() {
         hire_date: "",
         salary_base: 0,
         department_id: "" as string | number,
-        role_ids: [] as number[]
+        role_ids: [] as number[],
+        status: "actif" // Statut par défaut
     });
 
     useEffect(() => {
@@ -56,10 +57,7 @@ export default function EmployeeCreate() {
             };
 
             await api.post("/employees", payload);
-            
-            // 2. Message de succès avant la redirection
-            toast.success(`Le recrutement de ${form.first_name} ${form.last_name} a été finalisé avec succès !`);
-            
+            toast.success(`Le recrutement de ${form.first_name} a été finalisé !`);
             navigate("/admin/employees");
         } catch (err: any) {
             if (err.response?.data?.errors) {
@@ -67,7 +65,6 @@ export default function EmployeeCreate() {
                     Object.entries(err.response.data.errors).map(([k, v]: any) => [k, v[0]])
                 ));
             }
-            // 3. Optionnel : Message d'erreur en cas d'échec serveur
             toast.error("Une erreur est survenue lors du recrutement.");
         } finally {
             setLoading(false);
@@ -141,8 +138,19 @@ export default function EmployeeCreate() {
 
                     <div className="col-12 col-lg-4">
                         <div className="card border-0 shadow-sm p-4 mb-4" style={{ borderRadius: '15px' }}>
-                            <h5 className="mb-4 fw-bold">Poste & Contrat</h5>
+                            <h5 className="mb-4 fw-bold text-dark">Poste & Contrat</h5>
                             
+                            <div className="mb-3">
+                                <label className="form-label small fw-bold text-muted">Statut de l'employé</label>
+                                <select className="form-select border-light-subtle bg-light-subtle" value={form.status} 
+                                    onChange={e => setForm({...form, status: e.target.value})}>
+                                    <option value="actif">En poste (Actif)</option>
+                                    <option value="demission">Démissionnaire</option>
+                                    <option value="renvoyer">Licencié</option>
+                                    <option value="retraite">Retraité</option>
+                                </select>
+                            </div>
+
                             <div className="mb-3">
                                 <label className="form-label small fw-bold text-muted">Département</label>
                                 <select className="form-select border-light-subtle" value={form.department_id} 

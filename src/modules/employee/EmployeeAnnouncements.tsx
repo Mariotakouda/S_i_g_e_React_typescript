@@ -1,24 +1,33 @@
 // src/modules/employee/EmployeeAnnouncementsView.tsx
 
-import { useEffect, useState } from "react";
-import { fetchMyAnnouncements } from "../announcements/service";
+import { useEffect, useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
+import { fetchMyAnnouncements, checkManagerStatus } from "../announcements/service";
+import { AuthContext } from "../../context/AuthContext";
 import type { Announcement } from "../announcements/model";
+import type { ManagerStatus } from "../announcements/service";
 
 export default function EmployeeAnnouncementsView() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
+  const [managerStatus, setManagerStatus] = useState<ManagerStatus | null>(null);
+  const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    loadAnnouncements();
+    loadData();
   }, []);
 
-  async function loadAnnouncements() {
+  async function loadData() {
     try {
       setLoading(true);
-      const data = await fetchMyAnnouncements();
-      setAnnouncements(data);
+      const [announcementsData, status] = await Promise.all([
+        fetchMyAnnouncements(),
+        checkManagerStatus()
+      ]);
+      setAnnouncements(announcementsData);
+      setManagerStatus(status);
       setError("");
     } catch (err: any) {
       console.error("Erreur chargement annonces:", err);
@@ -38,121 +47,146 @@ export default function EmployeeAnnouncementsView() {
     if (announcement.employee) {
       return { label: "Personnel", color: "#f3e5f5", icon: "👤" };
     }
-    return { label: "Général", color: "#f5f5f5", icon: "📢" };
+    return { label: "Annonce", color: "#f5f5f5", icon: "📢" };
   }
+
+  // 🔥 CORRECTION : Vérifier si l'utilisateur peut gérer les annonces
+  const canManageAnnouncements = user?.role === 'admin' || managerStatus?.is_manager || false;
 
   if (loading) {
     return (
-      <div style={{ padding: "20px", textAlign: "center" }}>
-        <p>Chargement des annonces...</p>
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "200px" }}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Chargement...</span>
+        </div>
       </div>
     );
   }
 
   return (
     <div style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}>
-      <h1 style={{ marginBottom: "20px" }}>📢 Mes Annonces</h1>
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h1 className="h3 mb-0">📢 Mes Annonces</h1>
+        <div className="d-flex gap-2">
+          <button 
+            onClick={loadData} 
+            className="btn btn-outline-secondary btn-sm rounded-pill"
+          >
+            Actualiser
+          </button>
+          
+          {/* 🔥 CORRECTION : Bouton créer uniquement pour admin/manager */}
+          {canManageAnnouncements && (
+            <button
+              onClick={() => navigate('/employee/announcements/create')}
+              className="btn btn-primary btn-sm rounded-pill d-flex align-items-center gap-2"
+            >
+              <span>+</span> Nouvelle annonce
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* 🔥 Info pour les employés simples */}
+      {!canManageAnnouncements && (
+        <div className="alert alert-info border-0 shadow-sm mb-4" role="alert">
+          <div className="d-flex align-items-center gap-2">
+            <span style={{ fontSize: '20px' }}>ℹ️</span>
+            <span>Vous consultez les annonces. Seuls les managers et administrateurs peuvent en créer.</span>
+          </div>
+        </div>
+      )}
 
       {error && (
-        <div style={{
-          padding: "15px",
-          backgroundColor: "#fee",
-          border: "1px solid #fcc",
-          borderRadius: "5px",
-          marginBottom: "20px",
-          color: "#c00"
-        }}>
+        <div className="alert alert-danger shadow-sm border-0 rounded-3 mb-4" role="alert">
+          <i className="bi bi-exclamation-triangle-fill me-2"></i>
           {error}
         </div>
       )}
 
       {announcements.length === 0 ? (
-        <div style={{
-          padding: "40px",
-          textAlign: "center",
-          backgroundColor: "#f9f9f9",
-          borderRadius: "8px",
-          border: "1px solid #e0e0e0"
-        }}>
-          <p style={{ fontSize: "18px", color: "#666" }}>Aucune annonce pour le moment</p>
+        <div className="text-center py-5 bg-white rounded-4 shadow-sm border">
+          <div className="mb-3 text-muted display-4">📭</div>
+          <p className="fs-5 text-secondary">Aucune annonce pour le moment</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))", gap: "20px" }}>
+        <div style={{ 
+          display: "grid", 
+          gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", 
+          gap: "24px" 
+        }}>
           {announcements.map((announcement) => {
             const type = getAnnouncementType(announcement);
             return (
               <div
                 key={announcement.id}
+                className="card border-0 shadow-sm h-100 transition-all"
                 style={{
-                  border: "1px solid #e0e0e0",
-                  borderRadius: "8px",
-                  padding: "20px",
-                  backgroundColor: "#fff",
                   cursor: "pointer",
-                  transition: "all 0.2s",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.05)"
+                  borderRadius: "16px",
+                  overflow: "hidden",
+                  borderLeft: `5px solid ${type.color === "#f5f5f5" ? "#dee2e6" : type.color}`
                 }}
-                onClick={() => setSelectedAnnouncement(announcement)}
+                onClick={() => navigate(`/employee/announcements/${announcement.id}`)}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
-                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.transform = "translateY(-5px)";
+                  e.currentTarget.style.boxShadow = "0 10px 20px rgba(0,0,0,0.1)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = "0 2px 4px rgba(0,0,0,0.05)";
                   e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "0 2px 4px rgba(0,0,0,0.05)";
                 }}
               >
-                {/* Badge de type */}
-                <div style={{
-                  padding: "4px 10px",
-                  backgroundColor: type.color,
-                  borderRadius: "4px",
-                  fontSize: "12px",
-                  display: "inline-block",
-                  marginBottom: "12px",
-                  fontWeight: "500"
-                }}>
-                  {type.icon} {type.label}
-                </div>
+                <div className="card-body p-4 d-flex flex-column">
+                  {/* Badge de type */}
+                  <div className="mb-3">
+                    <span 
+                      className="badge py-2 px-3 rounded-pill"
+                      style={{ 
+                        backgroundColor: type.color, 
+                        color: "#333",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        letterSpacing: "0.3px"
+                      }}
+                    >
+                      {type.icon} {type.label.toUpperCase()}
+                    </span>
+                  </div>
 
-                {/* Titre */}
-                <h3 style={{ 
-                  margin: "0 0 10px 0", 
-                  fontSize: "18px",
-                  color: "#333"
-                }}>
-                  {announcement.title}
-                </h3>
+                  {/* Titre */}
+                  <h5 className="card-title fw-bold mb-2 text-dark">
+                    {announcement.title}
+                  </h5>
 
-                {/* Aperçu du message */}
-                <p style={{ 
-                  margin: "0 0 12px 0", 
-                  color: "#666",
-                  fontSize: "14px",
-                  lineHeight: "1.5"
-                }}>
-                  {announcement.message.length > 150 
-                    ? announcement.message.substring(0, 150) + "..." 
-                    : announcement.message
-                  }
-                </p>
+                  {/* Aperçu du message */}
+                  <p className="card-text text-muted mb-4 flex-grow-1" style={{ 
+                    fontSize: "14px", 
+                    lineHeight: "1.6",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden"
+                  }}>
+                    {announcement.message}
+                  </p>
 
-                {/* Date */}
-                <div style={{ 
-                  fontSize: "12px", 
-                  color: "#999",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "5px"
-                }}>
-                  🕒 {announcement.created_at 
-                    ? new Date(announcement.created_at).toLocaleDateString('fr-FR', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric'
-                      })
-                    : "-"
-                  }
+                  {/* Footer de la carte */}
+                  <div className="mt-auto d-flex align-items-center justify-content-between pt-3 border-top">
+                    <small className="text-secondary d-flex align-items-center gap-1" style={{ fontSize: "12px" }}>
+                      <span role="img" aria-label="clock">🕒</span>
+                      {announcement.created_at 
+                        ? new Date(announcement.created_at).toLocaleDateString('fr-FR', {
+                            day: 'numeric',
+                            month: 'short',
+                          })
+                        : "-"
+                      }
+                    </small>
+                    <span className="text-primary fw-bold" style={{ fontSize: "12px" }}>
+                      Lire la suite →
+                    </span>
+                  </div>
                 </div>
               </div>
             );
@@ -160,104 +194,11 @@ export default function EmployeeAnnouncementsView() {
         </div>
       )}
 
-      {/* Modal de détail */}
-      {selectedAnnouncement && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-            padding: "20px"
-          }}
-          onClick={() => setSelectedAnnouncement(null)}
-        >
-          <div
-            style={{
-              backgroundColor: "white",
-              borderRadius: "12px",
-              padding: "30px",
-              maxWidth: "700px",
-              maxHeight: "80vh",
-              overflow: "auto",
-              boxShadow: "0 10px 40px rgba(0,0,0,0.3)"
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Badge de type */}
-            <div style={{
-              padding: "6px 12px",
-              backgroundColor: getAnnouncementType(selectedAnnouncement).color,
-              borderRadius: "4px",
-              fontSize: "13px",
-              display: "inline-block",
-              marginBottom: "15px",
-              fontWeight: "500"
-            }}>
-              {getAnnouncementType(selectedAnnouncement).icon} {getAnnouncementType(selectedAnnouncement).label}
-            </div>
-
-            {/* Titre */}
-            <h2 style={{ 
-              margin: "0 0 15px 0",
-              color: "#333"
-            }}>
-              {selectedAnnouncement.title}
-            </h2>
-
-            {/* Date */}
-            <div style={{ 
-              fontSize: "13px", 
-              color: "#999",
-              marginBottom: "20px",
-              paddingBottom: "15px",
-              borderBottom: "1px solid #e0e0e0"
-            }}>
-              Publié le {selectedAnnouncement.created_at 
-                ? new Date(selectedAnnouncement.created_at).toLocaleString('fr-FR', {
-                    dateStyle: 'long',
-                    timeStyle: 'short'
-                  })
-                : "-"
-              }
-            </div>
-
-            {/* Message complet */}
-            <div style={{
-              fontSize: "15px",
-              lineHeight: "1.7",
-              color: "#333",
-              whiteSpace: "pre-wrap",
-              marginBottom: "20px"
-            }}>
-              {selectedAnnouncement.message}
-            </div>
-
-            {/* Bouton fermer */}
-            <button
-              onClick={() => setSelectedAnnouncement(null)}
-              style={{
-                padding: "10px 24px",
-                backgroundColor: "#2196F3",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-                fontSize: "14px",
-                fontWeight: "500"
-              }}
-            >
-              Fermer
-            </button>
-          </div>
-        </div>
-      )}
+      <style>{`
+        .transition-all {
+          transition: all 0.3s ease;
+        }
+      `}</style>
     </div>
   );
 }

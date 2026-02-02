@@ -4,13 +4,20 @@ export interface Employee {
     last_name: string | null;
     email: string;
     phone: string | null;
-    profile_photo_url: string | null; // <--- AJOUTEZ CECI
+    profile_photo_url: string | null;
     contract_type: string | null;
     hire_date: string | null;
     salary_base: number | null;
     department_id: number | null;
-    department?: { id: number; name: string };
-    roles?: { id: number; name: string }[];
+    status: 'actif' | 'demission' | 'renvoyer' | 'retraite';
+    department?: { 
+        id: number; 
+        name: string 
+    };
+    roles?: { 
+        id: number; 
+        name: string 
+    }[];
 }
 
 export interface EmployeeFormData {
@@ -18,11 +25,11 @@ export interface EmployeeFormData {
     last_name: string | null;
     email: string;
     phone: string | null;
-    // Optionnel : si vous gérez l'upload directement dans le formulaire
     profile_photo?: File | null; 
     contract_type: string | null;
     hire_date: string | null;
     salary_base?: number | null;
     department_id?: number | null;
     role_ids?: number[]; 
+    status: string;
 }

@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../../api/axios";
+import { AuthContext } from "../../context/AuthContext";
 
 // --- Composants Icônes SVG Professionnelles ---
 const IconFile = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>;
@@ -19,17 +20,20 @@ interface Task {
   due_date: string;
   task_file: string | null;
   report_file: string | null;
+  employee_id: number;
   creator: { name: string; role: string };
 }
 
 export default function EmployeeTaskDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
   const [task, setTask] = useState<Task | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [isTaskOwner, setIsTaskOwner] = useState(false);
 
   const getStorageUrl = () => {
     const apiUrl = import.meta.env.VITE_API_URL;
@@ -40,8 +44,34 @@ export default function EmployeeTaskDetail() {
   const loadTask = async () => {
     try {
       setLoading(true);
-      const res = await api.get(`/tasks/${id}`);
-      setTask(res.data.data || res.data);
+      
+      // Charger à la fois la tâche ET les données de l'utilisateur
+      const [taskRes, meRes] = await Promise.all([
+        api.get(`/tasks/${id}`),
+        api.get('/me')
+      ]);
+      
+      const taskData = taskRes.data.data || taskRes.data;
+      const userData = meRes.data;
+      
+      setTask(taskData);
+      
+      // ✅ Utiliser l'employee_id retourné par /me
+      const currentUserEmployeeId = userData.employee?.id;
+      const taskAssignedTo = taskData.employee_id;
+      
+      console.log("🔍 Vérification propriétaire tâche:", {
+        currentUserEmployeeId,
+        taskAssignedTo,
+        isOwner: currentUserEmployeeId === taskAssignedTo,
+        userData
+      });
+      
+      if (currentUserEmployeeId && currentUserEmployeeId === taskAssignedTo) {
+        setIsTaskOwner(true);
+      } else {
+        setIsTaskOwner(false);
+      }
     } catch (err) {
       console.error("Erreur chargement mission:", err);
       navigate(-1); 
@@ -50,9 +80,25 @@ export default function EmployeeTaskDetail() {
     }
   };
 
-  useEffect(() => { 
+  // Charger les données de l'employé si elles sont manquantes
+  useEffect(() => {
+    const loadEmployeeData = async () => {
+      if (user && !user.employee) {
+        try {
+          const res = await api.get('/me');
+          console.log("📥 Données employé chargées:", res.data);
+          if (res.data.employee) {
+            sessionStorage.setItem('employee_data', JSON.stringify(res.data.employee));
+          }
+        } catch (err) {
+          console.error("Erreur chargement données employé:", err);
+        }
+      }
+    };
+    
+    loadEmployeeData();
     if (id) loadTask(); 
-  }, [id]);
+  }, [id, user]);
 
   const handleDownloadPDF = async (e: React.MouseEvent, fileUrl: string, fileName: string) => {
     e.preventDefault();
@@ -176,54 +222,74 @@ export default function EmployeeTaskDetail() {
         </div>
       </div>
 
-      {/* Section Rapport */}
-      <div className={`card shadow-sm border-0 rounded-4 overflow-hidden ${task.report_file ? 'border-success' : ''}`}>
-        <div className={`card-body p-4 p-md-5 ${task.report_file ? 'bg-success-subtle' : 'bg-white'}`}>
-          <h4 className="fw-bold mb-4 d-flex align-items-center gap-2">
-            {task.report_file ? <IconCheck /> : <IconUpload />}
-            {task.report_file ? 'Mission terminée' : 'Soumettre votre rapport'}
-          </h4>
+      {/* Section Rapport - UNIQUEMENT pour le propriétaire de la tâche */}
+      {isTaskOwner && (
+        <div className={`card shadow-sm border-0 rounded-4 overflow-hidden ${task.report_file ? 'border-success' : ''}`}>
+          <div className={`card-body p-4 p-md-5 ${task.report_file ? 'bg-success-subtle' : 'bg-white'}`}>
+            <h4 className="fw-bold mb-4 d-flex align-items-center gap-2">
+              {task.report_file ? <IconCheck /> : <IconUpload />}
+              {task.report_file ? 'Mission terminée' : 'Soumettre votre rapport'}
+            </h4>
 
-          {task.report_file ? (
-            <div className="d-flex flex-column gap-3">
-              <p className="text-muted mb-0">Vous avez déjà soumis un rapport pour cette mission.</p>
-              <button 
-                onClick={(e) => handleDownloadPDF(e, task.report_file!, 'mon-rapport.pdf')}
-                disabled={downloading === task.report_file}
-                className="btn btn-success d-flex align-items-center gap-2 align-self-start"
-              >
-                <IconFile /> {downloading === task.report_file ? 'Ouverture...' : 'Voir mon rapport soumis'}
-              </button>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmitReport}>
-              <div className="mb-4">
-                <label className="form-label small fw-bold text-muted">Fichier du rapport (PDF uniquement)</label>
-                <input 
-                  type="file" 
-                  accept=".pdf" 
-                  onChange={e => setFile(e.target.files?.[0] || null)}
-                  className={`form-control border-2 border-dashed shadow-none ${file ? 'border-primary' : ''}`} 
-                  disabled={uploading}
-                />
-                {file && (
-                   <div className="mt-2 small text-primary fw-bold d-flex align-items-center gap-1">
-                     <IconFile /> {file.name} ({(file.size / 1024).toFixed(1)} KB)
-                   </div>
-                )}
+            {task.report_file ? (
+              <div className="d-flex flex-column gap-3">
+                <p className="text-muted mb-0">Vous avez déjà soumis un rapport pour cette mission.</p>
+                <button 
+                  onClick={(e) => handleDownloadPDF(e, task.report_file!, 'mon-rapport.pdf')}
+                  disabled={downloading === task.report_file}
+                  className="btn btn-success d-flex align-items-center gap-2 align-self-start"
+                >
+                  <IconFile /> {downloading === task.report_file ? 'Ouverture...' : 'Voir mon rapport soumis'}
+                </button>
               </div>
-              <button 
-                type="submit" 
-                disabled={!file || uploading} 
-                className="btn btn-primary w-100 py-3 fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm"
-              >
-                {uploading ? <span className="spinner-border spinner-border-sm"></span> : <IconUpload />}
-                {uploading ? 'Envoi en cours...' : 'Confirmer et terminer la mission'}
-              </button>
-            </form>
-          )}
+            ) : (
+              <form onSubmit={handleSubmitReport}>
+                <div className="mb-4">
+                  <label className="form-label small fw-bold text-muted">Fichier du rapport (PDF uniquement)</label>
+                  <input 
+                    type="file" 
+                    accept=".pdf" 
+                    onChange={e => setFile(e.target.files?.[0] || null)}
+                    className={`form-control border-2 border-dashed shadow-none ${file ? 'border-primary' : ''}`} 
+                    disabled={uploading}
+                  />
+                  {file && (
+                     <div className="mt-2 small text-primary fw-bold d-flex align-items-center gap-1">
+                       <IconFile /> {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                     </div>
+                  )}
+                </div>
+                <button 
+                  type="submit" 
+                  disabled={!file || uploading} 
+                  className="btn btn-primary w-100 py-3 fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm"
+                >
+                  {uploading ? <span className="spinner-border spinner-border-sm"></span> : <IconUpload />}
+                  {uploading ? 'Envoi en cours...' : 'Confirmer et terminer la mission'}
+                </button>
+              </form>
+            )}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Section Rapport pour les managers/admins - UNIQUEMENT SI le rapport existe */}
+      {!isTaskOwner && task.report_file && (
+        <div className="card shadow-sm border-0 rounded-4 overflow-hidden border-success">
+          <div className="card-body p-4 p-md-5 bg-success-subtle">
+            <h4 className="fw-bold mb-4 d-flex align-items-center gap-2">
+              <IconCheck /> Rapport soumis par l'employé
+            </h4>
+            <button 
+              onClick={(e) => handleDownloadPDF(e, task.report_file!, 'rapport-employe.pdf')}
+              disabled={downloading === task.report_file}
+              className="btn btn-success d-flex align-items-center gap-2"
+            >
+              <IconFile /> {downloading === task.report_file ? 'Ouverture...' : 'Télécharger le rapport'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

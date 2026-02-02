@@ -5,7 +5,7 @@ import ProtectedRoute from "./ProtectedRoute";
 
 // Layouts
 import AdminLayout from "../components/layout/AdminLayout";
-import EmployeeLayout from "../components/layout/EmployeeLayout"; 
+import EmployeeLayout from "../components/layout/EmployeeLayout";
 
 // Home & Auth
 import Login from "../modules/auth/Login";
@@ -50,7 +50,7 @@ import AnnouncementList from "../modules/announcements/list";
 import AdminLeaveRequests from "../modules/admin/AdminLeaveRequests";
 
 // Employee modules
-import EmployeeLeaveHistory from "../modules/employee/EmployeeLeaveHistory"; 
+import EmployeeLeaveHistory from "../modules/employee/EmployeeLeaveHistory";
 import LeaveRequestForm from "../modules/employee/LeaveRequestForm";
 import EditLeaveRequest from "../modules/employee/EditLeaveRequest";
 import EmployeePresencePage from "../modules/employee/EmployeePresencePage";
@@ -58,18 +58,22 @@ import AdminPresencePage from "../modules/admin/AdminPresencePage";
 import EmployeeProfile from "../modules/employee/Profile";
 import EmployeeTaskDetail from "../modules/employee/EmployeeTaskDetail";
 import ManagerTeamTasks from "../modules/employee/ManagerTeamTasks";
+import ForgotPassword from "../modules/auth/ForgotPassword";
+import ResetPassword from "../modules/auth/ResetPassword";
 
 export default function AppRoutes() {
   const { user, loading } = useContext(AuthContext);
 
   if (loading) {
     return (
-      <div style={{ 
-        display: "flex", 
-        justifyContent: "center", 
-        alignItems: "center", 
-        height: "100vh" 
-      }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
         <p>Chargement...</p>
       </div>
     );
@@ -80,12 +84,11 @@ export default function AppRoutes() {
       {/* ========== PAGE D'ACCUEIL PUBLIQUE ========== */}
       <Route path="/" element={<Home />} />
 
-      {/* ========== LOGIN ========== */}
+      {/* ========== AUTHENTIFICATION (PUBLIQUE) ========== */}
       <Route
         path="/login"
         element={
           user ? (
-            // ✅ CORRECTION : Redirection basée sur le rôle depuis /login
             user.role === "admin" ? (
               <Navigate to="/admin/dashboard" replace />
             ) : user.role === "manager" || user.role === "employee" ? (
@@ -98,12 +101,14 @@ export default function AppRoutes() {
           )
         }
       />
+      {/* Correction : Ces routes sont déplacées ici pour être accessibles hors login */}
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* ========== REDIRECTION DASHBOARD SELON RÔLE ========== */}
       <Route
         path="/dashboard"
         element={
-          // ✅ CORRECTION : Vérifier d'abord si user existe
           !user ? (
             <Navigate to="/login" replace />
           ) : user.role === "admin" ? (
@@ -111,7 +116,6 @@ export default function AppRoutes() {
           ) : user.role === "employee" || user.role === "manager" ? (
             <Navigate to="/employee/dashboard" replace />
           ) : (
-            // ✅ CORRECTION : Fallback pour rôles inconnus
             <Navigate to="/login" replace />
           )
         }
@@ -126,6 +130,7 @@ export default function AppRoutes() {
           </ProtectedRoute>
         }
       >
+        {/* Correction : Suppression des slashs "/" initiaux pour les routes enfants */}
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="presences" element={<AdminPresencePage />} />
 
@@ -162,7 +167,7 @@ export default function AppRoutes() {
         {/* LEAVES */}
         <Route path="leave-requests" element={<AdminLeaveRequests />} />
         <Route path="leave-requests/create" element={<LeaveRequestForm />} />
-        <Route path="leave-requests/:id/edit" element={<LeaveRequestForm />} /> 
+        <Route path="leave-requests/:id/edit" element={<LeaveRequestForm />} />
 
         {/* ANNOUNCEMENTS */}
         <Route path="announcements" element={<AnnouncementList />} />
@@ -182,9 +187,7 @@ export default function AppRoutes() {
       >
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<EmployeeDashboard />} />
-        
         <Route path="profile" element={<EmployeeProfile />} />
-
         <Route path="presences" element={<EmployeePresencePage />} />
 
         {/* LEAVE REQUESTS */}
@@ -193,8 +196,8 @@ export default function AppRoutes() {
         <Route path="leave-requests/edit/:id" element={<EditLeaveRequest />} />
 
         {/* TASKS (ACCÈS MANAGER & EMPLOYÉ) */}
-        <Route path="tasks" element={<TaskList />} /> 
-        <Route path="tasks/create" element={<TaskCreate />} /> 
+        <Route path="tasks" element={<TaskList />} />
+        <Route path="tasks/create" element={<TaskCreate />} />
         <Route path="tasks/:id/edit" element={<TaskEdit />} />
         <Route path="tasks/:id" element={<EmployeeTaskDetail />} />
 
@@ -208,7 +211,7 @@ export default function AppRoutes() {
       </Route>
 
       {/* ========== REDIRECTION PAR DÉFAUT ========== */}
-      <Route path="*" element={<Navigate to="/" replace />} /> 
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

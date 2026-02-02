@@ -1,5 +1,6 @@
+
 import { useState, useContext, type FormEvent, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; 
+import { useNavigate, Link } from "react-router-dom"; 
 import "./login.css";
 import { AuthContext, type User } from "../../context/AuthContext";
 
@@ -13,6 +14,7 @@ export default function Login() {
   const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false); 
 
+  // Redirection automatique si l'utilisateur est déjà connecté
   useEffect(() => {
     if (user) {
       if (user.needs_password_change) {
@@ -31,6 +33,8 @@ export default function Login() {
 
     try {
       const loggedInUser: User = await login(email, password); 
+      
+      // Logique de redirection après succès
       if (loggedInUser.needs_password_change) {
         navigate('/change-password', { replace: true });
       } else {
@@ -38,13 +42,7 @@ export default function Login() {
         navigate(redirectPath, { replace: true });
       }
     } catch (err: any) {
-      let errorMessage = "Une erreur inconnue est survenue";
-      if (err.response?.data?.message) {
-        errorMessage = err.response.data.message; 
-      } else if (err instanceof Error) {
-        errorMessage = err.message;
-      }
-      setError(errorMessage);
+      setError(err.message || "Identifiants incorrects");
     } finally {
       setIsLoading(false); 
     }
@@ -63,7 +61,7 @@ export default function Login() {
         </button>
 
         <h2 className="login-title">Connexion</h2>
-        <p className="login-subtitle">Accédez à votre espace personnel</p>
+        <p className="login-subtitle">Accédez à votre espace personnel HODO</p>
 
         {error && <div className="error-message">{error}</div>}
 
@@ -98,7 +96,6 @@ export default function Login() {
                 className="password-toggle-btn"
                 onClick={() => setShowPassword(!showPassword)}
                 tabIndex={-1}
-                aria-label={showPassword ? "Cacher le mot de passe" : "Afficher le mot de passe"}
               >
                 {showPassword ? (
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -113,6 +110,16 @@ export default function Login() {
                 )}
               </button>
             </div>
+          </div>
+
+          {/* LIEN MOT DE PASSE OUBLIÉ */}
+          <div style={{ textAlign: 'right', marginBottom: '20px' }}>
+            <Link 
+              to="/forgot-password" 
+              style={{ fontSize: '0.85rem', color: '#2563eb', textDecoration: 'none', fontWeight: '500' }}
+            >
+              Mot de passe oublié ?
+            </Link>
           </div>
 
           <button type="submit" className="login-button" disabled={isLoading}>
