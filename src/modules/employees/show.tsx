@@ -3,6 +3,40 @@ import { useParams, Link } from "react-router-dom";
 import { EmployeeService } from "./service";
 import type { Employee } from "./model";
 
+// --- Composant Squelette spécifique au profil ---
+const ProfileSkeleton = () => (
+    <div className="container-fluid py-4 px-md-5 bg-light min-vh-100">
+        <div className="skeleton mb-4" style={{ width: '150px', height: '24px', borderRadius: '4px' }}></div>
+        
+        {/* Header Skeleton */}
+        <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: '15px' }}>
+            <div className="card-body p-4">
+                <div className="d-flex flex-column flex-md-row align-items-center gap-4">
+                    <div className="skeleton rounded-circle" style={{ width: '120px', height: '120px' }}></div>
+                    <div className="flex-grow-1 text-center text-md-start">
+                        <div className="skeleton mb-3" style={{ width: '250px', height: '32px' }}></div>
+                        <div className="skeleton" style={{ width: '180px', height: '20px' }}></div>
+                    </div>
+                    <div className="skeleton rounded-3" style={{ width: '140px', height: '40px' }}></div>
+                </div>
+            </div>
+        </div>
+
+        {/* Grid Skeleton */}
+        <div className="row g-4">
+            {[1, 2].map(i => (
+                <div key={i} className="col-12 col-lg-6">
+                    <div className="card border-0 shadow-sm p-4" style={{ borderRadius: '15px', height: '200px' }}>
+                        <div className="skeleton mb-4" style={{ width: '40%', height: '25px' }}></div>
+                        <div className="skeleton mb-3" style={{ width: '80%', height: '20px' }}></div>
+                        <div className="skeleton" style={{ width: '60%', height: '20px' }}></div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
 export default function EmployeeShow() {
     const { id } = useParams();
     const [employee, setEmployee] = useState<Employee | null>(null);
@@ -37,13 +71,22 @@ export default function EmployeeShow() {
         );
     };
 
-    if (loading) {
-        return (
-            <div className="d-flex justify-content-center align-items-center vh-100">
-                <div className="spinner-border text-primary" role="status"></div>
-            </div>
-        );
-    }
+    if (loading) return (
+        <>
+            <style>{`
+                .skeleton {
+                    background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%);
+                    background-size: 200% 100%;
+                    animation: skeleton-loading 1.5s infinite ease-in-out;
+                }
+                @keyframes skeleton-loading {
+                    0% { background-position: 200% 0; }
+                    100% { background-position: -200% 0; }
+                }
+            `}</style>
+            <ProfileSkeleton />
+        </>
+    );
 
     if (!employee) {
         return (
@@ -70,7 +113,6 @@ export default function EmployeeShow() {
             <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: '15px' }}>
                 <div className="card-body p-4">
                     <div className="d-flex flex-column flex-md-row align-items-center gap-4">
-                        {/* Avatar */}
                         <div className="flex-shrink-0">
                             {employee.profile_photo_url ? (
                                 <img 
@@ -87,11 +129,10 @@ export default function EmployeeShow() {
                             )}
                         </div>
 
-                        {/* Infos principales */}
                         <div className="text-center text-md-start flex-grow-1">
                             <div className="d-flex flex-column flex-md-row align-items-md-center gap-3 mb-2">
                                 <h1 className="h2 fw-bold text-dark mb-0">{employee.first_name} {employee.last_name}</h1>
-                                <div className="d-flex gap-2">
+                                <div className="d-flex gap-2 justify-content-center">
                                     {getStatusBadge(employee.status)}
                                     <span className="badge bg-light text-secondary border rounded-pill px-3 py-2">
                                         {employee.contract_type || 'Type non défini'}
@@ -106,20 +147,19 @@ export default function EmployeeShow() {
                             </p>
                         </div>
 
-                        {/* Bouton Action */}
                         <div className="mt-3 mt-md-0">
                             <Link to={`/admin/employees/${employee.id}/edit`} className="btn btn-dark px-4 py-2 d-flex align-items-center shadow-sm" style={{ borderRadius: '10px' }}>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="me-2">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                 </svg>
-                                Modifier le profil
+                                Modifier
                             </Link>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Grille d'informations détaillée */}
+            {/* Grille d'informations */}
             <div className="row g-4">
                 <div className="col-12 col-lg-6">
                     <div className="card border-0 shadow-sm h-100" style={{ borderRadius: '15px' }}>

@@ -431,3 +431,69 @@ body {
 
 .no-overflow { max-width: 100%; overflow: hidden; }
 .text-truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+
+/* Skeleton Animation */
+.skeleton-pulse {
+  background: #fff;
+  overflow: hidden;
+}
+
+.sk-icon { width: 46px; height: 46px; background: #f1f5f9; border-radius: 12px; }
+.sk-details { flex: 1; }
+.sk-line { background: #f1f5f9; border-radius: 4px; margin-bottom: 8px; }
+.sk-line.small { width: 40%; height: 10px; }
+.sk-line.large { width: 80%; height: 20px; }
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+.skeleton-pulse { animation: pulse 1.5s infinite; }
+
+/* Fix Responsivité Texte */
+.text-truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-info {
+  min-width: 0; /* Important pour que text-overflow fonctionne dans un flex */
+  flex: 1;
+}
+
+.item-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.item-row:last-child { border-bottom: none; }
+
+/* Fix Spacing Between pour les badges de présence */
+.space-between {
+  justify-content: space-between;
+}
+
+/* Error Box */
+.error-alert-box {
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  color: #991b1b;
+}
+
+.btn-retry-modern {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background: #991b1b;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}

@@ -10,6 +10,47 @@ interface Manager {
   email: string;
 }
 
+/**
+ * COMPOSANT SKELETON POUR LE FORMULAIRE
+ */
+const EditSkeleton = () => (
+  <div className="container-fluid py-4 px-3 px-md-5" style={{ backgroundColor: "#f8fafc", minHeight: "100vh" }}>
+    <style>{`
+      @keyframes shimmer {
+        0% { background-position: -468px 0; }
+        100% { background-position: 468px 0; }
+      }
+      .skeleton-shimmer {
+        background: #f6f7f8;
+        background-image: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 20%, #f1f5f9 40%, #f1f5f9 100%);
+        background-repeat: no-repeat;
+        background-size: 800px 100%;
+        display: inline-block;
+        animation: shimmer 1.5s linear infinite forwards;
+      }
+    `}</style>
+    <div className="mx-auto" style={{ maxWidth: "800px" }}>
+      <div className="skeleton-shimmer mb-3" style={{ width: '150px', height: '24px', borderRadius: '4px' }}></div>
+      <div className="d-flex align-items-center gap-3 mb-4">
+        <div className="skeleton-shimmer" style={{ width: '60px', height: '60px', borderRadius: '8px' }}></div>
+        <div className="skeleton-shimmer" style={{ width: '250px', height: '32px', borderRadius: '4px' }}></div>
+      </div>
+      <div className="card border-0 shadow-sm rounded-4 p-4 p-md-5">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="mb-4">
+            <div className="skeleton-shimmer mb-2" style={{ width: '150px', height: '16px' }}></div>
+            <div className="skeleton-shimmer w-100" style={{ height: '50px', borderRadius: '8px' }}></div>
+          </div>
+        ))}
+        <div className="d-flex gap-3">
+          <div className="skeleton-shimmer" style={{ width: '180px', height: '50px', borderRadius: '8px' }}></div>
+          <div className="skeleton-shimmer" style={{ width: '120px', height: '50px', borderRadius: '8px' }}></div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 export default function DepartmentEdit() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -21,7 +62,7 @@ export default function DepartmentEdit() {
   });
   const [managers, setManagers] = useState<Manager[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving] = false || useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadManagers = useCallback(async () => {
@@ -85,15 +126,8 @@ export default function DepartmentEdit() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "60vh" }}>
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Chargement...</span>
-        </div>
-      </div>
-    );
-  }
+  // --- RENDU DE CHARGEMENT ---
+  if (loading) return <EditSkeleton />;
 
   return (
     <div className="container-fluid py-4 px-3 px-md-5" style={{ backgroundColor: "#f8fafc", minHeight: "100vh" }}>

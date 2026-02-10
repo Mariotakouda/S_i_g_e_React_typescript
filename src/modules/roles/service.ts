@@ -1,16 +1,11 @@
-// src/modules/roles/service.ts
-
-import {api} from "../../api/axios";
+import { api } from "../../api/axios";
 import type { Role, LaravelPaginationResponse, RolePayload } from "./model";
 
 export const RoleService = {
   /**
    * Récupère la liste paginée des rôles avec recherche.
    */
-  async list(
-    page: number = 1, 
-    search: string = ''
-  ): Promise<LaravelPaginationResponse<Role>> {
+  async list(page: number = 1, search: string = ''): Promise<LaravelPaginationResponse<Role>> {
     const response = await api.get("/roles", {
       params: { page, search }
     });
@@ -22,7 +17,6 @@ export const RoleService = {
    */
   async get(id: number): Promise<Role> {
     const response = await api.get(`/roles/${id}`);
-    // Le controller show renvoie maintenant l'objet Role directement
     return response.data; 
   },
 

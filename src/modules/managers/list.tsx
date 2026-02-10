@@ -3,6 +3,60 @@ import { Link } from "react-router-dom";
 import { fetchManagers, deleteManager } from "./service";
 import type { Manager } from "./model";
 
+/**
+ * COMPOSANT SKELETON POUR LA LISTE
+ */
+const ListSkeleton = () => (
+  <div className="w-100">
+    <style>{`
+      @keyframes shimmer {
+        0% { background-position: -468px 0; }
+        100% { background-position: 468px 0; }
+      }
+      .skeleton-shimmer {
+        background: #f6f7f8;
+        background-image: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 20%, #f1f5f9 40%, #f1f5f9 100%);
+        background-repeat: no-repeat;
+        background-size: 800px 100%;
+        display: inline-block;
+        animation: shimmer 1.5s linear infinite forwards;
+      }
+    `}</style>
+    {/* Skeletons pour le tableau (Desktop) */}
+    <div className="d-none d-md-block">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div key={i} className="d-flex align-items-center p-3 border-bottom bg-white">
+          <div className="flex-grow-1">
+            <div className="skeleton-shimmer mb-2" style={{ width: '200px', height: '20px', borderRadius: '4px' }}></div>
+            <div className="skeleton-shimmer" style={{ width: '150px', height: '14px', borderRadius: '4px' }}></div>
+          </div>
+          <div className="mx-auto">
+            <div className="skeleton-shimmer" style={{ width: '100px', height: '24px', borderRadius: '12px' }}></div>
+          </div>
+          <div className="ms-auto d-flex gap-2">
+            <div className="skeleton-shimmer" style={{ width: '38px', height: '38px', borderRadius: '8px' }}></div>
+            <div className="skeleton-shimmer" style={{ width: '38px', height: '38px', borderRadius: '8px' }}></div>
+            <div className="skeleton-shimmer" style={{ width: '38px', height: '38px', borderRadius: '8px' }}></div>
+          </div>
+        </div>
+      ))}
+    </div>
+    {/* Skeletons pour les cartes (Mobile) */}
+    <div className="d-md-none">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="card border-0 shadow-sm mb-3 p-3">
+          <div className="skeleton-shimmer mb-2" style={{ width: '60%', height: '24px' }}></div>
+          <div className="skeleton-shimmer mb-3" style={{ width: '40%', height: '16px' }}></div>
+          <div className="d-flex gap-2">
+            <div className="skeleton-shimmer flex-grow-1" style={{ height: '40px', borderRadius: '8px' }}></div>
+            <div className="skeleton-shimmer" style={{ width: '45px', height: '40px', borderRadius: '8px' }}></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 export default function ManagerList() {
   const [managers, setManagers] = useState<Manager[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,9 +103,8 @@ export default function ManagerList() {
     }
   };
 
-  // Configuration commune pour toutes les icônes (Uniformité garantie)
   const iconProps = {
-    width: "20", // Taille légèrement réduite pour l'élégance
+    width: "20",
     height: "20",
     strokeWidth: "2",
     stroke: "currentColor",
@@ -62,7 +115,7 @@ export default function ManagerList() {
 
   return (
     <div className="container-fluid py-4 px-2 px-md-5 bg-light min-vh-100">
-      {/* Header - Taille réajustée */}
+      {/* Header */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <div>
           <h2 className="fw-bold text-dark mb-1">Gestion des Managers</h2>
@@ -83,7 +136,7 @@ export default function ManagerList() {
         </div>
       )}
 
-      {/* Barre de recherche - Taille standardisée */}
+      {/* Barre de recherche */}
       <div className="card border-0 shadow-sm mb-4 rounded-3 overflow-hidden">
         <div className="card-body p-3 bg-white">
           <form onSubmit={handleSearch} className="row g-2 align-items-center">
@@ -108,7 +161,7 @@ export default function ManagerList() {
         </div>
       </div>
 
-      {/* VUE DESKTOP : Tableau équilibré */}
+      {/* VUE TABLEAU (Desktop) */}
       <div className="card border-0 shadow-sm d-none d-md-block rounded-3 overflow-hidden">
         <div className="table-responsive">
           <table className="table table-hover align-middle mb-0 text-nowrap">
@@ -121,7 +174,11 @@ export default function ManagerList() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={3} className="text-center py-5 fs-6 text-muted">Chargement...</td></tr>
+                <tr>
+                  <td colSpan={3} className="p-0">
+                    <ListSkeleton />
+                  </td>
+                </tr>
               ) : managers.length > 0 ? (
                 managers.map((manager) => (
                   <tr key={manager.id}>
@@ -136,15 +193,12 @@ export default function ManagerList() {
                     </td>
                     <td className="px-4">
                       <div className="d-flex justify-content-end gap-2">
-                        {/* Boutons proportionnels 38x38px pour plus de finesse */}
                         <Link to={`/admin/managers/${manager.id}`} className="btn btn-outline-primary d-flex align-items-center justify-content-center border-1" style={{ width: '38px', height: '38px', borderRadius: '8px' }}>
                           <svg {...iconProps} viewBox="0 0 24 24" stroke="#0d6efd" width="18" height="18"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                         </Link>
-                        
                         <Link to={`/admin/managers/${manager.id}/edit`} className="btn btn-outline-warning d-flex align-items-center justify-content-center border-1" style={{ width: '38px', height: '38px', borderRadius: '8px' }}>
                           <svg {...iconProps} viewBox="0 0 24 24" stroke="#ffc107" width="18" height="18"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
                         </Link>
-
                         <button onClick={() => handleDelete(manager.id)} disabled={isDeleting === manager.id} className="btn btn-outline-danger d-flex align-items-center justify-content-center border-1" style={{ width: '38px', height: '38px', borderRadius: '8px' }}>
                           {isDeleting === manager.id ? <span className="spinner-border spinner-border-sm"></span> : 
                           <svg {...iconProps} viewBox="0 0 24 24" stroke="#dc3545" width="18" height="18"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>}
@@ -161,9 +215,11 @@ export default function ManagerList() {
         </div>
       </div>
 
-      {/* VUE MOBILE : Cartes plus compactes */}
+      {/* VUE MOBILE (Cards) */}
       <div className="d-block d-md-none">
-        {!loading && managers.map((manager) => (
+        {loading ? (
+          <ListSkeleton />
+        ) : managers.map((manager) => (
           <div key={manager.id} className="card border-0 shadow-sm mb-3 rounded-3">
             <div className="card-body p-3">
               <div className="mb-3">
@@ -173,10 +229,10 @@ export default function ManagerList() {
               </div>
               <div className="d-flex gap-2">
                 <Link to={`/admin/managers/${manager.id}`} className="btn btn-dark flex-grow-1 py-2 fw-bold fs-6 rounded-2">Détails</Link>
-                <Link to={`/admin/managers/${manager.id}/edit`} className="btn btn-outline-warning d-flex align-items-center justify-content-center border-1" style={{ width: '45px', height: '45px', borderRadius: '10px' }}>
+                <Link to={`/admin/managers/${manager.id}/edit`} className="btn btn-outline-warning d-flex align-items-center justify-content-center" style={{ width: '45px', height: '45px', borderRadius: '10px' }}>
                     <svg {...iconProps} viewBox="0 0 24 24" stroke="#ffc107" width="20" height="20"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
                 </Link>
-                <button onClick={() => handleDelete(manager.id)} className="btn btn-outline-danger d-flex align-items-center justify-content-center border-1" style={{ width: '45px', height: '45px', borderRadius: '10px' }}>
+                <button onClick={() => handleDelete(manager.id)} className="btn btn-outline-danger d-flex align-items-center justify-content-center" style={{ width: '45px', height: '45px', borderRadius: '10px' }}>
                     <svg {...iconProps} viewBox="0 0 24 24" stroke="#dc3545" width="20" height="20"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
                 </button>
               </div>
@@ -185,7 +241,7 @@ export default function ManagerList() {
         ))}
       </div>
 
-      {/* Pagination - Standard */}
+      {/* Pagination */}
       {lastPage > 1 && (
         <div className="d-flex justify-content-center align-items-center mt-4 gap-3">
           <button className="btn btn-outline-secondary btn-sm px-3 py-2 fw-bold" onClick={() => setCurrentPage(p => Math.max(1, p-1))} disabled={currentPage === 1 || loading}>Précédent</button>

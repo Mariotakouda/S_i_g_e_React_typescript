@@ -1,4 +1,4 @@
-import { useEffect, useState, } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import type { LeaveRequest } from '../leaveRequests/model';
 import { ApiError, LeaveRequestService } from '../leaveRequests/service';
 
@@ -7,57 +7,75 @@ type ProcessingAction = {
     type: 'approve' | 'reject' | 'delete';
 } | null;
 
+// --- SKELETON POUR LE CHARGEMENT ---
+const TableSkeleton = () => (
+    <div className="sk-wrapper">
+        <style>{`
+            @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+            .sk-row { height: 80px; background: white; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; padding: 0 20px; gap: 20px; }
+            .sk-cell { background: #f1f5f9; animation: pulse 1.5s infinite; border-radius: 6px; }
+            @media (max-width: 992px) {
+                .sk-row { flex-direction: column; height: auto; padding: 20px; align-items: flex-start; }
+                .sk-cell { width: 100% !important; height: 15px !important; margin-bottom: 10px; }
+            }
+        `}</style>
+        {[1, 2, 3, 4].map(i => (
+            <div key={i} className="sk-row">
+                <div className="sk-cell" style={{ width: '20%', height: '20px' }}></div>
+                <div className="sk-cell" style={{ width: '10%', height: '20px' }}></div>
+                <div className="sk-cell" style={{ width: '20%', height: '20px' }}></div>
+                <div className="sk-cell" style={{ width: '15%', height: '25px', borderRadius: '20px' }}></div>
+                <div className="sk-cell" style={{ flexGrow: 1, height: '20px' }}></div>
+            </div>
+        ))}
+    </div>
+);
+
 export default function AdminLeaveRequests() {
     const [requests, setRequests] = useState<LeaveRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [processingAction, setProcessingAction] = useState<ProcessingAction>(null);
 
-    useEffect(() => {
-        fetchLeaveRequests();
-    }, []);
+    const sortRequests = (data: LeaveRequest[]) => {
+        return [...data].sort((a, b) => {
+            if (a.status === 'pending' && b.status !== 'pending') return -1;
+            if (a.status !== 'pending' && b.status === 'pending') return 1;
+            return new Date(b.created_at ?? '').getTime() - new Date(a.created_at ?? '').getTime();
+        });
+    };
 
-    const fetchLeaveRequests = async () => {
+    const fetchLeaveRequests = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
             const data = await LeaveRequestService.fetchAllAdmin();
-            const sortedData = data.sort((a, b) => {
-                if (a.status === 'pending' && b.status !== 'pending') return -1;
-                if (a.status !== 'pending' && b.status === 'pending') return 1;
-                return new Date(b.created_at ?? '').getTime() - new Date(a.created_at ?? '').getTime();
-            });
-            setRequests(sortedData);
+            setRequests(sortRequests(data));
         } catch (err: unknown) {
             setError("Erreur lors du chargement des demandes.");
         } finally {
-            setLoading(false);
+            setTimeout(() => setLoading(false), 600);
         }
-    };
+    }, []);
+
+    useEffect(() => { fetchLeaveRequests(); }, [fetchLeaveRequests]);
 
     const handleAction = async (id: number, action: 'approve' | 'reject') => {
         const actionLabel = action === 'approve' ? 'APPROUVER' : 'REJETER';
-        const comment = window.prompt(`Voulez-vous ${actionLabel} cette demande ? Ajoutez un motif (optionnel) :`, "");
+        const comment = window.prompt(`Voulez-vous ${actionLabel} cette demande ?`, "");
         if (comment === null) return;
 
         setProcessingAction({ id, type: action });
-        setError(null);
         try {
             const updatedRequest = action === 'approve'
                 ? await LeaveRequestService.approve(id, comment)
                 : await LeaveRequestService.reject(id, comment);
             
-            setRequests(prev => 
-                prev.map(req => req.id === id ? updatedRequest : req)
-                    .sort((a, b) => { 
-                        if (a.status === 'pending' && b.status !== 'pending') return -1;
-                        if (a.status !== 'pending' && b.status === 'pending') return 1;
-                        return new Date(b.created_at ?? '').getTime() - new Date(a.created_at ?? '').getTime();
-                    })
-            );
+            setRequests(prev => sortRequests(
+                prev.map(req => req.id === id ? { ...updatedRequest, employee: req.employee } : req)
+            ));
         } catch (err: unknown) {
-            const errorMsg = err instanceof ApiError ? err.message : `Échec de l'action.`;
-            setError(errorMsg);
+            setError(err instanceof ApiError ? err.message : `Échec de l'action.`);
         } finally {
             setProcessingAction(null);
         }
@@ -76,102 +94,93 @@ export default function AdminLeaveRequests() {
         }
     };
 
-    // --- Icones SVG ---
-    const IconCheck = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>;
-    const IconX = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
-    const IconTrash = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
-
-    if (loading) return <div className="loading-state">Chargement des demandes en cours...</div>;
-    
     return (
         <div className="admin-container">
             <style>{`
-                .admin-container { padding: 30px; max-width: 1200px; margin: 0 auto; font-family: 'Inter', system-ui, sans-serif; color: #1e293b; }
+                .admin-container { padding: 20px; max-width: 1250px; margin: 0 auto; font-family: 'Inter', system-ui, sans-serif; background-color: #f8fafc; min-height: 100vh; }
                 .page-header { margin-bottom: 25px; }
-                .page-title { fontSize: 24px; font-weight: 700; color: #0f172a; margin: 0; }
-                
-                .alert-error { padding: 12px 16px; background-color: #fef2f2; border: 1px solid #fee2e2; color: #991b1b; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
-                
-                .table-card { background: white; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden; }
-                .table-wrapper { overflow-x: auto; }
-                table { width: 100%; border-collapse: collapse; text-align: left; }
-                th { padding: 14px 20px; background: #f8fafc; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; border-bottom: 1px solid #e2e8f0; }
-                td { padding: 16px 20px; font-size: 14px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
-                
-                .row-pending { background-color: #fffaf0; }
-                .employee-info { display: flex; flex-direction: column; }
-                .emp-name { font-weight: 600; color: #1e293b; }
-                .emp-id { font-size: 11px; color: #94a3b8; }
-                
-                .badge { padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; display: inline-block; }
-                .badge-approved { background: #dcfce7; color: #166534; }
-                .badge-rejected { background: #fee2e2; color: #991b1b; }
-                .badge-pending { background: #fef3c7; color: #92400e; }
-                
-                .comment-box { margin-top: 8px; padding: 10px; background: #f8fafc; border-left: 3px solid #cbd5e1; border-radius: 4px; font-size: 13px; color: #475569; }
-                .comment-box.admin { border-left-color: #3b82f6; background: #eff6ff; }
-                
-                .actions-cell { display: flex; flex-direction: column; gap: 8px; min-width: 140px; }
-                .btn-group { display: flex; gap: 6px; }
-                .btn-icon { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; border-radius: 6px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; color: white; }
-                .btn-approve { background: #10b981; }
-                .btn-approve:hover { background: #059669; }
-                .btn-reject { background: #ef4444; }
-                .btn-reject:hover { background: #dc2626; }
-                .btn-delete { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
-                .btn-delete:hover { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
-                
-                .loading-state { padding: 100px; text-align: center; color: #64748b; }
+                .page-title { font-size: 26px; font-weight: 800; color: #0f172a; }
 
-                @media (max-width: 768px) {
-                    .admin-container { padding: 15px; }
-                    th { display: none; }
-                    td { display: block; width: 100%; box-sizing: border-box; padding: 10px 20px; border-bottom: none; }
-                    tr { display: block; padding: 15px 0; border-bottom: 2px solid #e2e8f0; }
-                    td::before { content: attr(data-label); display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; color: #94a3b8; margin-bottom: 4px; }
+                /* ALERTES */
+                .alert-error { 
+                    background: #fef2f2; border: 1px solid #fee2e2; color: #991b1b; 
+                    padding: 12px 16px; border-radius: 12px; margin-bottom: 20px; 
+                    display: flex; align-items: center; justify-content: space-between; font-weight: 500;
+                }
+
+                /* TABLEAU CARD */
+                .table-card { background: white; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow: hidden; }
+                table { width: 100%; border-collapse: collapse; }
+                th { padding: 16px 20px; background: #f8fafc; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #e2e8f0; text-align: left; }
+                td { padding: 18px 20px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+                
+                .row-pending { background-color: #fffbeb; }
+                .emp-name { font-weight: 700; color: #1e293b; display: block; }
+                .emp-id { font-size: 12px; color: #94a3b8; }
+                
+                .badge { padding: 5px 12px; border-radius: 99px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+                .badge-approved { background: #dcfce7; color: #15803d; }
+                .badge-rejected { background: #fee2e2; color: #b91c1c; }
+                .badge-pending { background: #fef3c7; color: #b45309; }
+                
+                .comment-box.admin { background: #eff6ff; border: 1px solid #dbeafe; padding: 10px; border-radius: 8px; font-size: 13px; color: #1e40af; margin-top: 8px; }
+
+                .actions-cell { display: flex; gap: 8px; flex-wrap: wrap; }
+                .btn-icon { border: none; border-radius: 8px; padding: 8px 14px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+                .btn-approve { background: #10b981; color: white; }
+                .btn-reject { background: #ef4444; color: white; }
+                .btn-delete { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+
+                /* RESPONSIVITÉ : TABLEAU -> CARTES */
+                @media (max-width: 992px) {
+                    table, thead, tbody, th, td, tr { display: block; }
+                    thead tr { position: absolute; top: -9999px; left: -9999px; }
+                    tr { border-bottom: 8px solid #f1f5f9; padding: 10px 0; }
+                    td { 
+                        border: none; position: relative; padding: 12px 20px 12px 45% !important; 
+                        text-align: right; font-size: 13px; border-bottom: 1px inset #f8fafc;
+                    }
+                    td::before {
+                        content: attr(data-label); position: absolute; left: 20px; width: 40%; 
+                        text-align: left; font-weight: 800; font-size: 10px; color: #94a3b8; text-transform: uppercase;
+                    }
+                    .actions-cell { justify-content: flex-end; padding-top: 10px; }
                 }
             `}</style>
 
             <div className="page-header">
                 <h1 className="page-title">Gestion des congés</h1>
             </div>
-            
+
             {error && (
                 <div className="alert-error">
-                    <IconX /> {error}
+                    <span>⚠️ {error}</span>
+                    <button style={{background:'none', border:'none', cursor:'pointer', fontSize: '18px'}} onClick={() => setError(null)}>&times;</button>
                 </div>
             )}
 
             <div className="table-card">
-                <div className="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Employé</th>
-                                <th>Type</th>
-                                <th>Période</th>
-                                <th>Statut</th>
-                                <th>Détails</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {requests.map((req) => {
-                                const isPending = req.status === 'pending';
-                                const processing = processingAction?.id === req.id;
-                                const employeeName = req.employee ? `${req.employee.first_name} ${req.employee.last_name || ''}` : 'Inconnu';
-
-                                return (
-                                    <tr key={req.id} className={isPending ? 'row-pending' : ''}>
+                {loading ? <TableSkeleton /> : (
+                    <div className="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Employé</th>
+                                    <th>Type</th>
+                                    <th>Période</th>
+                                    <th>Statut</th>
+                                    <th>Détails</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {requests.map((req) => (
+                                    <tr key={req.id} className={req.status === 'pending' ? 'row-pending' : ''}>
                                         <td data-label="Employé">
-                                            <div className="employee-info">
-                                                <span className="emp-name">{employeeName}</span>
-                                                <span className="emp-id">Matricule: {req.employee_id}</span>
-                                            </div>
+                                            <span className="emp-name">{req.employee ? `${req.employee.first_name} ${req.employee.last_name}` : 'Inconnu'}</span>
+                                            {/* <span className="emp-id">Matricule: {req.employee_id}</span> */}
                                         </td>
-                                        <td data-label="Type">
-                                            <span style={{fontWeight: 500}}>{req.type}</span>
-                                        </td>
+                                        <td data-label="Type"><strong>{req.type}</strong></td>
                                         <td data-label="Période">
                                             <div style={{fontSize: '13px'}}>Du {req.start_date}</div>
                                             <div style={{fontSize: '13px'}}>Au {req.end_date}</div>
@@ -181,53 +190,32 @@ export default function AdminLeaveRequests() {
                                                 {req.status === 'pending' ? 'En attente' : req.status === 'approved' ? 'Approuvé' : 'Rejeté'}
                                             </span>
                                         </td>
-                                        <td data-label="Détails">
-                                            <div style={{fontSize: '13px'}}>
-                                                <strong>Motif :</strong> {req.message || 'Non spécifié'}
-                                            </div>
+                                        <td data-label="Détails" style={{maxWidth: '250px'}}>
+                                            <div className="small text-muted italic">"{req.message || 'Sans motif'}"</div>
                                             {req.admin_comment && (
                                                 <div className="comment-box admin">
-                                                    <strong>Note Admin :</strong> {req.admin_comment}
+                                                    <strong>Note :</strong> {req.admin_comment}
                                                 </div>
                                             )}
                                         </td>
                                         <td data-label="Actions">
                                             <div className="actions-cell">
-                                                {isPending ? (
-                                                    <div className="btn-group">
-                                                        <button 
-                                                            onClick={() => handleAction(req.id, 'approve')} 
-                                                            disabled={processing} 
-                                                            className="btn-icon btn-approve"
-                                                        >
-                                                            {processingAction?.type === 'approve' && processing ? '...' : <><IconCheck /> Approuver</>}
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => handleAction(req.id, 'reject')} 
-                                                            disabled={processing} 
-                                                            className="btn-icon btn-reject"
-                                                        >
-                                                            {processingAction?.type === 'reject' && processing ? '...' : <><IconX /> Rejeter</>}
-                                                        </button>
-                                                    </div>
+                                                {req.status === 'pending' ? (
+                                                    <>
+                                                        <button onClick={() => handleAction(req.id, 'approve')} disabled={!!processingAction} className="btn-icon btn-approve">Approuver</button>
+                                                        <button onClick={() => handleAction(req.id, 'reject')} disabled={!!processingAction} className="btn-icon btn-reject">Rejeter</button>
+                                                    </>
                                                 ) : (
-                                                    <span style={{ color: '#94a3b8', fontSize: '12px', fontStyle: 'italic' }}>Demande traitée</span>
+                                                    <button onClick={() => handleDelete(req.id)} disabled={!!processingAction} className="btn-icon btn-delete">Supprimer</button>
                                                 )}
-                                                <button 
-                                                    onClick={() => handleDelete(req.id)} 
-                                                    disabled={processing} 
-                                                    className="btn-icon btn-delete"
-                                                >
-                                                    {processingAction?.type === 'delete' && processing ? '...' : <><IconTrash /> Supprimer</>}
-                                                </button>
                                             </div>
                                         </td>
                                     </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
-                </div>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -3,6 +3,66 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { DepartmentService } from "./service";
 import type { Department } from "./model";
 
+/**
+ * COMPOSANT SKELETON AVEC STYLES INTÉGRÉS
+ */
+const DepartmentSkeleton = () => (
+  <div className="container-fluid py-5 px-3 px-md-5" style={{ backgroundColor: "#F9FAFB", minHeight: "100vh" }}>
+    {/* Injection dynamique du CSS pour l'animation Shimmer */}
+    <style>{`
+      @keyframes shimmer {
+        0% { background-position: -468px 0; }
+        100% { background-position: 468px 0; }
+      }
+      .skeleton-shimmer {
+        background: #f6f7f8;
+        background-image: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 20%, #f1f5f9 40%, #f1f5f9 100%);
+        background-repeat: no-repeat;
+        background-size: 800px 100%;
+        display: inline-block;
+        animation: shimmer 1.5s linear infinite forwards;
+      }
+    `}</style>
+
+    <div className="mx-auto" style={{ maxWidth: "1100px" }}>
+      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
+        <div>
+          <div className="skeleton-shimmer mb-3" style={{ width: '150px', height: '35px', borderRadius: '8px' }}></div>
+          <div className="skeleton-shimmer d-block mb-2" style={{ width: '300px', height: '40px', borderRadius: '4px' }}></div>
+          <div className="skeleton-shimmer" style={{ width: '200px', height: '16px', borderRadius: '4px' }}></div>
+        </div>
+        <div className="d-flex gap-2">
+          <div className="skeleton-shimmer" style={{ width: '100px', height: '45px', borderRadius: '8px' }}></div>
+          <div className="skeleton-shimmer" style={{ width: '120px', height: '45px', borderRadius: '8px' }}></div>
+        </div>
+      </div>
+
+      <div className="row g-4">
+        <div className="col-12 col-lg-7">
+          <div className="card border-0 shadow-sm rounded-4 h-100 p-4">
+            <div className="skeleton-shimmer mb-4" style={{ width: '40%', height: '20px' }}></div>
+            <div className="skeleton-shimmer mb-4" style={{ width: '100%', height: '150px', borderRadius: '12px' }}></div>
+            <div className="row g-3">
+              <div className="col-sm-6"><div className="skeleton-shimmer" style={{ width: '100%', height: '60px', borderRadius: '8px' }}></div></div>
+              <div className="col-sm-6"><div className="skeleton-shimmer" style={{ width: '100%', height: '60px', borderRadius: '8px' }}></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div className="col-12 col-lg-5">
+          <div className="card border-0 shadow-sm rounded-4 h-100 p-4 text-center">
+            <div className="skeleton-shimmer mb-4 mx-auto" style={{ width: '90px', height: '90px', borderRadius: '50%' }}></div>
+            <div className="skeleton-shimmer mb-2 mx-auto" style={{ width: '60%', height: '28px' }}></div>
+            <div className="skeleton-shimmer mb-4 mx-auto" style={{ width: '45%', height: '18px' }}></div>
+            <div className="skeleton-shimmer w-100 mb-2" style={{ height: '45px', borderRadius: '8px' }}></div>
+            <div className="skeleton-shimmer w-100" style={{ height: '45px', borderRadius: '8px' }}></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 export default function DepartmentShow() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -36,14 +96,7 @@ export default function DepartmentShow() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="d-flex flex-column justify-content-center align-items-center" style={{ minHeight: "80vh" }}>
-        <div className="spinner-grow text-primary" role="status" style={{ width: "3rem", height: "3rem" }}></div>
-        <p className="mt-3 text-muted fw-medium">Chargement des ressources...</p>
-      </div>
-    );
-  }
+  if (loading) return <DepartmentSkeleton />;
 
   if (error || !department) {
     return (
@@ -66,7 +119,6 @@ export default function DepartmentShow() {
     <div className="container-fluid py-5 px-3 px-md-5" style={{ backgroundColor: "#F9FAFB", minHeight: "100vh" }}>
       <div className="mx-auto" style={{ maxWidth: "1100px" }}>
         
-        {/* TOP NAVIGATION & ACTIONS */}
         <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
           <div>
             <Link to="/admin/departments" className="btn btn-sm btn-white border shadow-xs mb-3 d-inline-flex align-items-center gap-2 px-3 py-2 text-decoration-none text-dark fw-semibold" style={{ borderRadius: "8px" }}>
@@ -90,7 +142,6 @@ export default function DepartmentShow() {
         </div>
 
         <div className="row g-4">
-          {/* MAIN CONTENT CARD */}
           <div className="col-12 col-lg-7">
             <div className="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
               <div className="card-header bg-white border-bottom p-4">
@@ -105,12 +156,12 @@ export default function DepartmentShow() {
                 </div>
 
                 <div className="row g-3">
-                  <div className="col-sm-6">
+                  {/* <div className="col-sm-6">
                     <div className="p-3 border rounded-3 bg-white">
                       <span className="text-muted small d-block">Identifiant unique</span>
                       <span className="fw-bold">REF-{department.id.toString().padStart(4, '0')}</span>
                     </div>
-                  </div>
+                  </div> */}
                   <div className="col-sm-6">
                     <div className="p-3 border rounded-3 bg-white">
                       <span className="text-muted small d-block">Dernière mise à jour</span>
@@ -122,7 +173,6 @@ export default function DepartmentShow() {
             </div>
           </div>
 
-          {/* SIDEBAR : MANAGER INFO */}
           <div className="col-12 col-lg-5">
             <div className="card border-0 shadow-sm rounded-4 h-100">
               <div className="card-header bg-white border-bottom p-4">

@@ -1,4 +1,3 @@
-// src/modules/announcements/create.tsx
 import { useState, useEffect, useContext } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
@@ -7,30 +6,41 @@ import { EmployeeService } from "../employees/service";
 import { DepartmentService } from "../departments/service";
 import type { Employee } from "../employees/model";
 
-// --- Icônes SVG Professionnelles ---
-const IconMegaphone = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="me-3 text-primary"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>;
-const IconChevronLeft = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="me-1"><path d="m15 18-6-6 6-6"/></svg>;
-const IconSend = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="me-2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>;
-const IconUsers = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="me-2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>;
-const IconEditPen = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-warning"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>;
-const IconAlert = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="me-2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>;
+// --- Composant Skeleton pour le chargement initial ---
+const AnnouncementSkeleton = () => (
+  <div className="container py-4 py-lg-5" style={{ maxWidth: "1000px" }}>
+    <div className="skeleton mb-4" style={{ width: '200px', height: '24px', borderRadius: '4px' }}></div>
+    <div className="skeleton mb-5" style={{ width: '350px', height: '40px', borderRadius: '8px' }}></div>
+    <div className="card border-0 shadow-sm p-5" style={{ borderRadius: '15px' }}>
+      <div className="row">
+        <div className="col-lg-4"><div className="skeleton mb-3" style={{ width: '80%', height: '80px' }}></div></div>
+        <div className="col-lg-8"><div className="skeleton mb-3" style={{ width: '100%', height: '80px' }}></div></div>
+      </div>
+      <hr className="my-5 opacity-25" />
+      <div className="row">
+        <div className="col-lg-4"><div className="skeleton mb-3" style={{ width: '80%', height: '80px' }}></div></div>
+        <div className="col-lg-8"><div className="skeleton mb-3" style={{ width: '100%', height: '200px' }}></div></div>
+      </div>
+    </div>
+  </div>
+);
 
-interface DepartmentListItem {
-  id: number;
-  name: string;
-}
+// --- Icônes SVG ---
+const IconMegaphone = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="me-3 text-primary"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>;
+const IconSend = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="me-2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>;
+const IconAlert = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="me-2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>;
 
 export default function AnnouncementCreate() {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
 
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [departments, setDepartments] = useState<DepartmentListItem[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
-
+  const [error, setError] = useState(""); // Variable maintenant utilisée
   const [targetType, setTargetType] = useState<"general" | "department" | "employee">("general");
+
   const [formData, setFormData] = useState({
     title: "",
     message: "",
@@ -39,104 +49,95 @@ export default function AnnouncementCreate() {
     is_general: true,
   });
 
-  const [managerInfo, setManagerInfo] = useState({ 
-    is_manager: false, 
-    dept_name: "" 
-  });
+  const [managerInfo, setManagerInfo] = useState({ is_manager: false, dept_name: "" });
 
   useEffect(() => {
-    let isMounted = true;
     async function init() {
       try {
         setLoading(true);
         const status = await checkManagerStatus();
-        if (isMounted) {
-          if (status.is_manager) {
-            const dName = status.department_name || "votre département";
-            setManagerInfo({ is_manager: true, dept_name: dName });
-            if (user?.role !== 'admin') {
-              setTargetType("department");
-              setFormData(p => ({ ...p, department_id: status.department_id, is_general: false }));
-            }
-          }
-          if (user?.role === 'admin') {
-            const [empData, deptResponse] = await Promise.all([
-              EmployeeService.fetchAllForSelect().catch(() => []),
-              DepartmentService.list().catch(() => ({ data: [] }))
-            ]);
-            setEmployees(empData);
-            setDepartments(deptResponse.data || []);
+        
+        if (status.is_manager) {
+          setManagerInfo({ is_manager: true, dept_name: status.department_name || "votre département" });
+          if (user?.role !== 'admin') {
+            setTargetType("department");
+            setFormData(p => ({ ...p, department_id: status.department_id, is_general: false }));
           }
         }
+
+        if (user?.role === 'admin') {
+          const [empData, deptResponse] = await Promise.all([
+            EmployeeService.fetchAllForSelect().catch(() => []),
+            DepartmentService.list().catch(() => ({ data: [] }))
+          ]);
+          setEmployees(empData);
+          setDepartments(deptResponse.data || []);
+        }
       } catch (err) {
-        setError("Erreur lors du chargement des paramètres.");
+        setError("Erreur lors de l'initialisation du formulaire. Veuillez réessayer.");
       } finally {
-        if (isMounted) setLoading(false);
+        setLoading(false);
       }
     }
     if (user) init();
-    return () => { isMounted = false; };
   }, [user]);
 
   useEffect(() => {
-    if (targetType === "general") {
-      setFormData(p => ({ ...p, is_general: true, employee_id: null, department_id: null }));
-    } else if (targetType === "department") {
-      setFormData(p => ({ ...p, is_general: false, employee_id: null, department_id: managerInfo.is_manager ? p.department_id : null }));
-    } else if (targetType === "employee") {
-      setFormData(p => ({ ...p, is_general: false, department_id: null }));
-    }
-  }, [targetType, managerInfo.is_manager]);
+  setFormData(p => ({
+    ...p,
+    // On force is_general à false si on cible un département ou un employé
+    is_general: targetType === "general", 
+    department_id: targetType === "department" ? p.department_id : null,
+    employee_id: targetType === "employee" ? p.employee_id : null,
+  }));
+}, [targetType]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    setError("");
+    setError(""); // Reset de l'erreur au début de la soumission
     try {
       await createAnnouncement(formData);
       navigate(user?.role === 'admin' ? "/admin/announcements" : "/employee/announcements");
     } catch (err: any) {
-      setError(err.response?.data?.message || "Erreur lors de la publication");
+      setError(err.response?.data?.message || "Une erreur est survenue lors de la publication.");
       setSubmitting(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="vh-100 d-flex flex-column justify-content-center align-items-center bg-white">
-        <div className="spinner-border text-primary mb-3" role="status" style={{ width: '3rem', height: '3rem' }}></div>
-        <span className="text-muted fw-medium">Préparation du formulaire...</span>
-      </div>
-    );
-  }
+  if (loading) return (
+    <>
+      <style>{`.skeleton { background: linear-gradient(90deg, #f2f2f2 25%, #fafafa 50%, #f2f2f2 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; } @keyframes skeleton-loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
+      <AnnouncementSkeleton />
+    </>
+  );
 
   return (
     <div className="bg-light min-vh-100 py-4 py-lg-5">
       <div className="container" style={{ maxWidth: "1000px" }}>
         
-        {/* Header Navigation */}
-        <div className="row mb-4 align-items-center g-3 text-center text-md-start">
-          <div className="col-md-8">
-            <nav aria-label="breadcrumb" className="d-none d-md-block">
-              <ol className="breadcrumb mb-2 small text-uppercase ls-1">
-                <li className="breadcrumb-item"><Link to="/admin/announcements" className="text-decoration-none text-muted fw-bold">Communications</Link></li>
-                <li className="breadcrumb-item active text-primary fw-bold" aria-current="page">Création</li>
+        {/* En-tête */}
+        <div className="d-flex justify-content-between align-items-end mb-4">
+          <div>
+            <nav aria-label="breadcrumb">
+              <ol className="breadcrumb mb-2 small text-uppercase fw-bold">
+                <li className="breadcrumb-item"><Link to="#" className="text-decoration-none text-muted">Communications</Link></li>
+                <li className="breadcrumb-item active text-primary">Nouveau</li>
               </ol>
             </nav>
-            <h2 className="fw-bold text-dark mb-0 d-flex align-items-center justify-content-center justify-content-md-start">
-              <IconMegaphone /> Nouvelle Communication
+            <h2 className="fw-bold text-dark mb-0 d-flex align-items-center">
+              <IconMegaphone /> Publier une annonce
             </h2>
           </div>
-          <div className="col-md-4 text-md-end">
-            <button onClick={() => navigate(-1)} className="btn btn-white border shadow-sm px-4 fw-bold text-muted transition-all">
-              <IconChevronLeft /> Retour
-            </button>
-          </div>
+          <button onClick={() => navigate(-1)} className="btn btn-white border shadow-sm px-4 fw-bold text-muted transition-all">
+            Retour
+          </button>
         </div>
 
+        {/* Affichage de l'erreur (Correction TS) */}
         {error && (
-          <div className="alert alert-danger border-0 shadow-sm rounded-4 mb-4 d-flex align-items-center p-3 animate-fade-in">
-             <IconAlert /> {error}
+          <div className="alert alert-danger border-0 shadow-sm rounded-4 mb-4 d-flex align-items-center p-3 animate-fade-in text-danger">
+            <IconAlert /> {error}
           </div>
         )}
 
@@ -144,43 +145,38 @@ export default function AnnouncementCreate() {
           <div style={{ height: "5px", background: "linear-gradient(90deg, #2e2a5b 0%, #4e44a8 100%)" }}></div>
           
           <div className="card-body p-4 p-md-5 bg-white">
-            
-            {/* SECTION 1: AUDIENCE */}
+            {/* SECTION AUDIENCE */}
             <div className="row mb-5">
               <div className="col-lg-4 border-end-lg">
-                <div className="d-flex align-items-center mb-2">
-                  <div className="p-2 bg-primary-subtle rounded-3 text-primary me-2"><IconUsers /></div>
-                  <h5 className="fw-bold mb-0 text-dark">Audience</h5>
-                </div>
-                <p className="text-muted small pe-lg-3">Définissez la visibilité de cette annonce au sein de l'organisation.</p>
+                <h5 className="fw-bold text-dark mb-2">Audience</h5>
+                <p className="text-muted small">Ciblez précisément les destinataires de votre message.</p>
               </div>
               <div className="col-lg-8 ps-lg-4">
                 {managerInfo.is_manager && user?.role !== 'admin' ? (
-                  <div className="p-4 rounded-4 border-2 border border-primary-subtle bg-primary-subtle bg-opacity-10">
+                  <div className="p-4 rounded-4 bg-primary bg-opacity-10 border border-primary border-opacity-10">
                     <span className="badge bg-primary mb-2 px-3 rounded-pill">Mode Manager</span>
-                    <h6 className="fw-bold text-dark mb-1">Cible : {managerInfo.dept_name}</h6>
-                    <p className="small text-muted mb-0">Visible uniquement par les membres de votre département.</p>
+                    <h6 className="fw-bold text-dark mb-1">Département : {managerInfo.dept_name}</h6>
+                    <p className="small text-muted mb-0">En tant qu'employé du prestataire, votre annonce sera visible par votre équipe.</p>
                   </div>
                 ) : (
-                  <div className="bg-light p-2 rounded-4 d-flex flex-column flex-sm-row gap-1">
-                    {[
-                      { id: "general", label: "Tout le monde" },
-                      { id: "department", label: "Département" },
-                      { id: "employee", label: "Individuel" }
-                    ].map((t) => (
-                      <label key={t.id} className={`flex-fill btn border-0 py-3 fw-bold transition-all rounded-3 ${targetType === t.id ? 'btn-white shadow text-primary' : 'text-muted'}`}>
-                        <input type="radio" className="btn-check" checked={targetType === t.id} onChange={() => setTargetType(t.id as any)} />
-                        {t.label}
-                      </label>
+                  <div className="bg-light p-1 rounded-4 d-flex gap-1 mb-4 shadow-sm">
+                    {["general", "department", "employee"].map((t) => (
+                      <button 
+                        key={t} type="button"
+                        onClick={() => setTargetType(t as any)}
+                        className={`btn flex-fill py-3 fw-bold border-0 transition-all rounded-3 ${targetType === t ? 'bg-white shadow-sm text-primary' : 'text-muted'}`}
+                      >
+                        {t === 'general' ? 'Tout le monde' : t === 'department' ? 'Département' : 'Individuel'}
+                      </button>
                     ))}
                   </div>
                 )}
 
                 {user?.role === 'admin' && targetType !== "general" && (
-                  <div className="mt-3 animate-fade-in">
-                    <label className="form-label small fw-bold text-muted text-uppercase mb-2 ps-1">Sélectionner la cible</label>
+                  <div className="animate-fade-in mt-3">
+                    <label className="form-label small fw-bold text-muted text-uppercase mb-2">Sélectionner la cible</label>
                     <select 
-                      className="form-select form-select-lg border-2 shadow-none py-3 px-4 rounded-3 fw-medium" 
+                      className="form-select form-select-lg border-2 shadow-none py-3 px-4 rounded-3" 
                       value={targetType === 'department' ? (formData.department_id || "") : (formData.employee_id || "")}
                       onChange={e => setFormData({
                         ...formData, 
@@ -199,56 +195,45 @@ export default function AnnouncementCreate() {
               </div>
             </div>
 
-            <hr className="my-5 border-light" />
+            <hr className="my-5 opacity-25" />
 
-            {/* SECTION 2: CONTENU */}
+            {/* SECTION CONTENU */}
             <div className="row mb-4">
               <div className="col-lg-4 border-end-lg">
-                <div className="d-flex align-items-center mb-2">
-                  <div className="p-2 bg-warning-subtle rounded-3 me-2">
-                    <IconEditPen />
-                  </div>
-                  <h5 className="fw-bold mb-0 text-dark">Message</h5>
-                </div>
-                <p className="text-muted small pe-lg-3">Rédigez un titre percutant pour capter l'attention rapidement.</p>
+                <h5 className="fw-bold text-dark mb-2">Message</h5>
+                <p className="text-muted small">Rédigez un titre accrocheur et un contenu clair.</p>
               </div>
               <div className="col-lg-8 ps-lg-4">
                 <div className="mb-4">
-                  <label className="form-label fw-bold small text-muted text-uppercase ls-1">Sujet de l'annonce</label>
+                  <label className="form-label fw-bold small text-muted text-uppercase">Sujet de l'annonce</label>
                   <input 
-                    type="text" 
-                    className="form-control form-control-lg border-2 shadow-none py-3 px-4 rounded-3 fw-bold" 
-                    placeholder="Ex: Information importante concernant..."
+                    type="text" className="form-control form-control-lg border-2 shadow-none py-3 px-4 rounded-3 fw-bold" 
+                    placeholder="Ex: Réunion d'équipe, Nouvelle procédure..."
                     value={formData.title}
                     onChange={e => setFormData({...formData, title: e.target.value})}
                     required 
                   />
                 </div>
                 <div>
-                  <label className="form-label fw-bold small text-muted text-uppercase ls-1">Corps du message</label>
+                  <label className="form-label fw-bold small text-muted text-uppercase">Corps du message</label>
                   <textarea 
                     className="form-control border-2 shadow-none p-4 rounded-3" 
                     rows={6} 
-                    placeholder="Saisissez votre contenu ici..."
+                    placeholder="Saisissez votre message ici..."
                     value={formData.message}
                     onChange={e => setFormData({...formData, message: e.target.value})}
-                    style={{ fontSize: '1.05rem', lineHeight: '1.6' }}
+                    style={{ fontSize: '1.05rem' }}
                     required 
                   />
-                  <div className="text-end mt-2">
-                    <span className="small text-muted fw-medium">{formData.message.length} caractères rédigés</span>
-                  </div>
                 </div>
               </div>
             </div>
 
-            {/* FOOTER ACTIONS */}
             <div className="row mt-5">
               <div className="col-lg-8 offset-lg-4 ps-lg-4">
                 <button 
-                  type="submit" 
-                  disabled={submitting} 
-                  className="btn btn-lg w-100 py-3 fw-bold text-white shadow shadow-hover border-0 rounded-3 transition-all d-flex align-items-center justify-content-center"
+                  type="submit" disabled={submitting} 
+                  className="btn btn-primary btn-lg w-100 py-3 fw-bold shadow-sm border-0 rounded-3 transition-all d-flex align-items-center justify-content-center"
                   style={{ backgroundColor: "#4e44a8" }}
                 >
                   {submitting ? (
@@ -259,26 +244,18 @@ export default function AnnouncementCreate() {
                 </button>
               </div>
             </div>
-
           </div>
         </form>
       </div>
-
+      
       <style>{`
-        .ls-1 { letter-spacing: 0.05rem; }
-        .btn-white { background: #fff; color: #6c757d; }
+        .btn-white { background: #fff; }
         .btn-white:hover { background: #f8f9fa; }
-        .form-control:focus, .form-select:focus { border-color: #2e2a5b !important; }
-        .shadow-hover { transition: box-shadow 0.3s ease; }
-        .shadow-hover:hover { box-shadow: 0 1rem 3rem rgba(0,0,0,.1) !important; }
+        .border-end-lg { border-right: 1px solid #f0f0f0; }
         .transition-all { transition: all 0.2s ease-in-out; }
         .animate-fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @media (min-width: 992px) { .border-end-lg { border-right: 1px solid #f0f0f0; } }
-        .bg-primary-subtle { background-color: #eef2f7 !important; }
-        .bg-warning-subtle { background-color: #fff8eb !important; }
-        .text-primary { color: #2e2a5b !important; }
-        .breadcrumb-item + .breadcrumb-item::before { content: "›"; font-size: 1.2rem; line-height: 1; vertical-align: middle; }
+        @media (max-width: 991px) { .border-end-lg { border-right: none; border-bottom: 1px solid #f0f0f0; margin-bottom: 1rem; padding-bottom: 1rem; } }
       `}</style>
     </div>
   );

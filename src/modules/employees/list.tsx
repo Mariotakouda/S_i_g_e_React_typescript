@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../api/axios";
 
-// Composant Icone SVG
+// Composant Icone SVG (Inchangé)
 const Icon = ({ name }: { name: 'eye' | 'edit' | 'trash' | 'plus' | 'settings' }) => {
     const icons = {
         eye: <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>,
@@ -14,9 +14,42 @@ const Icon = ({ name }: { name: 'eye' | 'edit' | 'trash' | 'plus' | 'settings' }
     return icons[name];
 };
 
+// --- Composant Squelette (Inchangé) ---
+const TableSkeleton = () => (
+    <>
+        <div className="d-md-none">
+            {[1, 2, 3].map(i => (
+                <div key={i} className="card border-0 shadow-sm mb-4 rounded-4 p-4">
+                    <div className="d-flex align-items-center mb-3">
+                        <div className="skeleton rounded-circle me-3" style={{ width: '60px', height: '60px' }}></div>
+                        <div className="flex-grow-1">
+                            <div className="skeleton mb-2" style={{ width: '60%', height: '20px' }}></div>
+                            <div className="skeleton" style={{ width: '40%', height: '15px' }}></div>
+                        </div>
+                    </div>
+                    <div className="skeleton" style={{ width: '100%', height: '35px', borderRadius: '8px' }}></div>
+                </div>
+            ))}
+        </div>
+        <div className="card border-0 shadow-sm d-none d-md-block rounded-4 overflow-hidden bg-white">
+            <div className="p-4">
+                {[1, 2, 3, 4, 5].map(i => (
+                    <div key={i} className="d-flex align-items-center mb-4">
+                        <div className="skeleton rounded-circle me-3" style={{ width: '45px', height: '45px' }}></div>
+                        <div className="flex-grow-1 me-4"><div className="skeleton" style={{ width: '100%', height: '20px' }}></div></div>
+                        <div className="flex-grow-1 me-4"><div className="skeleton" style={{ width: '100%', height: '20px' }}></div></div>
+                        <div style={{ width: '120px' }}><div className="skeleton" style={{ height: '20px' }}></div></div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    </>
+);
+
 export default function EmployeeList() {
     const [employees, setEmployees] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState(""); // État pour la recherche
     const navigate = useNavigate();
 
     useEffect(() => { loadEmployees(); }, []);
@@ -45,6 +78,12 @@ export default function EmployeeList() {
         }
     };
 
+    // Logique de filtrage par nom ou prénom
+    const filteredEmployees = employees.filter(emp => 
+        emp.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        emp.last_name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     const getStatusBadge = (status: string) => {
         const configs: Record<string, { label: string, color: string }> = {
             actif: { label: 'En poste', color: 'success' },
@@ -66,12 +105,27 @@ export default function EmployeeList() {
 
     return (
         <div className="container-fluid py-4 py-md-5 px-3 px-md-5 bg-light min-vh-100">
+            <style>{`
+                .skeleton {
+                    background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%);
+                    background-size: 200% 100%;
+                    animation: skeleton-loading 1.5s infinite ease-in-out;
+                }
+                @keyframes skeleton-loading {
+                    0% { background-position: 200% 0; }
+                    100% { background-position: -200% 0; }
+                }
+                .search-input:focus {
+                    border-color: #4e73df !important;
+                    box-shadow: 0 0 0 0.25rem rgba(78, 115, 223, 0.1) !important;
+                }
+            `}</style>
             
             {/* HEADER */}
-            <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
+            <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
                 <div>
                     <h1 className="display-6 fw-bold text-dark mb-1">Employees</h1>
-                    <p className="text-muted mb-0 fs-5">Gestion des collaborateurs ({employees.length})</p>
+                    <p className="text-muted mb-0 fs-5">Gestion des collaborateurs ({filteredEmployees.length})</p>
                 </div>
                 <button 
                     onClick={() => navigate("/admin/employees/create")} 
@@ -83,15 +137,34 @@ export default function EmployeeList() {
                 </button>
             </div>
 
+            {/* BARRE DE RECHERCHE RAPIDE */}
+            <div className="mb-4">
+                <div className="position-relative">
+                    <span className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted">
+                        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    </span>
+                    <input 
+                        type="text"
+                        className="form-control form-control-lg ps-5 rounded-4 border-0 shadow-sm search-input"
+                        placeholder="Rechercher par nom ou prénom..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{ fontSize: '16px', height: '55px' }}
+                    />
+                </div>
+            </div>
+
             {loading ? (
-                <div className="text-center py-5"><div className="spinner-border text-primary"></div></div>
-            ) : employees.length === 0 ? (
-                <div className="text-center py-5 bg-white rounded-4 shadow-sm text-muted fs-5">Aucun employé trouvé.</div>
+                <TableSkeleton />
+            ) : filteredEmployees.length === 0 ? (
+                <div className="text-center py-5 bg-white rounded-4 shadow-sm text-muted fs-5">
+                    {searchTerm ? `Aucun résultat pour "${searchTerm}"` : "Aucun employé trouvé."}
+                </div>
             ) : (
                 <>
                     {/* VUE MOBILE (Cartes) */}
                     <div className="d-md-none">
-                        {employees.map(emp => (
+                        {filteredEmployees.map(emp => (
                             <div key={emp.id} className="card border-0 shadow-sm mb-4 rounded-4 overflow-hidden">
                                 <div className="card-body p-4">
                                     <div className="d-flex align-items-center mb-4">
@@ -127,12 +200,12 @@ export default function EmployeeList() {
                                 <thead className="bg-light border-bottom">
                                     <tr>
                                         <th className="px-4 py-3 text-muted fw-bold" style={{ fontSize: '12px', textTransform: 'uppercase' }}>Collaborateur</th>
-                                        <th className="py-3 text-muted fw-bold" style={{ fontSize: '12px', textTransform: 'uppercase' }}>Département</th>
+                                        <th className="py-3 text-muted fw-bold" style={{ fontSize: '12px', textTransform: 'uppercase' }}>Département / Statut</th>
                                         <th className="py-3 text-center text-muted fw-bold" style={{ fontSize: '12px', textTransform: 'uppercase' }}>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {employees.map(emp => (
+                                    {filteredEmployees.map(emp => (
                                         <tr key={emp.id}>
                                             <td className="px-4 py-3">
                                                 <div className="d-flex align-items-center">

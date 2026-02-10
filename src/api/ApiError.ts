@@ -1,4 +1,3 @@
-// src/api/ApiError.ts
 
 /**
  * Classe d'erreur personnalisée pour les problèmes rencontrés avec l'API.

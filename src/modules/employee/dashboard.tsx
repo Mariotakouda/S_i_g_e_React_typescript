@@ -33,190 +33,146 @@ export default function EmployeeDashboard() {
     tasks: Task[];
     leaves: LeaveRequest[];
     announcements: Announcement[];
-  }>({
-    presences: [],
-    tasks: [],
-    leaves: [],
-    announcements: [],
-  });
+  }>({ presences: [], tasks: [], leaves: [], announcements: [] });
 
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasNewAnnouncements, setHasNewAnnouncements] = useState(false);
 
-  // ✅ CORRECTION : useEffect optimisé avec dépendance stable
   useEffect(() => {
     let isMounted = true;
-    
     async function loadDashboard() {
-      // ✅ Attendre que employee OU user soit disponible
-      if (!employee?.id && !user?.id) {
-        console.log("⏳ [Dashboard] En attente des données utilisateur...");
-        return;
-      }
-
-      // ✅ Si on a user mais pas employee, essayer de charger depuis /me
+      if (!employee?.id && !user?.id) return;
       if (!employee?.id && user?.id) {
-        console.log("🔄 [Dashboard] Chargement des données employee depuis /me...");
         try {
           const meResponse = await api.get("/me");
-          if (meResponse.data.employee && setEmployee) {
+          if (meResponse.data.employee && setEmployee && isMounted) {
             setEmployee(meResponse.data.employee);
             localStorage.setItem("employee", JSON.stringify(meResponse.data.employee));
-            return; // Le useEffect se redéclenchera avec employee.id
+            return;
           }
-        } catch (err) {
-          console.error("❌ [Dashboard] Erreur /me:", err);
-        }
+        } catch (err) { console.error("Erreur sync /me", err); }
       }
-
-      if (!employee?.id) {
-        console.log("⚠️ [Dashboard] Impossible de charger les données sans employee.id");
-        return;
-      }
-      
+      if (!employee?.id) return;
       try {
         setLoading(true);
-        console.log("📊 [Dashboard] Chargement pour employee.id:", employee.id);
-        
         const endpoints = ["/me/presences", "/me/tasks", "/me/leave-requests", "/me/announcements"];
         const responses = await Promise.all(
-          endpoints.map(url => 
-            api.get(url).catch(err => {
-              console.error(`❌ Erreur ${url}:`, err.response?.data || err.message);
-              return { data: [] };
-            })
-          )
+          endpoints.map(url => api.get(url).catch(() => ({ data: [] })))
         );
-        
         if (isMounted) {
-          setData({
-            presences: responses[0].data?.data || responses[0].data || [],
-            tasks: responses[1].data?.data || responses[1].data || [],
-            leaves: responses[2].data?.data || responses[2].data || [],
-            announcements: responses[3].data?.data || responses[3].data || [],
-          });
-          
-          console.log("✅ [Dashboard] Données chargées avec succès");
+          const presences = responses[0].data?.data || responses[0].data || [];
+          const tasks = responses[1].data?.data || responses[1].data || [];
+          const leaves = responses[2].data?.data || responses[2].data || [];
+          const announcements = responses[3].data?.data || responses[3].data || [];
+          setData({ presences, tasks, leaves, announcements });
+          const lastRead = localStorage.getItem("last_announcement_read");
+          if (announcements.length > 0) {
+            const latestDate = announcements[0].created_at;
+            setHasNewAnnouncements(!lastRead || latestDate > lastRead);
+          }
         }
-        
       } catch (err) {
-        console.error("❌ [Dashboard] Erreur critique:", err);
-        if (isMounted) {
-          setError("Erreur lors de la synchronisation des données.");
-        }
+        if (isMounted) setError("Erreur lors de la recuperation des donnees.");
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        if (isMounted) setLoading(false);
       }
     }
-    
     loadDashboard();
-    
-    return () => {
-      isMounted = false;
-    };
-  }, [employee?.id, user?.id, setEmployee]); // ✅ Dépendances : employee.id, user.id et setEmployee
+    return () => { isMounted = false; };
+  }, [employee?.id, user?.id, setEmployee]);
+
+  const markAnnouncementsAsRead = () => {
+    if (data.announcements.length > 0) {
+      localStorage.setItem("last_announcement_read", data.announcements[0].created_at);
+      setHasNewAnnouncements(false);
+    }
+  };
 
   const handlePhotoUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !employee) return;
-
     const formData = new FormData();
     formData.append("profile_photo", file);
-
     try {
       setUploading(true);
-      setError(null);
-      
       const response = await api.post("/me/profile-photo", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
-      
-      // ✅ CORRECTION 3 : Mise à jour unique et propre
       if (setEmployee && response.data.url) {
-        const updatedEmployee = {
-          ...employee,
-          profile_photo_url: response.data.url
-        };
-        setEmployee(updatedEmployee as any);
-        localStorage.setItem("employee", JSON.stringify(updatedEmployee));
+        const updated = { ...employee, profile_photo_url: response.data.url };
+        setEmployee(updated as any);
+        localStorage.setItem("employee", JSON.stringify(updated));
       }
-      
-      alert("✅ Photo de profil mise à jour !");
-
-    } catch (err: any) {
-      console.error("❌ Erreur upload photo:", err);
-      setError("Erreur lors de l'envoi de la photo");
-    } finally {
-      setUploading(false);
-      e.target.value = '';
-    }
+    } catch (err) { setError("Erreur upload photo"); }
+    finally { setUploading(false); e.target.value = ''; }
   };
-
-  if (loading) return (
-    <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
-      <div className="spinner-border text-primary" role="status"><span className="visually-hidden">Chargement...</span></div>
-    </div>
-  );
 
   return (
     <div className="bg-light min-vh-100 py-4 py-md-5">
+      <style>{`
+        @keyframes skeleton-loading {
+          0% { background-color: #e9ecef; }
+          100% { background-color: #f8f9fa; }
+        }
+        .skeleton {
+          animation: skeleton-loading 1s linear infinite alternate;
+          border-radius: 4px;
+        }
+      `}</style>
+      
       <div className="container">
         
-        <header className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-3 border-bottom gap-3">
+        <header className="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom gap-3">
           <div>
             <h1 className="h4 fw-bold text-dark mb-1">Tableau de bord</h1>
-            <p className="text-muted small mb-0">Espace personnel de <span className="fw-semibold text-primary">{user?.name || employee?.first_name}</span></p>
+            <p className="text-muted small mb-0">Session active : <span className="fw-semibold text-primary">{user?.name || 'Utilisateur'}</span></p>
           </div>
-          <button onClick={logout} className="btn btn-outline-danger btn-sm d-flex align-items-center gap-2 align-self-start shadow-sm px-3">
-            <Icons.Logout /> Déconnexion
-          </button>
+          <div className="d-flex align-items-center gap-3">
+            <Link to="/employee/announcements" onClick={markAnnouncementsAsRead} className="btn btn-white border shadow-sm btn-sm position-relative">
+              <Icons.Bell />
+              {hasNewAnnouncements && <span className="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" />}
+            </Link>
+            <button onClick={logout} className="btn btn-outline-danger btn-sm d-flex align-items-center gap-2 shadow-sm">
+              <Icons.Logout /> Deconnexion
+            </button>
+          </div>
         </header>
 
         {error && <div className="alert alert-danger border-0 shadow-sm">{error}</div>}
 
+        {/* Profil Card */}
         <div className="card border-0 shadow-sm rounded-4 mb-4">
           <div className="card-body p-4">
             <div className="row align-items-center g-4">
               <div className="col-auto">
                 <div className="position-relative">
-                  <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm overflow-hidden" 
-                       style={{ width: '85px', height: '85px', border: '3px solid #fff' }}>
-                    {uploading ? (
-                      <div className="spinner-border spinner-border-sm text-white" />
-                    ) : employee?.profile_photo_url ? (
-                      <img src={employee.profile_photo_url} className="w-100 h-100 object-fit-cover" alt="Avatar" />
-                    ) : <span style={{fontSize: '24px'}}>{employee?.first_name?.charAt(0)}{employee?.last_name?.charAt(0)}</span>}
-                  </div>
-                  <label 
-                    htmlFor="avatar-upload" 
-                    className="position-absolute bottom-0 end-0 bg-white rounded-circle shadow-sm d-flex align-items-center justify-content-center border" 
-                    style={{ width: '30px', height: '30px', cursor: uploading ? 'not-allowed' : 'pointer', opacity: uploading ? 0.5 : 1 }}
-                    title={uploading ? "Upload en cours..." : "Changer la photo"}
-                  >
-                    <Icons.Camera />
-                    <input 
-                      type="file" 
-                      id="avatar-upload" 
-                      className="d-none" 
-                      accept="image/jpeg,image/png,image/jpg,image/gif" 
-                      onChange={handlePhotoUpload} 
-                      disabled={uploading} 
-                    />
+                  {loading ? (
+                    <div className="skeleton rounded-circle" style={{ width: '85px', height: '85px' }} />
+                  ) : (
+                    <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm overflow-hidden" 
+                         style={{ width: '85px', height: '85px', border: '3px solid #fff' }}>
+                      {uploading ? <div className="spinner-border spinner-border-sm text-white" /> : 
+                        employee?.profile_photo_url ? <img src={employee.profile_photo_url} className="w-100 h-100 object-fit-cover" alt="Profil" /> :
+                        <span style={{fontSize: '24px'}}>{employee?.first_name?.[0]}{employee?.last_name?.[0]}</span>
+                      }
+                    </div>
+                  )}
+                  <label htmlFor="avatar-upload" className="position-absolute bottom-0 end-0 bg-white rounded-circle shadow-sm d-flex align-items-center justify-content-center border" style={{ width: '30px', height: '30px', cursor: 'pointer' }}>
+                    <Icons.Camera /><input type="file" id="avatar-upload" className="d-none" onChange={handlePhotoUpload} accept="image/*" />
                   </label>
                 </div>
               </div>
 
               <div className="col">
                 <div className="row g-3">
-                  <InfoItem label="Collaborateur" value={`${employee?.last_name} ${employee?.first_name}`} />
-                  <InfoItem label="Département" value={employee?.department?.name || "Général"} />
-                  <InfoItem label="Poste" value={employee?.roles?.[0]?.name || "Membre"} />
+                  <InfoItem label="Collaborateur" value={`${employee?.first_name} ${employee?.last_name}`} loading={loading} />
+                  <InfoItem label="Departement" value={employee?.department?.name || "General"} loading={loading} />
+                  <InfoItem label="Poste actuel" value={employee?.roles?.[0]?.name || "Membre"} loading={loading} />
                   <div className="col-6 col-md-3">
-                    <label className="text-uppercase text-muted fw-bold d-block mb-1" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>Statut</label>
-                    <p className="mb-0 small fw-bold text-success">● Actif</p>
+                    <label className="text-uppercase text-muted fw-bold d-block mb-1" style={{ fontSize: '10px' }}>Statut</label>
+                    {loading ? <div className="skeleton" style={{ width: '40px', height: '16px' }} /> : <p className="mb-0 small fw-bold text-success">Actif</p>}
                   </div>
                 </div>
               </div>
@@ -224,19 +180,20 @@ export default function EmployeeDashboard() {
           </div>
         </div>
 
+        {/* Grille de Sections */}
         <div className="row g-4">
           <SectionCard title="Missions en cours" icon={<Icons.Task />} link="/employee/tasks">
-            {data.tasks.length === 0 ? <EmptyState /> : (
+            {loading ? <SkeletonList count={3} /> : data.tasks.length === 0 ? <EmptyState /> : (
               <div className="vstack gap-2">
                 {data.tasks.slice(0, 3).map((t) => (
-                  <div key={t.id} className="p-3 bg-light rounded-3 border-0 shadow-none border-start border-primary border-4">
+                  <div key={t.id} className="p-3 bg-light rounded-3 border-start border-primary border-4 shadow-sm">
                     <div className="d-flex justify-content-between align-items-center">
                       <h6 className="mb-0 fw-bold small text-truncate pe-2">{t.title}</h6>
-                      <Link to={`/employee/tasks/${t.id}`} className="text-primary text-decoration-none small fw-bold">Détails</Link>
+                      <Link to={`/employee/tasks/${t.id}`} className="text-primary text-decoration-none small fw-bold">Details</Link>
                     </div>
                     <div className="d-flex justify-content-between align-items-center mt-2">
                       <StatusBadge status={t.status} />
-                      <span className="text-muted" style={{fontSize: '11px'}}>📅 {t.due_date || 'Sans date'}</span>
+                      <span className="text-muted" style={{fontSize: '11px'}}>Echeance: {t.due_date || 'N/A'}</span>
                     </div>
                   </div>
                 ))}
@@ -244,43 +201,41 @@ export default function EmployeeDashboard() {
             )}
           </SectionCard>
 
-          <SectionCard title="Historique de Présence" icon={<Icons.Calendar />} link="/employee/presences">
-            {data.presences.length === 0 ? <EmptyState text="Aucune présence enregistrée" /> : (
+          <SectionCard title="Historique Presence" icon={<Icons.Calendar />} link="/employee/presences">
+            {loading ? <SkeletonList count={4} /> : data.presences.length === 0 ? <EmptyState text="Aucune donnee de presence" /> : (
               <div className="vstack gap-2">
-                {data.presences.slice(0, 3).map((p) => (
-                  <div key={p.id} className="d-flex justify-content-between align-items-center p-2 px-3 bg-light rounded-3 border">
-                    <span className="small fw-semibold">{new Date(p.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</span>
-                    <span className={`badge rounded-pill ${p.status === 'présent' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'}`}>{p.status}</span>
+                {data.presences.slice(0, 4).map((p) => (
+                  <div key={p.id} className="d-flex justify-content-between align-items-center p-2 px-3 bg-white border rounded-3">
+                    <span className="small fw-semibold">{new Date(p.date).toLocaleDateString('fr-FR')}</span>
+                    <span className={`small fw-bold ${p.status === 'présent' ? 'text-success' : 'text-danger'}`}>{p.status}</span>
                   </div>
                 ))}
               </div>
             )}
           </SectionCard>
 
-          <SectionCard title="Demandes de Congés" icon={<Icons.User />} link="/employee/leave-requests">
+          <SectionCard title="Demandes de Conges" icon={<Icons.User />} link="/employee/leave-requests">
             <Link to="/employee/leave-requests/create" className="btn btn-primary btn-sm w-100 mb-3 rounded-3 shadow-none fw-bold">Nouvelle Demande</Link>
-            {data.leaves.length === 0 ? <EmptyState text="Aucune demande de congé" /> : (
+            {loading ? <SkeletonList count={2} /> : data.leaves.length === 0 ? <EmptyState text="Aucune demande" /> : (
               data.leaves.slice(0, 2).map((l) => (
-                <div key={l.id} className="p-2 px-3 border rounded-3 bg-light mb-2">
-                  <div className="d-flex justify-content-between align-items-center">
-                    <div className="small fw-bold">{l.start_date}</div>
-                    <span className="badge bg-warning-subtle text-warning border border-warning-subtle">{l.status}</span>
-                  </div>
+                <div key={l.id} className="p-2 px-3 border rounded-3 bg-white mb-2 d-flex justify-content-between align-items-center">
+                  <span className="small fw-bold">{l.start_date}</span>
+                  <span className="badge bg-warning-subtle text-warning border border-warning-subtle">{l.status}</span>
                 </div>
               ))
             )}
           </SectionCard>
 
-          <SectionCard title="Annonces Récentes" icon={<Icons.Bell />} link="/employee/announcements">
-            {data.announcements.length === 0 ? <EmptyState text="Aucune communication" /> : (
+          <SectionCard title="Annonces Recentes" icon={<Icons.Bell />} link="/employee/announcements">
+            {loading ? <SkeletonList count={3} /> : data.announcements.length === 0 ? <EmptyState text="Aucune communication" /> : (
               <div className="vstack gap-2">
                 {data.announcements.slice(0, 3).map((a) => (
-                  <div key={a.id} className="p-3 rounded-3 bg-light border-start border-4" style={{ borderLeftColor: a.is_general ? '#0d6efd' : '#ffc107' }}>
+                  <div key={a.id} className="p-3 rounded-3 bg-white border-start border-4 border-info">
                     <div className="d-flex justify-content-between align-items-center mb-1">
                       <span className="fw-bold small">{a.title}</span>
                       <span className="text-muted" style={{ fontSize: '10px' }}>{new Date(a.created_at).toLocaleDateString()}</span>
                     </div>
-                    <p className="mb-0 text-muted" style={{ fontSize: '11px' }}>{a.is_general ? "Annonce globale" : `Dépt: ${a.department?.name}`}</p>
+                    <p className="mb-0 text-muted" style={{ fontSize: '11px' }}>{a.is_general ? "Annonce globale" : "Annonce departementale"}</p>
                   </div>
                 ))}
               </div>
@@ -292,7 +247,7 @@ export default function EmployeeDashboard() {
   );
 }
 
-// --- Utils ---
+// --- Composants Internes ---
 function SectionCard({ title, icon, children, link }: any) {
   return (
     <div className="col-12 col-md-6">
@@ -309,11 +264,25 @@ function SectionCard({ title, icon, children, link }: any) {
   );
 }
 
-function InfoItem({ label, value }: { label: string, value: string }) {
+function InfoItem({ label, value, loading }: { label: string, value: string, loading?: boolean }) {
   return (
     <div className="col-6 col-md-3 text-truncate">
-      <label className="text-uppercase text-muted fw-bold d-block mb-1" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>{label}</label>
-      <p className="mb-0 fw-semibold text-dark small">{value}</p>
+      <label className="text-uppercase text-muted fw-bold d-block mb-1" style={{ fontSize: '10px' }}>{label}</label>
+      {loading ? (
+        <div className="skeleton" style={{ width: '80%', height: '18px' }} />
+      ) : (
+        <p className="mb-0 fw-semibold text-dark small">{value}</p>
+      )}
+    </div>
+  );
+}
+
+function SkeletonList({ count }: { count: number }) {
+  return (
+    <div className="vstack gap-2">
+      {[...Array(count)].map((_, i) => (
+        <div key={i} className="skeleton" style={{ height: '50px', borderRadius: '8px' }} />
+      ))}
     </div>
   );
 }
@@ -328,6 +297,6 @@ function StatusBadge({ status }: { status: string }) {
   return <span className={`badge ${s.bg} ${s.text} fw-bold`} style={{fontSize: '10px'}}>{s.label}</span>;
 }
 
-function EmptyState({ text = "Rien à afficher" }) {
+function EmptyState({ text = "Rien a afficher" }) {
   return <p className="text-center text-muted fst-italic py-4 small">{text}</p>;
 }

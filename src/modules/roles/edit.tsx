@@ -1,4 +1,3 @@
-// src/modules/roles/edit.tsx
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { RoleService } from "./service";
@@ -7,6 +6,34 @@ import type { RolePayload } from "./model";
 interface FormErrors {
   name?: string[];
 }
+
+/**
+ * SKELETON POUR L'ÉDITION
+ */
+const EditSkeleton = () => (
+  <div className="min-vh-100 py-5 bg-light">
+    <style>{`
+      @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+      .skeleton-box { background: #e9ecef; animation: pulse 1.5s infinite ease-in-out; border-radius: 10px; }
+    `}</style>
+    <div className="container" style={{ maxWidth: "600px" }}>
+      <div className="mb-4 d-flex align-items-center">
+        <div className="skeleton-box rounded-circle me-3" style={{ width: '38px', height: '38px' }}></div>
+        <div className="flex-grow-1">
+          <div className="skeleton-box mb-2" style={{ width: '40%', height: '20px' }}></div>
+          <div className="skeleton-box" style={{ width: '25%', height: '12px' }}></div>
+        </div>
+      </div>
+      <div className="card border-0 shadow-sm rounded-4">
+        <div className="card-body p-4 p-md-5">
+          <div className="skeleton-box mb-3" style={{ width: '100px', height: '15px' }}></div>
+          <div className="skeleton-box mb-4" style={{ width: '100%', height: '50px' }}></div>
+          <div className="skeleton-box mt-4" style={{ width: '100%', height: '45px', borderRadius: '50px' }}></div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
 export default function RoleEdit() {
   const { id } = useParams<{ id: string }>();
@@ -59,12 +86,7 @@ export default function RoleEdit() {
     }
   };
 
-  if (loading) return (
-    <div className="d-flex flex-column justify-content-center align-items-center vh-100 bg-light">
-      <div className="spinner-border text-primary spinner-border-sm mb-2" role="status"></div>
-      <span className="text-muted small fw-bold">Récupération des données...</span>
-    </div>
-  );
+  if (loading) return <EditSkeleton />;
 
   return (
     <div className="min-vh-100 py-5" style={{ backgroundColor: "#f8f9fa" }}>
@@ -72,17 +94,17 @@ export default function RoleEdit() {
         
         {/* Header de retour */}
         <div className="mb-4 d-flex align-items-center">
-          <button onClick={() => navigate(-1)} className="btn btn-white border shadow-sm rounded-circle me-3 d-flex align-items-center justify-content-center" style={{ width: '38px', height: '38px' }}>
+          <button onClick={() => navigate(-1)} className="btn btn-white border shadow-sm rounded-circle me-3 d-flex align-items-center justify-content-center" style={{ width: '38px', height: '38px', backgroundColor: 'white' }}>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           </button>
           <div>
             <h4 className="fw-bold mb-0 text-dark">Modifier le Rôle</h4>
-            <span className="text-muted small">ID: #{id} — <span className="text-primary fw-bold">{initialName}</span></span>
+            {/* <span className="text-muted small">ID: #{id} — <span className="text-primary fw-bold">{initialName}</span></span> */}
           </div>
         </div>
 
         <div className="card border-0 shadow-sm rounded-4">
-          <div className="card-body p-4 p-md-5">
+          <div className="card-body p-4 p-md-5 bg-white">
             {generalError && (
               <div className="alert alert-danger border-0 small d-flex align-items-center rounded-3 mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" className="me-2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -121,7 +143,7 @@ export default function RoleEdit() {
               <div className="d-flex flex-column gap-2 mt-5">
                 <button 
                   type="submit" 
-                  className="btn btn-primary btn-lg rounded-pill fw-bold shadow-sm d-flex align-items-center justify-content-center" 
+                  className="btn btn-primary btn-lg rounded-pill fw-bold shadow-sm d-flex align-items-center justify-content-center border-0" 
                   disabled={isSubmitting || name === initialName}
                 >
                   {isSubmitting ? (

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../../api/axios";
 import { AuthContext } from "../../context/AuthContext";
 
-// --- Composants Icônes SVG Professionnelles ---
+// --- Icônes ---
 const IconFile = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>;
 const IconDownload = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>;
 const IconUpload = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>;
@@ -11,6 +11,22 @@ const IconArrowLeft = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" h
 const IconCheck = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
 const IconCalendar = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
 const IconUser = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+
+// --- Skeleton Component ---
+const TaskDetailSkeleton = () => (
+    <div className="container py-4 py-lg-5" style={{ maxWidth: '850px' }}>
+        <style>{`
+            @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 0.3; } 100% { opacity: 0.6; } }
+            .skeleton-box { background: #e2e8f0; animation: pulse 1.5s infinite; border-radius: 8px; }
+        `}</style>
+        <div className="d-flex justify-content-between mb-4">
+            <div className="skeleton-box" style={{ width: '200px', height: '28px' }}></div>
+            <div className="skeleton-box" style={{ width: '100px', height: '38px' }}></div>
+        </div>
+        <div className="skeleton-box mb-4" style={{ width: '100%', height: '350px', borderRadius: '20px' }}></div>
+        <div className="skeleton-box" style={{ width: '100%', height: '150px', borderRadius: '20px' }}></div>
+    </div>
+);
 
 interface Task {
   id: number;
@@ -27,7 +43,8 @@ interface Task {
 export default function EmployeeTaskDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useContext(AuthContext);
+  // Suppression de 'user' ici pour éviter l'erreur ts(6133)
+  const { } = useContext(AuthContext); 
   const [task, setTask] = useState<Task | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -44,8 +61,6 @@ export default function EmployeeTaskDetail() {
   const loadTask = async () => {
     try {
       setLoading(true);
-      
-      // Charger à la fois la tâche ET les données de l'utilisateur
       const [taskRes, meRes] = await Promise.all([
         api.get(`/tasks/${id}`),
         api.get('/me')
@@ -56,22 +71,10 @@ export default function EmployeeTaskDetail() {
       
       setTask(taskData);
       
-      // ✅ Utiliser l'employee_id retourné par /me
       const currentUserEmployeeId = userData.employee?.id;
       const taskAssignedTo = taskData.employee_id;
       
-      console.log("🔍 Vérification propriétaire tâche:", {
-        currentUserEmployeeId,
-        taskAssignedTo,
-        isOwner: currentUserEmployeeId === taskAssignedTo,
-        userData
-      });
-      
-      if (currentUserEmployeeId && currentUserEmployeeId === taskAssignedTo) {
-        setIsTaskOwner(true);
-      } else {
-        setIsTaskOwner(false);
-      }
+      setIsTaskOwner(!!currentUserEmployeeId && currentUserEmployeeId === taskAssignedTo);
     } catch (err) {
       console.error("Erreur chargement mission:", err);
       navigate(-1); 
@@ -80,25 +83,9 @@ export default function EmployeeTaskDetail() {
     }
   };
 
-  // Charger les données de l'employé si elles sont manquantes
   useEffect(() => {
-    const loadEmployeeData = async () => {
-      if (user && !user.employee) {
-        try {
-          const res = await api.get('/me');
-          console.log("📥 Données employé chargées:", res.data);
-          if (res.data.employee) {
-            sessionStorage.setItem('employee_data', JSON.stringify(res.data.employee));
-          }
-        } catch (err) {
-          console.error("Erreur chargement données employé:", err);
-        }
-      }
-    };
-    
-    loadEmployeeData();
     if (id) loadTask(); 
-  }, [id, user]);
+  }, [id]);
 
   const handleDownloadPDF = async (e: React.MouseEvent, fileUrl: string, fileName: string) => {
     e.preventDefault();
@@ -121,9 +108,6 @@ export default function EmployeeTaskDetail() {
     }
   };
 
-  /**
-   * ✅ CORRECTION : Gestion de l'envoi du rapport avec FormData et Headers explicites
-   */
   const handleSubmitReport = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) {
@@ -132,23 +116,18 @@ export default function EmployeeTaskDetail() {
     }
 
     const formData = new FormData();
-    // Le nom du champ 'report_file' doit correspondre exactement à la validation Backend
     formData.append('report_file', file);
 
     setUploading(true);
     try {
       await api.post(`/tasks/${id}/submit-report`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        }
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
       
       alert("✅ Rapport envoyé avec succès !");
       setFile(null);
-      // Réinitialiser l'input file manuellement si nécessaire via un ID ou une ref
-      loadTask(); // Recharger pour mettre à jour l'affichage (statut, bouton téléchargement)
+      loadTask(); 
     } catch (err: any) {
-      console.error("Erreur upload rapport:", err.response?.data || err.message);
       const errorMsg = err.response?.data?.message || "Erreur lors de l'envoi du rapport.";
       alert(`❌ ${errorMsg}`);
     } finally {
@@ -156,11 +135,7 @@ export default function EmployeeTaskDetail() {
     }
   };
 
-  if (loading) return (
-    <div className="d-flex justify-content-center align-items-center min-vh-100">
-      <div className="spinner-border text-primary" role="status"></div>
-    </div>
-  );
+  if (loading) return <TaskDetailSkeleton />;
   
   if (!task) return null;
 
@@ -222,7 +197,7 @@ export default function EmployeeTaskDetail() {
         </div>
       </div>
 
-      {/* Section Rapport - UNIQUEMENT pour le propriétaire de la tâche */}
+      {/* Section Rapport */}
       {isTaskOwner && (
         <div className={`card shadow-sm border-0 rounded-4 overflow-hidden ${task.report_file ? 'border-success' : ''}`}>
           <div className={`card-body p-4 p-md-5 ${task.report_file ? 'bg-success-subtle' : 'bg-white'}`}>
@@ -253,11 +228,6 @@ export default function EmployeeTaskDetail() {
                     className={`form-control border-2 border-dashed shadow-none ${file ? 'border-primary' : ''}`} 
                     disabled={uploading}
                   />
-                  {file && (
-                     <div className="mt-2 small text-primary fw-bold d-flex align-items-center gap-1">
-                       <IconFile /> {file.name} ({(file.size / 1024).toFixed(1)} KB)
-                     </div>
-                  )}
                 </div>
                 <button 
                   type="submit" 
@@ -273,7 +243,6 @@ export default function EmployeeTaskDetail() {
         </div>
       )}
 
-      {/* Section Rapport pour les managers/admins - UNIQUEMENT SI le rapport existe */}
       {!isTaskOwner && task.report_file && (
         <div className="card shadow-sm border-0 rounded-4 overflow-hidden border-success">
           <div className="card-body p-4 p-md-5 bg-success-subtle">

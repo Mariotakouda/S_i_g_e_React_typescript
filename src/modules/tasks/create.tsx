@@ -1,31 +1,37 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../api/axios";
 import { AuthContext } from "../../context/AuthContext";
 
-// --- COMPOSANTS ICONES SVG (Style Lucide) ---
-const IconTarget = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="me-2 text-primary"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>;
-const IconUser = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="me-2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
-const IconCalendar = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="me-2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
-const IconFile = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="me-2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>;
-const IconAlert = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="me-2 text-danger"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>;
+// --- ICONS SVG (Lucide style) ---
+const Icons = {
+  Target: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+  User: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+  Calendar: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+  File: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>,
+  Upload: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>,
+  Alert: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-danger"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+};
 
-interface Employee {
-  id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-  department?: {
-    id: number;
-    name: string;
-  };
-}
+/**
+ * SKELETON STATE
+ */
+const CreateSkeleton = () => (
+  <div className="container py-5" style={{ maxWidth: "800px" }}>
+    <style>{`@keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } } .sk { background: #eef2f7; animation: pulse 1.5s infinite; border-radius: 12px; }`}</style>
+    <div className="sk mb-4" style={{ width: '250px', height: '35px' }}></div>
+    <div className="card border-0 shadow-sm p-4 p-md-5" style={{ borderRadius: '20px' }}>
+        {[1, 2, 3, 4].map(i => <div key={i} className="mb-4"><div className="sk mb-2" style={{ width: '120px', height: '20px' }}></div><div className="sk" style={{ width: '100%', height: '50px' }}></div></div>)}
+        <div className="sk mt-3" style={{ width: '100%', height: '60px' }}></div>
+    </div>
+  </div>
+);
 
 export default function TaskCreate() {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext) as any;
 
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingEmployees, setLoadingEmployees] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,54 +46,25 @@ export default function TaskCreate() {
   });
 
   const [file, setFile] = useState<File | null>(null);
-  const [fileName, setFileName] = useState<string>("");
-
   const isAdmin = user?.role === "admin";
 
-  useEffect(() => {
-    checkManagerStatus();
-    loadEmployees();
-  }, []);
-
-  const checkManagerStatus = async () => {
-    try {
-      const res = await api.get("/check-manager-status");
-      setIsManager(res.data.is_manager || false);
-    } catch (err) {
-      setIsManager(false);
-    }
-  };
-
-  const loadEmployees = async () => {
+  const initData = useCallback(async () => {
     try {
       setLoadingEmployees(true);
-      setError(null);
-      const res = await api.get("/employees");
-      const data = res.data.data || res.data;
-      if (Array.isArray(data)) {
-        setEmployees(data);
-      } else {
-        setError("Format de données invalide");
-      }
+      const [mgrRes, empRes] = await Promise.all([
+        api.get("/check-manager-status"),
+        api.get("/employees")
+      ]);
+      setIsManager(mgrRes.data.is_manager || false);
+      setEmployees(empRes.data.data || empRes.data || []);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Erreur de chargement");
+      setError("Erreur lors de l'initialisation des données.");
     } finally {
-      setLoadingEmployees(false);
+      setTimeout(() => setLoadingEmployees(false), 500);
     }
-  };
+  }, []);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      if (selectedFile.type !== "application/pdf") {
-        alert("Seuls les fichiers PDF sont acceptés");
-        e.target.value = "";
-        return;
-      }
-      setFile(selectedFile);
-      setFileName(selectedFile.name);
-    }
-  };
+  useEffect(() => { initData(); }, [initData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,203 +72,203 @@ export default function TaskCreate() {
 
     setLoading(true);
     const formData = new FormData();
-    formData.append("title", form.title);
-    formData.append("description", form.description);
-    formData.append("status", form.status);
-    formData.append("employee_id", form.employee_id);
-    if (form.due_date) formData.append("due_date", form.due_date);
+    Object.entries(form).forEach(([key, val]) => formData.append(key, val));
     if (file) formData.append("task_file", file);
 
     try {
-      await api.post("/tasks", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      
-      // On utilise un petit délai pour éviter le crash 'removeChild' de React avec l'alerte
+      await api.post("/tasks", formData, { headers: { "Content-Type": "multipart/form-data" } });
       alert("Mission créée avec succès !");
-      setTimeout(() => {
-        if (isAdmin) navigate("/admin/tasks");
-        else if (isManager) navigate("/employee/team-tasks");
-        else navigate("/employee/tasks");
-      }, 100);
-
+      const path = isAdmin ? "/admin/tasks" : (isManager ? "/employee/team-tasks" : "/employee/tasks");
+      navigate(path);
     } catch (err: any) {
-      alert("Erreur : " + (err.response?.data?.message || "Erreur lors de la création"));
+      alert("Erreur : " + (err.response?.data?.message || "Échec de création"));
     } finally {
       setLoading(false);
     }
   };
 
-  if (loadingEmployees) {
-    return (
-      <div className="d-flex flex-column justify-content-center align-items-center vh-100 bg-light">
-        <div className="spinner-border text-primary mb-3" role="status" />
-        <p className="text-muted fw-bold">Initialisation du formulaire...</p>
-      </div>
-    );
-  }
+  if (loadingEmployees) return <div className="min-vh-100 bg-light"><CreateSkeleton /></div>;
 
   return (
-    <div className="container py-5">
-      <div className="row justify-content-center">
-        <div className="col-12 col-lg-9 col-xl-8">
-          <div className="card shadow-sm border-0 rounded-4">
-            <div className="card-body p-4 p-md-5">
-              
-              {/* En-tête */}
-              <div className="mb-5 border-bottom pb-4">
-                <h2 className="card-title fw-bold d-flex align-items-center mb-2">
-                  <IconTarget /> Créer une nouvelle mission
+    <div className="min-vh-100 py-5" style={{ backgroundColor: "#F9FAFB" }}>
+      <div className="container" style={{ maxWidth: "850px" }}>
+        
+        {/* Header Section */}
+        <div className="mb-4 d-flex align-items-center justify-content-between">
+            <div>
+                <h2 className="h3 fw-bold text-dark d-flex align-items-center gap-3 mb-1">
+                    <Icons.Target /> Nouvelle Mission
                 </h2>
-                <p className="text-muted mb-0 small">
-                  {isAdmin 
-                    ? "Attribuez des objectifs clairs à n'importe quel collaborateur de l'organisation." 
-                    : "Attribuez une tâche aux membres de votre département."}
+                <p className="text-muted mb-0">
+                    {isAdmin ? "Assignation globale" : "Gestion d'équipe : " + user?.department?.name}
                 </p>
+            </div>
+            <button onClick={() => navigate(-1)} className="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                Retour
+            </button>
+        </div>
+
+        {error && (
+            <div className="alert alert-danger border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center">
+                <Icons.Alert /> <span className="ms-2">{error}</span>
+            </div>
+        )}
+
+        <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
+          <div className="card-body p-4 p-md-5">
+            <form onSubmit={handleSubmit}>
+              
+              {/* Titre & Description */}
+              <div className="mb-4">
+                <label className="form-label fw-bold text-dark small mb-2 uppercase-label">Désignation de la tâche</label>
+                <input 
+                  type="text" 
+                  className="form-control custom-field fs-5" 
+                  required 
+                  value={form.title}
+                  onChange={e => setForm({...form, title: e.target.value})} 
+                  placeholder="Ex: Rédaction du rapport trimestriel..."
+                />
               </div>
 
-              {/* Message d'erreur */}
-              {error && employees.length === 0 && (
-                <div className="alert alert-danger rounded-3 d-flex align-items-center justify-content-between mb-4">
-                  <div className="d-flex align-items-center">
-                    <IconAlert /> {error}
-                  </div>
-                  <button onClick={loadEmployees} className="btn btn-sm btn-outline-danger">Actualiser</button>
+              <div className="mb-4">
+                <label className="form-label fw-bold text-dark small mb-2 uppercase-label">Consignes détaillées</label>
+                <textarea 
+                  className="form-control custom-field" 
+                  rows={4}
+                  value={form.description}
+                  onChange={e => setForm({...form, description: e.target.value})} 
+                  placeholder="Quels sont les objectifs et les livrables attendus ?"
+                />
+              </div>
+
+              <div className="row g-4 mb-4">
+                {/* Employee Select */}
+                <div className="col-md-7">
+                  <label className="form-label fw-bold text-dark small mb-2 d-flex align-items-center gap-2">
+                    <Icons.User /> Assignation
+                  </label>
+                  <select 
+                    className="form-select custom-field" 
+                    required 
+                    value={form.employee_id}
+                    onChange={e => setForm({...form, employee_id: e.target.value})} 
+                  >
+                    <option value="">Sélectionner un collaborateur</option>
+                    {employees.map(emp => (
+                      <option key={emp.id} value={emp.id}>
+                        {emp.first_name} {emp.last_name} {emp.department ? `(${emp.department.name})` : ""}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              )}
 
-              <form onSubmit={handleSubmit}>
-                <div className="row g-4">
-                  
-                  {/* Titre */}
-                  <div className="col-12">
-                    <label className="form-label fw-bold text-dark small">Titre de la mission *</label>
-                    <input 
-                      type="text" 
-                      className="form-control form-control-lg border-2 shadow-none fs-6" 
-                      required 
-                      value={form.title}
-                      onChange={e => setForm({...form, title: e.target.value})} 
-                      placeholder="Saisissez le titre de la tâche"
-                    />
-                  </div>
+                {/* Due Date */}
+                <div className="col-md-5">
+                  <label className="form-label fw-bold text-dark small mb-2 d-flex align-items-center gap-2">
+                    <Icons.Calendar /> Échéance
+                  </label>
+                  <input 
+                    type="date" 
+                    className="form-control custom-field" 
+                    value={form.due_date}
+                    onChange={e => setForm({...form, due_date: e.target.value})} 
+                    min={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+              </div>
 
-                  {/* Description */}
-                  <div className="col-12">
-                    <label className="form-label fw-bold text-dark small">Consignes détaillées</label>
-                    <textarea 
-                      className="form-control border-2 shadow-none fs-6" 
-                      rows={4}
-                      value={form.description}
-                      onChange={e => setForm({...form, description: e.target.value})} 
-                      placeholder="Décrivez les livrables attendus..."
-                    />
-                  </div>
-
-                  {/* Assigner à */}
-                  <div className="col-12">
-                    <label className="form-label fw-bold text-dark small d-flex align-items-center">
-                      <IconUser /> Assigner à *
-                    </label>
-                    <select 
-                      className="form-select form-select-lg border-2 shadow-none fs-6" 
-                      required 
-                      value={form.employee_id}
-                      onChange={e => setForm({...form, employee_id: e.target.value})} 
-                      disabled={employees.length === 0}
-                    >
-                      <option value="">-- Sélectionner un employé --</option>
-                      {employees.map(emp => (
-                        <option key={emp.id} value={emp.id}>
-                          {emp.first_name} {emp.last_name} {emp.department ? `(${emp.department.name})` : ""}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Statut & Date (Alignés avec hauteur fixe) */}
-                  <div className="col-md-6">
-                    <label className="form-label fw-bold text-dark small">Statut initial</label>
-                    <select 
-                      className="form-select border-2 shadow-none" 
-                      style={{ height: '48px' }}
-                      value={form.status}
-                      onChange={e => setForm({...form, status: e.target.value})}
-                    >
-                      <option value="pending">En attente</option>
-                      <option value="in_progress">En cours</option>
-                    </select>
-                  </div>
-
-                  <div className="col-md-6">
-                    <label className="form-label fw-bold text-dark small d-flex align-items-center">
-                      <IconCalendar /> Date limite
-                    </label>
-                    <input 
-                      type="date" 
-                      className="form-control border-2 shadow-none" 
-                      style={{ height: '48px' }}
-                      value={form.due_date}
-                      onChange={e => setForm({...form, due_date: e.target.value})} 
-                      min={new Date().toISOString().split('T')[0]}
-                    />
-                  </div>
-
-                  {/* Zone de téléchargement */}
-                  <div className="col-12">
-                    <label className="form-label fw-bold text-dark small">Fichier joint (PDF uniquement)</label>
-                    <div className="border border-2 border-dashed rounded-3 p-4 text-center bg-light position-relative" style={{ borderStyle: 'dashed !important' }}>
-                      <input 
-                        type="file" 
-                        accept=".pdf" 
-                        onChange={handleFileChange}
-                        className="position-absolute top-0 start-0 w-100 h-100 opacity-0"
-                        style={{ cursor: 'pointer' }}
-                      />
-                      {fileName ? (
-                        <div className="d-flex align-items-center justify-content-center text-success">
-                          <IconFile /> <span className="fw-bold">{fileName}</span>
-                          <button type="button" className="btn btn-sm btn-link text-danger ms-2" onClick={() => {setFile(null); setFileName("")}}>Supprimer</button>
-                        </div>
-                      ) : (
-                        <div className="text-muted">
-                          <IconFile />
-                          <p className="mb-0 mt-2 small">Cliquez pour importer un document</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Boutons d'action */}
-                  <div className="col-12 mt-5">
-                    <div className="d-flex flex-column flex-md-row gap-3">
-                      <button 
-                        type="submit" 
-                        disabled={loading || employees.length === 0}
-                        className="btn btn-primary btn-lg flex-grow-1 fw-bold rounded-3 shadow-sm py-3 px-4"
-                      >
-                        {loading ? "Création en cours..." : "Enregistrer la mission"}
-                      </button>
-                      <button 
-                        type="button"
-                        onClick={() => navigate(-1)}
-                        className="btn btn-light btn-lg px-4 fw-semibold border rounded-3"
-                      >
-                        Annuler
-                      </button>
-                    </div>
+              {/* Upload Zone */}
+              <div className="mb-5">
+                <label className="form-label fw-bold text-dark small mb-2 uppercase-label">Fichier de référence (PDF)</label>
+                <div className="upload-wrapper">
+                  <input 
+                    type="file" 
+                    accept=".pdf" 
+                    onChange={e => setFile(e.target.files?.[0] || null)}
+                    className="upload-input"
+                  />
+                  <div className="upload-placeholder">
+                    <div className="icon-box mb-2"><Icons.Upload /></div>
+                    <span className="fw-bold d-block">{file ? file.name : "Glissez un fichier ou cliquez ici"}</span>
+                    <span className="text-muted small">Format PDF uniquement - Max 10Mo</span>
                   </div>
                 </div>
-              </form>
-            </div>
+              </div>
+
+              {/* Submit Actions */}
+              <div className="d-flex flex-column flex-md-row gap-3 pt-4 border-top">
+                <button 
+                  type="submit" 
+                  disabled={loading}
+                  className="btn btn-primary flex-grow-1 py-3 fw-bold rounded-3 shadow-sm"
+                >
+                  {loading ? <span className="spinner-border spinner-border-sm me-2"></span> : "Lancer la mission"}
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => navigate(-1)}
+                  className="btn btn-light px-4 py-3 fw-bold text-muted border"
+                  style={{ borderRadius: '12px' }}
+                >
+                  Annuler
+                </button>
+              </div>
+
+            </form>
           </div>
         </div>
       </div>
 
       <style>{`
-        .border-dashed { border-style: dashed !important; border-color: #dee2e6 !important; }
-        .form-control:focus, .form-select:focus { border-color: #0d6efd !important; box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.05) !important; }
-        .btn-primary { background-color: #0d6efd; border: none; transition: transform 0.1s ease; }
+        .uppercase-label { text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.75rem; color: #64748b; }
+        .custom-field {
+          border: 2px solid #f1f5f9 !important;
+          background-color: #f8fafc !important;
+          padding: 14px 18px;
+          border-radius: 14px !important;
+          transition: all 0.2s ease;
+        }
+        .custom-field:focus {
+          border-color: #3b82f6 !important;
+          background-color: #fff !important;
+          box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1) !important;
+        }
+        .upload-wrapper {
+          position: relative;
+          border: 2px dashed #e2e8f0;
+          border-radius: 16px;
+          background: #fff;
+          transition: all 0.2s ease;
+        }
+        .upload-wrapper:hover { border-color: #3b82f6; background: #f0f7ff; }
+        .upload-input {
+          position: absolute;
+          width: 100%; height: 100%;
+          top: 0; left: 0;
+          opacity: 0; cursor: pointer;
+          z-index: 2;
+        }
+        .upload-placeholder {
+          padding: 30px;
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+        .icon-box {
+          width: 48px; height: 48px;
+          background: #eff6ff;
+          border-radius: 12px;
+          display: flex; align-items: center; justify-content: center;
+          color: #3b82f6;
+        }
+        .btn-primary {
+          background-color: #0d6efd;
+          border: none;
+          border-radius: 14px;
+          transition: transform 0.1s ease;
+        }
         .btn-primary:active { transform: scale(0.98); }
       `}</style>
     </div>
