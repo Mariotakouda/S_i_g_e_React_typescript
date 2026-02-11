@@ -41,47 +41,57 @@ export default function EmployeeDashboard() {
   const [hasNewAnnouncements, setHasNewAnnouncements] = useState(false);
 
   useEffect(() => {
-    let isMounted = true;
-    async function loadDashboard() {
-      if (!employee?.id && !user?.id) return;
-      if (!employee?.id && user?.id) {
-        try {
-          const meResponse = await api.get("/me");
-          if (meResponse.data.employee && setEmployee && isMounted) {
-            setEmployee(meResponse.data.employee);
-            localStorage.setItem("employee", JSON.stringify(meResponse.data.employee));
-            return;
-          }
-        } catch (err) { console.error("Erreur sync /me", err); }
+  let isMounted = true;
+
+  async function loadDashboard() {
+    if (!user?.id) return;
+
+    try {
+      setLoading(true);
+
+      // 1. On prépare les promesses. 
+      // Si on a déjà l'employé, on résout une promesse nulle immédiatement.
+      const profilePromise = !employee?.id 
+        ? api.get("/me") 
+        : Promise.resolve(null); // Utilise le point (.) pas (::)
+
+      const summaryPromise = api.get("/me/dashboard-summary");
+
+      // 2. On lance tout en parallèle
+      const [meRes, summaryRes] = await Promise.all([profilePromise, summaryPromise]);
+
+      if (!isMounted) return;
+
+      // 3. Correction de l'erreur TS : on vérifie que meRes n'est pas nul et possède 'data'
+      if (meRes && 'data' in meRes && meRes.data.employee && setEmployee) {
+        setEmployee(meRes.data.employee);
       }
-      if (!employee?.id) return;
-      try {
-        setLoading(true);
-        const endpoints = ["/me/presences", "/me/tasks", "/me/leave-requests", "/me/announcements"];
-        const responses = await Promise.all(
-          endpoints.map(url => api.get(url).catch(() => ({ data: [] })))
-        );
-        if (isMounted) {
-          const presences = responses[0].data?.data || responses[0].data || [];
-          const tasks = responses[1].data?.data || responses[1].data || [];
-          const leaves = responses[2].data?.data || responses[2].data || [];
-          const announcements = responses[3].data?.data || responses[3].data || [];
-          setData({ presences, tasks, leaves, announcements });
-          const lastRead = localStorage.getItem("last_announcement_read");
-          if (announcements.length > 0) {
-            const latestDate = announcements[0].created_at;
-            setHasNewAnnouncements(!lastRead || latestDate > lastRead);
-          }
-        }
-      } catch (err) {
-        if (isMounted) setError("Erreur lors de la recuperation des donnees.");
-      } finally {
-        if (isMounted) setLoading(false);
+
+      // 4. Ici summaryRes est forcément une AxiosResponse
+      const { presences, tasks, leave_requests, announcements } = summaryRes.data;
+
+      setData({
+        presences: presences || [],
+        tasks: tasks || [],
+        leaves: leave_requests || [],
+        announcements: announcements || []
+      });
+
+      // Gestion du cache local pour les annonces
+      if (announcements?.length > 0) {
+        const lastRead = localStorage.getItem("last_announcement_read");
+        setHasNewAnnouncements(!lastRead || announcements[0].created_at > lastRead);
       }
+    } catch (err) {
+      if (isMounted) setError("Erreur de chargement des données.");
+    } finally {
+      if (isMounted) setLoading(false);
     }
-    loadDashboard();
-    return () => { isMounted = false; };
-  }, [employee?.id, user?.id, setEmployee]);
+  }
+
+  loadDashboard();
+  return () => { isMounted = false; };
+}, [user?.id]); // On évite de mettre employee?.id ici pour stopper les boucles infinies
 
   const markAnnouncementsAsRead = () => {
     if (data.announcements.length > 0) {

@@ -62,7 +62,7 @@ html, body {
 
 /* L'image du logo HODO */
 .hero-logo {
-  height: 110px; /* Taille idéale pour un logo de navigation */
+  height: 70px; /* Taille idéale pour un logo de navigation */
   width: auto;  /* Préserve le ratio de l'image */
   object-fit: contain;
   /* Ombre portée pour détacher le logo du fond bleu */
@@ -105,7 +105,7 @@ html, body {
 }
 
 .highlight {
-  background: linear-gradient(to right, #fefeff, #b3b60d);
+  background: linear-gradient(to right, #fefeff, #5c1ad6);
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;

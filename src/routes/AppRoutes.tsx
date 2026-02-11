@@ -60,6 +60,7 @@ import EmployeeTaskDetail from "../modules/employee/EmployeeTaskDetail";
 import ManagerTeamTasks from "../modules/employee/ManagerTeamTasks";
 import ForgotPassword from "../modules/auth/ForgotPassword";
 import ResetPassword from "../modules/auth/ResetPassword";
+import PrivacyPolicy from "../Pages/PrivacyPolicy";
 
 export default function AppRoutes() {
   const { user, loading } = useContext(AuthContext);
@@ -83,6 +84,7 @@ export default function AppRoutes() {
     <Routes>
       {/* ========== PAGE D'ACCUEIL PUBLIQUE ========== */}
       <Route path="/" element={<Home />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} /> {/* <-- Nouvelle route ajoutée */}
 
       {/* ========== AUTHENTIFICATION (PUBLIQUE) ========== */}
       <Route

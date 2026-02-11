@@ -68,8 +68,8 @@ export default function AdminLayout() {
       {/* SIDEBAR */}
       <aside style={{ ...sidebarStyle, width: sidebarWidth, minWidth: sidebarWidth }}>
         <div style={{ padding: "32px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-          <div style={logoBoxStyle}>A</div>
-          {sidebarOpen && <h1 style={logoTextStyle}>ADMIN SPACE</h1>}
+          <div style={logoBoxStyle}>H</div>
+          {sidebarOpen && <h1 style={logoTextStyle}>ADMINISTRATOR</h1>}
         </div>
 
         <nav style={{ flex: 1, padding: "20px 12px", overflowY: "auto" }}>

@@ -38,13 +38,17 @@ export default function EmployeePresencePage() {
   const loadPresences = async () => {
     try {
       setLoading(true);
-      setError(null);
-      const data = await getMyPresences();
+      
+      // OPTIMISATION : Lancement des requêtes en parallèle
+      const [data, status] = await Promise.all([
+        getMyPresences(),
+        hasActiveCheckIn()
+      ]);
+
       setPresences(data);
-      const { active, presence } = await hasActiveCheckIn();
-      setActivePresence(active ? presence || null : null);
+      setActivePresence(status.active ? status.presence || null : null);
     } catch (err) {
-      setError("Impossible de charger les données de présence.");
+      setError("Impossible de charger les données.");
     } finally {
       setLoading(false);
     }

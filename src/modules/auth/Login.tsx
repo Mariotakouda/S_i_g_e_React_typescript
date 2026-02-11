@@ -1,4 +1,3 @@
-
 import { useState, useContext, type FormEvent, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom"; 
 import "./login.css";
@@ -14,7 +13,6 @@ export default function Login() {
   const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false); 
 
-  // Redirection automatique si l'utilisateur est déjà connecté
   useEffect(() => {
     if (user) {
       if (user.needs_password_change) {
@@ -34,7 +32,6 @@ export default function Login() {
     try {
       const loggedInUser: User = await login(email, password); 
       
-      // Logique de redirection après succès
       if (loggedInUser.needs_password_change) {
         navigate('/change-password', { replace: true });
       } else {
@@ -51,7 +48,6 @@ export default function Login() {
   return (
     <div className="login-container">
       <div className="login-card">
-        {/* BOUTON RETOUR ACCUEIL */}
         <button onClick={() => navigate("/")} className="back-button" title="Retour à l'accueil">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="19" y1="12" x2="5" y2="12"></line>
@@ -112,7 +108,6 @@ export default function Login() {
             </div>
           </div>
 
-          {/* LIEN MOT DE PASSE OUBLIÉ */}
           <div style={{ textAlign: 'right', marginBottom: '20px' }}>
             <Link 
               to="/forgot-password" 
@@ -125,6 +120,18 @@ export default function Login() {
           <button type="submit" className="login-button" disabled={isLoading}>
             {isLoading ? 'Connexion...' : 'Se connecter'}
           </button>
+
+          {/* AJOUT : Lien Politique de Confidentialité */}
+          <div style={{ marginTop: '24px', textAlign: 'center' }}>
+            <Link 
+              to="/privacy-policy" 
+              style={{ fontSize: '0.75rem', color: '#94a3b8', textDecoration: 'none' }}
+              onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+              onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+            >
+              Politique de confidentialité
+            </Link>
+          </div>
         </form>
       </div>
     </div>

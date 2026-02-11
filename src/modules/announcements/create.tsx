@@ -1,12 +1,15 @@
-import { useState, useEffect, useContext } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState, useEffect, useContext, memo } from "react";
+import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import { createAnnouncement, checkManagerStatus } from "./service";
 import { EmployeeService } from "../employees/service";
 import { DepartmentService } from "../departments/service";
 import type { Employee } from "../employees/model";
 
-// --- Composant Skeleton pour le chargement initial ---
+// --- Composants d'icônes mémoïsés ---
+const IconSend = memo(() => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="me-2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>);
+const IconAlert = memo(() => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="me-2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>);
+
 const AnnouncementSkeleton = () => (
   <div className="container py-4 py-lg-5" style={{ maxWidth: "1000px" }}>
     <div className="skeleton mb-4" style={{ width: '200px', height: '24px', borderRadius: '4px' }}></div>
@@ -25,11 +28,6 @@ const AnnouncementSkeleton = () => (
   </div>
 );
 
-// --- Icônes SVG ---
-const IconMegaphone = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="me-3 text-primary"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>;
-const IconSend = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="me-2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>;
-const IconAlert = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="me-2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>;
-
 export default function AnnouncementCreate() {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
@@ -38,7 +36,7 @@ export default function AnnouncementCreate() {
   const [departments, setDepartments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState(""); // Variable maintenant utilisée
+  const [error, setError] = useState("");
   const [targetType, setTargetType] = useState<"general" | "department" | "employee">("general");
 
   const [formData, setFormData] = useState({
@@ -52,62 +50,79 @@ export default function AnnouncementCreate() {
   const [managerInfo, setManagerInfo] = useState({ is_manager: false, dept_name: "" });
 
   useEffect(() => {
+    // Si pas d'utilisateur, on ne tente rien (évite les erreurs au montage)
+    if (!user) return;
+
+    let isMounted = true;
+
     async function init() {
       try {
         setLoading(true);
-        const status = await checkManagerStatus();
-        
+        // On vérifie le rôle directement ici car TS sait que user existe grâce au check plus haut
+        const isAdmin = user?.role === 'admin';
+
+        const [status, empData, deptResponse] = await Promise.all([
+          checkManagerStatus(),
+          isAdmin ? EmployeeService.fetchAllForSelect() : Promise.resolve([]),
+          isAdmin ? DepartmentService.list() : Promise.resolve({ data: [] })
+        ]);
+
+        if (!isMounted) return;
+
         if (status.is_manager) {
           setManagerInfo({ is_manager: true, dept_name: status.department_name || "votre département" });
-          if (user?.role !== 'admin') {
+          if (!isAdmin) {
             setTargetType("department");
             setFormData(p => ({ ...p, department_id: status.department_id, is_general: false }));
           }
         }
 
-        if (user?.role === 'admin') {
-          const [empData, deptResponse] = await Promise.all([
-            EmployeeService.fetchAllForSelect().catch(() => []),
-            DepartmentService.list().catch(() => ({ data: [] }))
-          ]);
+        if (isAdmin) {
           setEmployees(empData);
           setDepartments(deptResponse.data || []);
         }
       } catch (err) {
-        setError("Erreur lors de l'initialisation du formulaire. Veuillez réessayer.");
+        setError("Erreur lors de l'initialisation du formulaire.");
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
-    if (user) init();
+
+    init();
+    return () => { isMounted = false; };
   }, [user]);
 
-  useEffect(() => {
-  setFormData(p => ({
-    ...p,
-    // On force is_general à false si on cible un département ou un employé
-    is_general: targetType === "general", 
-    department_id: targetType === "department" ? p.department_id : null,
-    employee_id: targetType === "employee" ? p.employee_id : null,
-  }));
-}, [targetType]);
+  const handleTargetChange = (type: "general" | "department" | "employee") => {
+    setTargetType(type);
+    setFormData(prev => ({
+      ...prev,
+      is_general: type === "general",
+      department_id: null,
+      employee_id: null,
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting || !user) return;
+
     setSubmitting(true);
-    setError(""); // Reset de l'erreur au début de la soumission
+    setError("");
+    
     try {
       await createAnnouncement(formData);
-      navigate(user?.role === 'admin' ? "/admin/announcements" : "/employee/announcements");
+      const path = user.role === 'admin' ? "/admin/announcements" : "/employee/announcements";
+      navigate(path);
     } catch (err: any) {
       setError(err.response?.data?.message || "Une erreur est survenue lors de la publication.");
       setSubmitting(false);
     }
   };
 
-  if (loading) return (
+  // --- GARDE TS : Si user est null ou en chargement, on affiche le skeleton ---
+  if (!user || loading) return (
     <>
-      <style>{`.skeleton { background: linear-gradient(90deg, #f2f2f2 25%, #fafafa 50%, #f2f2f2 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; } @keyframes skeleton-loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
+      <style>{`.skeleton { background: linear-gradient(90deg, #f2f2f2 25%, #fafafa 50%, #f2f2f2 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; border-radius: 4px; } @keyframes skeleton-loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
       <AnnouncementSkeleton />
     </>
   );
@@ -116,55 +131,52 @@ export default function AnnouncementCreate() {
     <div className="bg-light min-vh-100 py-4 py-lg-5">
       <div className="container" style={{ maxWidth: "1000px" }}>
         
-        {/* En-tête */}
         <div className="d-flex justify-content-between align-items-end mb-4">
           <div>
             <nav aria-label="breadcrumb">
               <ol className="breadcrumb mb-2 small text-uppercase fw-bold">
-                <li className="breadcrumb-item"><Link to="#" className="text-decoration-none text-muted">Communications</Link></li>
+                <li className="breadcrumb-item"><span className="text-muted">Communications</span></li>
                 <li className="breadcrumb-item active text-primary">Nouveau</li>
               </ol>
             </nav>
             <h2 className="fw-bold text-dark mb-0 d-flex align-items-center">
-              <IconMegaphone /> Publier une annonce
+               Publier une annonce
             </h2>
           </div>
-          <button onClick={() => navigate(-1)} className="btn btn-white border shadow-sm px-4 fw-bold text-muted transition-all">
+          <button onClick={() => navigate(-1)} className="btn btn-white border shadow-sm px-4 fw-bold text-muted">
             Retour
           </button>
         </div>
 
-        {/* Affichage de l'erreur (Correction TS) */}
         {error && (
-          <div className="alert alert-danger border-0 shadow-sm rounded-4 mb-4 d-flex align-items-center p-3 animate-fade-in text-danger">
+          <div className="alert alert-danger border-0 shadow-sm rounded-4 mb-4 d-flex align-items-center p-3 text-danger animate-fade-in">
             <IconAlert /> {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="card border-0 shadow-lg rounded-4 overflow-hidden shadow-hover">
+        <form onSubmit={handleSubmit} className="card border-0 shadow-lg rounded-4 overflow-hidden">
           <div style={{ height: "5px", background: "linear-gradient(90deg, #2e2a5b 0%, #4e44a8 100%)" }}></div>
           
           <div className="card-body p-4 p-md-5 bg-white">
-            {/* SECTION AUDIENCE */}
             <div className="row mb-5">
               <div className="col-lg-4 border-end-lg">
                 <h5 className="fw-bold text-dark mb-2">Audience</h5>
-                <p className="text-muted small">Ciblez précisément les destinataires de votre message.</p>
+                <p className="text-muted small">Ciblez précisément les destinataires.</p>
               </div>
               <div className="col-lg-8 ps-lg-4">
-                {managerInfo.is_manager && user?.role !== 'admin' ? (
+                {managerInfo.is_manager && user.role !== 'admin' ? (
                   <div className="p-4 rounded-4 bg-primary bg-opacity-10 border border-primary border-opacity-10">
                     <span className="badge bg-primary mb-2 px-3 rounded-pill">Mode Manager</span>
                     <h6 className="fw-bold text-dark mb-1">Département : {managerInfo.dept_name}</h6>
-                    <p className="small text-muted mb-0">En tant qu'employé du prestataire, votre annonce sera visible par votre équipe.</p>
+                    <p className="small text-muted mb-0">En tant que superviseur, votre annonce sera visible par votre équipe.</p>
                   </div>
                 ) : (
                   <div className="bg-light p-1 rounded-4 d-flex gap-1 mb-4 shadow-sm">
-                    {["general", "department", "employee"].map((t) => (
+                    {(['general', 'department', 'employee'] as const).map((t) => (
                       <button 
                         key={t} type="button"
-                        onClick={() => setTargetType(t as any)}
-                        className={`btn flex-fill py-3 fw-bold border-0 transition-all rounded-3 ${targetType === t ? 'bg-white shadow-sm text-primary' : 'text-muted'}`}
+                        onClick={() => handleTargetChange(t)}
+                        className={`btn flex-fill py-3 fw-bold border-0 rounded-3 transition-all ${targetType === t ? 'bg-white shadow-sm text-primary' : 'text-muted'}`}
                       >
                         {t === 'general' ? 'Tout le monde' : t === 'department' ? 'Département' : 'Individuel'}
                       </button>
@@ -172,7 +184,7 @@ export default function AnnouncementCreate() {
                   </div>
                 )}
 
-                {user?.role === 'admin' && targetType !== "general" && (
+                {user.role === 'admin' && targetType !== "general" && (
                   <div className="animate-fade-in mt-3">
                     <label className="form-label small fw-bold text-muted text-uppercase mb-2">Sélectionner la cible</label>
                     <select 
@@ -197,18 +209,17 @@ export default function AnnouncementCreate() {
 
             <hr className="my-5 opacity-25" />
 
-            {/* SECTION CONTENU */}
             <div className="row mb-4">
               <div className="col-lg-4 border-end-lg">
                 <h5 className="fw-bold text-dark mb-2">Message</h5>
-                <p className="text-muted small">Rédigez un titre accrocheur et un contenu clair.</p>
+                <p className="text-muted small">Rédigez un titre accrocheur.</p>
               </div>
               <div className="col-lg-8 ps-lg-4">
                 <div className="mb-4">
                   <label className="form-label fw-bold small text-muted text-uppercase">Sujet de l'annonce</label>
                   <input 
                     type="text" className="form-control form-control-lg border-2 shadow-none py-3 px-4 rounded-3 fw-bold" 
-                    placeholder="Ex: Réunion d'équipe, Nouvelle procédure..."
+                    placeholder="Ex: Réunion d'équipe..."
                     value={formData.title}
                     onChange={e => setFormData({...formData, title: e.target.value})}
                     required 
@@ -233,7 +244,7 @@ export default function AnnouncementCreate() {
               <div className="col-lg-8 offset-lg-4 ps-lg-4">
                 <button 
                   type="submit" disabled={submitting} 
-                  className="btn btn-primary btn-lg w-100 py-3 fw-bold shadow-sm border-0 rounded-3 transition-all d-flex align-items-center justify-content-center"
+                  className="btn btn-primary btn-lg w-100 py-3 fw-bold shadow-sm border-0 rounded-3 d-flex align-items-center justify-content-center"
                   style={{ backgroundColor: "#4e44a8" }}
                 >
                   {submitting ? (
