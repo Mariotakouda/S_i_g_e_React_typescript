@@ -1,8 +1,9 @@
-import React, { useContext, useState, useEffect } from "react";
+import { useContext, useState, useEffect } from "react";
 import { Link, useNavigate, useLocation, Outlet } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import { checkManagerStatus } from "../../modules/announcements/service";
 import type { ManagerStatus } from "../../modules/announcements/service";
+import "./EmployeeLayout.css";
 
 // --- ICONES ---
 const Icons = {
@@ -128,13 +129,13 @@ const Icons = {
       <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
     </svg>
   ),
-  MenuWhite: () => (
+  Menu: () => (
     <svg
       width="24"
       height="24"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="white"
+      stroke="currentColor"
       strokeWidth="2.5"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -236,59 +237,20 @@ export default function EmployeeLayout() {
   ];
 
   const showLabels = isMobile ? false : sidebarOpen;
-  const currentSidebarWidth = showLabels ? "280px" : "75px";
 
   return (
-    <div
-      style={{
-        display: "flex",
-        width: "100vw",
-        height: "100vh",
-        overflow: "hidden",
-        backgroundColor: "#f8fafc",
-      }}
-    >
-      <aside
-        style={{
-          ...sidebarStyle,
-          width: currentSidebarWidth,
-          overflowX: "hidden",
-        }}
-      >
-        <div
-          style={{
-            padding: "32px 0",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              padding: "0 24px",
-            }}
-          >
-            <div style={logoBoxStyle}>H</div>
-            {showLabels && (
-              <span
-                style={{
-                  fontWeight: "700",
-                  fontSize: "19px",
-                  color: "white",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                EMPLOYE
-              </span>
-            )}
+    <div className="employee-layout">
+      {/* SIDEBAR */}
+      <aside className={`sidebar ${showLabels ? "sidebar--open" : "sidebar--collapsed"}`}>
+        <div className="sidebar__header">
+          <div className="sidebar__logo">
+            <div className="logo-icon">H</div>
+            {showLabels && <span className="logo-text">EMPLOYE</span>}
           </div>
         </div>
 
-        <nav style={{ flex: 1, padding: "0 12px", overflowY: "auto" }}>
-          {showLabels && <p style={menuTitleStyle}>Menu Principal</p>}
+        <nav className="sidebar__nav">
+          {showLabels && <p className="nav__section-title">Menu Principal</p>}
           {menuItems.map((item) => {
             const isActive = location.pathname === item.path;
             const Icon = item.icon;
@@ -296,140 +258,69 @@ export default function EmployeeLayout() {
               <Link
                 key={item.path}
                 to={item.path}
-                style={{
-                  ...navLinkStyle,
-                  justifyContent: showLabels ? "flex-start" : "center",
-                  backgroundColor: isActive
-                    ? "rgba(255,255,255,0.1)"
-                    : "transparent",
-                  color: isActive ? "#fff" : "#94a3b8",
-                  padding: showLabels ? "12px 16px" : "12px 0",
-                }}
+                className={`nav-item ${isActive ? "nav-item--active" : ""} ${!showLabels ? "nav-item--collapsed" : ""}`}
               >
-                <Icon />
+                <span className="nav-item__icon">
+                  <Icon />
+                </span>
                 {showLabels && (
-                  <span
-                    style={{
-                      flex: 1,
-                      marginLeft: "12px",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {item.label}
-                  </span>
+                  <span className="nav-item__label">{item.label}</span>
                 )}
                 {showLabels && item.badge && (
-                  <span style={badgeStyle}>{item.badge}</span>
+                  <span className="nav-item__badge">{item.badge}</span>
                 )}
               </Link>
             );
           })}
 
           {managerStatus?.is_manager && (
-            <div style={{ marginTop: "24px" }}>
-              {showLabels && <p style={menuTitleStyle}>Gestion d'équipe</p>}
+            <div className="manager-section">
+              {showLabels && (
+                <p className="nav__section-title">Gestion d'équipe</p>
+              )}
               <Link
                 to="/employee/team-tasks"
-                style={{
-                  ...navLinkStyle,
-                  justifyContent: showLabels ? "flex-start" : "center",
-                  color:
-                    location.pathname === "/employee/team-tasks"
-                      ? "#fff"
-                      : "#10b981",
-                  backgroundColor:
-                    location.pathname === "/employee/team-tasks"
-                      ? "rgba(16, 185, 129, 0.2)"
-                      : "transparent",
-                  padding: showLabels ? "12px 16px" : "12px 0",
-                }}
+                className={`nav-item nav-item--manager ${
+                  location.pathname === "/employee/team-tasks"
+                    ? "nav-item--manager-active"
+                    : ""
+                } ${!showLabels ? "nav-item--collapsed" : ""}`}
               >
-                <Icons.Team />{" "}
+                <span className="nav-item__icon">
+                  <Icons.Team />
+                </span>
                 {showLabels && (
-                  <span style={{ marginLeft: "12px" }}>Tâches équipe</span>
+                  <span className="nav-item__label">Tâches équipe</span>
                 )}
               </Link>
               <Link
                 to="/employee/announcements/create"
-                style={{
-                  ...createBtnStyle,
-                  justifyContent: showLabels ? "flex-start" : "center",
-                  padding: showLabels ? "12px 16px" : "12px 0",
-                  marginBottom: "8px",
-                  marginTop: "8px",
-                }}
+                className={`create-btn create-btn--green ${!showLabels ? "create-btn--collapsed" : ""}`}
               >
-                <Icons.Create />{" "}
-                {showLabels && (
-                  <span style={{ marginLeft: "12px" }}>Annonce</span>
-                )}
+                <Icons.Create />
+                {showLabels && <span>Annonce</span>}
               </Link>
               <Link
                 to="/employee/tasks/create"
-                style={{
-                  ...createBtnStyle,
-                  justifyContent: showLabels ? "flex-start" : "center",
-                  padding: showLabels ? "12px 16px" : "12px 0",
-                  backgroundColor: "#6366f1",
-                  marginBottom: "8px",
-                }}
+                className={`create-btn create-btn--indigo ${!showLabels ? "create-btn--collapsed" : ""}`}
               >
-                <Icons.Tasks />{" "}
-                {showLabels && (
-                  <span style={{ marginLeft: "12px" }}>
-                    Assigner une mission
-                  </span>
-                )}
+                <Icons.Tasks />
+                {showLabels && <span>Assigner une mission</span>}
               </Link>
             </div>
           )}
         </nav>
 
-        <div
-          style={{
-            ...sidebarFooterStyle,
-            padding: showLabels ? "20px" : "20px 0",
-            textAlign: "center",
-          }}
-        >
-          {/* AJOUT : Lien Confidentialité Sidebar */}
-          {/* {showLabels && (
-            <Link
-              to="/privacy-policy"
-              style={{
-                fontSize: "11px",
-                color: "#818cf8",
-                textDecoration: "none",
-                display: "block",
-                marginBottom: "15px",
-              }}
-            >
-              Confidentialité des données
-            </Link>
-          )} */}
-
-          <Link
-            to="/employee/profile"
-            style={{ textDecoration: "none", color: "inherit" }}
-          >
+        <div className="sidebar__footer">
+          <Link to="/employee/profile" className="user-info-link">
             <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: showLabels ? "flex-start" : "center",
-                gap: "12px",
-                marginBottom: "16px",
-              }}
+              className={`user-info ${!showLabels ? "user-info--collapsed" : ""}`}
             >
-              <div style={avatarCircleStyle}>
+              <div className="user-avatar">
                 {employee?.profile_photo_url ? (
                   <img
                     src={employee.profile_photo_url}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                    }}
+                    className="user-avatar__img"
                     alt="P"
                   />
                 ) : (
@@ -437,13 +328,16 @@ export default function EmployeeLayout() {
                 )}
               </div>
               {showLabels && (
-                <div style={{ overflow: "hidden", textAlign: "left" }}>
-                  <p style={userNameStyle}>{employee?.first_name || "User"}</p>
+                <div className="user-details">
+                  <p className="user-name">
+                    {employee?.first_name || "User"}
+                  </p>
                   <p
-                    style={{
-                      ...userRoleStyle,
-                      color: managerStatus?.is_manager ? "#10b981" : "#818cf8",
-                    }}
+                    className={`user-role ${
+                      managerStatus?.is_manager
+                        ? "user-role--manager"
+                        : "user-role--employee"
+                    }`}
                   >
                     {managerStatus?.is_manager ? "MANAGER" : "EMPLOYÉ"}
                   </p>
@@ -453,111 +347,48 @@ export default function EmployeeLayout() {
           </Link>
           <button
             onClick={handleLogout}
-            style={{
-              ...logoutButtonStyle,
-              fontSize: showLabels ? "14px" : "10px",
-              width: showLabels ? "80%" : "50px",
-              padding: showLabels ? "8px" : "6px",
-            }}
+            className={`logout-btn ${!showLabels ? "logout-btn--collapsed" : ""}`}
           >
             {showLabels ? "Déconnexion" : "Exit"}
           </button>
         </div>
       </aside>
 
+      {/* MAIN CONTAINER */}
       <div
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          marginLeft: currentSidebarWidth,
-          transition: "margin-left 0.3s ease",
-          minWidth: 0,
-        }}
+        className={`main-container ${showLabels ? "main-container--shifted" : ""}`}
       >
-        <header
-          style={{
-            height: "72px",
-            display: "flex",
-            alignItems: "center",
-            padding: isMobile ? "0 15px" : "0 32px",
-            backgroundColor: "#1e1b4b",
-            boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
-            position: "sticky",
-            top: 0,
-            zIndex: 10,
-          }}
-        >
-          {!isMobile && (
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              style={{
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              <Icons.MenuWhite />
-            </button>
-          )}
-          {!isMobile && (
-            <div
-              style={{
-                width: "1px",
-                height: "28px",
-                backgroundColor: "rgba(255, 255, 255, 0.4)",
-                margin: "0 20px",
-              }}
-            />
-          )}
-          <h2
-            style={{
-              margin: 0,
-              fontSize: isMobile ? "14px" : "16px",
-              fontWeight: "600",
-              color: "white",
-            }}
-          >
-            ESPACE PERSONNEL
-          </h2>
-          <div
-            style={{
-              marginLeft: "auto",
-              display: "flex",
-              alignItems: "center",
-              gap: "16px",
-            }}
-          >
+        {/* HEADER */}
+        <header className={`header ${isMobile ? "header--mobile" : ""}`}>
+          <div className="header__left">
+            {!isMobile && (
+              <>
+                <button
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="menu-toggle"
+                  aria-label="Toggle sidebar"
+                >
+                  <Icons.Menu />
+                </button>
+                <div className="header__divider" />
+              </>
+            )}
+            <h2 className="header__title">ESPACE PERSONNEL</h2>
+          </div>
+
+          <div className="header__right">
             {managerStatus?.is_manager && !isMobile && (
-              <div
-                style={{
-                  ...managerTagStyle,
-                  background: "rgba(255,255,255,0.15)",
-                  color: "white",
-                  border: "1px solid rgba(255,255,255,0.3)",
-                }}
-              >
-                <Icons.ManagerBadge /> <span>Mode Responsable</span>
+              <div className="manager-badge">
+                <Icons.ManagerBadge />
+                <span>Mode Responsable</span>
               </div>
             )}
-            <Link to="/employee/profile" style={{ textDecoration: "none" }}>
-              <div
-                style={{
-                  ...headerAvatarStyle,
-                  background: "white",
-                  color: "#4f46e5",
-                }}
-              >
+            <Link to="/employee/profile" className="header__avatar-link">
+              <div className="header__avatar">
                 {employee?.profile_photo_url ? (
                   <img
                     src={employee.profile_photo_url}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                    }}
+                    className="header__avatar-img"
                     alt="P"
                   />
                 ) : (
@@ -568,15 +399,8 @@ export default function EmployeeLayout() {
           </div>
         </header>
 
-        <main
-          style={{
-            flex: 1,
-            overflowY: "auto",
-            padding: isMobile ? "16px" : "32px",
-            boxSizing: "border-box",
-          }}
-        >
-          <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
+        <main className={`content ${isMobile ? "content--mobile" : ""}`}>
+          <div className="content__wrapper">
             <Outlet />
           </div>
         </main>
@@ -584,124 +408,3 @@ export default function EmployeeLayout() {
     </div>
   );
 }
-
-// ... (Gardez vos styles CSS inchangés comme dans votre code original)
-const sidebarStyle: React.CSSProperties = {
-  backgroundColor: "#1e1b4b",
-  color: "#fff",
-  position: "fixed",
-  height: "100vh",
-  transition: "width 0.3s ease",
-  zIndex: 1000,
-  display: "flex",
-  flexDirection: "column",
-};
-const logoBoxStyle: React.CSSProperties = {
-  width: "36px",
-  height: "36px",
-  background: "linear-gradient(135deg, #6366f1, #4f46e5)",
-  borderRadius: "10px",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  fontWeight: "800",
-  flexShrink: 0,
-};
-const menuTitleStyle: React.CSSProperties = {
-  fontSize: "11px",
-  color: "#818cf8",
-  fontWeight: "700",
-  textTransform: "uppercase",
-  paddingLeft: "12px",
-  marginBottom: "12px",
-  letterSpacing: "1px",
-  whiteSpace: "nowrap",
-};
-const navLinkStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  textDecoration: "none",
-  borderRadius: "10px",
-  fontSize: "14px",
-  fontWeight: "600",
-  transition: "0.2s",
-};
-const createBtnStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: "12px",
-  padding: "12px 16px",
-  backgroundColor: "#10b981",
-  color: "#fff",
-  textDecoration: "none",
-  borderRadius: "10px",
-  fontWeight: "700",
-  fontSize: "14px",
-};
-const sidebarFooterStyle: React.CSSProperties = {
-  borderTop: "1px solid rgba(255,255,255,0.08)",
-  background: "rgba(0,0,0,0.15)",
-};
-const avatarCircleStyle: React.CSSProperties = {
-  width: "40px",
-  height: "40px",
-  borderRadius: "10px",
-  background: "#312e81",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontWeight: "700",
-  overflow: "hidden",
-  flexShrink: 0,
-};
-const managerTagStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: "6px",
-  padding: "6px 12px",
-  borderRadius: "8px",
-  fontSize: "12px",
-  fontWeight: "700",
-};
-const headerAvatarStyle: React.CSSProperties = {
-  width: "38px",
-  height: "38px",
-  borderRadius: "10px",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontWeight: "bold",
-  overflow: "hidden",
-};
-const userNameStyle = {
-  margin: 0,
-  fontSize: "14px",
-  fontWeight: "600",
-  color: "#fff",
-  whiteSpace: "nowrap",
-};
-const userRoleStyle = {
-  margin: 0,
-  fontSize: "10px",
-  fontWeight: "700",
-  whiteSpace: "nowrap",
-};
-const badgeStyle = {
-  fontSize: "10px",
-  background: "#4f46e5",
-  color: "#fff",
-  padding: "2px 6px",
-  borderRadius: "6px",
-  marginLeft: "auto",
-};
-const logoutButtonStyle: React.CSSProperties = {
-  width: "80%",
-  margin: "0 auto",
-  padding: "8px",
-  background: "rgba(239, 68, 68, 0.1)",
-  color: "#f87171",
-  border: "1px solid rgba(239, 68, 68, 0.2)",
-  borderRadius: "10px",
-  cursor: "pointer",
-  fontWeight: "700",
-};

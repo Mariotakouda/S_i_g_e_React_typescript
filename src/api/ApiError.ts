@@ -26,7 +26,7 @@ export class ApiError extends Error {
  * Elle capture l'erreur et la relance en tant qu'ApiError.
  */
 export function handleAxiosError(error: any): never {
-    console.error('❌ Erreur de Service Axios:', error);
+    console.error('Erreur de Service Axios:', error);
     
     if (error.response) {
         // Le serveur a répondu (ex: 400, 401, 422, 500)

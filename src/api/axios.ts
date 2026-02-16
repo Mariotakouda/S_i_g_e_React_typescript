@@ -16,13 +16,13 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    console.log('📤 Requête:', config.method?.toUpperCase(), config.url, {
+    console.log('Requête:', config.method?.toUpperCase(), config.url, {
       hasToken: !!token
     });
     return config;
   },
   (error) => {
-    console.error('❌ Erreur intercepteur requête:', error);
+    console.error('Erreur intercepteur requête:', error);
     return Promise.reject(error);
   }
 );
@@ -30,19 +30,19 @@ api.interceptors.request.use(
 // Intercepteur pour gérer les réponses
 api.interceptors.response.use(
   (response) => {
-    console.log('✅ Réponse:', response.status, response.config.url);
+    console.log('Réponse:', response.status, response.config.url);
     return response;
   },
   (error) => {
     if (error.response?.status === 401) {
-      console.error('❌ Non authentifié - Nettoyage du token');
+      console.error('Non authentifié - Nettoyage du token');
       // Suggestion: Nettoyer le localStorage immédiatement en cas de 401
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('employee');
       // Le AuthContext peut alors réagir à l'absence de token/user
     }
-    console.error('❌ Erreur intercepteur réponse:', error.response?.status, error.response?.data);
+    console.error('Erreur intercepteur réponse:', error.response?.status, error.response?.data);
     return Promise.reject(error);
   }
 );

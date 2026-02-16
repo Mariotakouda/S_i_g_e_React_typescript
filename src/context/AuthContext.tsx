@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // ✅ Charger les données au montage (depuis localStorage + vérif API si nécessaire)
+  // Charger les données au montage (depuis localStorage + vérif API si nécessaire)
   useEffect(() => {
     const initAuth = async () => {
       const token = localStorage.getItem("token");
@@ -60,36 +60,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const parsedUser = JSON.parse(storedUser);
           setUser(parsedUser);
 
-          // ✅ Si employee ou manager SANS données employee en localStorage
+          // Si employee ou manager SANS données employee en localStorage
           if ((parsedUser.role === "employee" || parsedUser.role === "manager") && !storedEmployee) {
-            console.log("🔄 Chargement des données employee depuis /me...");
+            console.log("Chargement des données employee depuis /me...");
             try {
               const meResponse = await api.get("/me");
               if (meResponse.data.employee) {
-                console.log("✅ Données employee chargées:", meResponse.data.employee);
+                console.log("Données employee chargées:", meResponse.data.employee);
                 setEmployee(meResponse.data.employee);
                 localStorage.setItem("employee", JSON.stringify(meResponse.data.employee));
                 
-                // ✅ IMPORTANT : Mettre à jour aussi user.employee pour le contexte
+                // IMPORTANT : Mettre à jour aussi user.employee pour le contexte
                 const updatedUser = { ...parsedUser, employee: meResponse.data.employee };
                 setUser(updatedUser);
                 localStorage.setItem("user", JSON.stringify(updatedUser));
               }
             } catch (err) {
-              console.error("❌ Erreur chargement /me:", err);
+              console.error("Erreur chargement /me:", err);
             }
           } else if (storedEmployee) {
             const parsedEmployee = JSON.parse(storedEmployee);
             setEmployee(parsedEmployee);
             
-            // ✅ Synchroniser user.employee aussi
+            // Synchroniser user.employee aussi
             if (!parsedUser.employee) {
               parsedUser.employee = parsedEmployee;
               setUser({ ...parsedUser });
             }
           }
         } catch (err) {
-          console.error("❌ Erreur parsing localStorage:", err);
+          console.error("Erreur parsing localStorage:", err);
           localStorage.clear();
         }
       }
@@ -120,23 +120,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       localStorage.setItem("token", token);
       
-      // ✅ CORRECTION : Toujours stocker employee s'il existe
+      // CORRECTION : Toujours stocker employee s'il existe
       if (employeeData) {
         localStorage.setItem("employee", JSON.stringify(employeeData));
         setEmployee(employeeData);
         
-        // ✅ Ajouter employee dans user aussi
+        // Ajouter employee dans user aussi
         userData = { ...userData, employee: employeeData };
         localStorage.setItem("user", JSON.stringify(userData));
         setUser(userData);
       } 
-      // ✅ Si pas d'employee retourné mais que c'est un employee/manager, charger depuis /me
+      // Si pas d'employee retourné mais que c'est un employee/manager, charger depuis /me
       else if (userData.role === "employee" || userData.role === "manager") {
-        console.log("🔄 Pas d'employee dans la réponse login, chargement depuis /me...");
+        console.log("Pas d'employee dans la réponse login, chargement depuis /me...");
         try {
           const meResponse = await api.get("/me");
           if (meResponse.data.employee) {
-            console.log("✅ Données employee récupérées via /me:", meResponse.data.employee);
+            console.log("Données employee récupérées via /me:", meResponse.data.employee);
             localStorage.setItem("employee", JSON.stringify(meResponse.data.employee));
             setEmployee(meResponse.data.employee);
             
@@ -145,12 +145,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setUser(userData);
           }
         } catch (err) {
-          console.error("❌ Erreur /me après login:", err);
+          console.error("Erreur /me après login:", err);
           localStorage.setItem("user", JSON.stringify(userData));
           setUser(userData);
         }
       } 
-      // ✅ Admin ou autre rôle sans employee
+      // Admin ou autre rôle sans employee
       else {
         localStorage.removeItem("employee");
         setEmployee(null);
@@ -173,7 +173,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       await api.post("/logout"); 
     } catch (err: any) {
-      console.error("⚠️ Erreur logout API :", err.message);
+      console.error("Erreur logout API :", err.message);
     }
     localStorage.removeItem("token");
     localStorage.removeItem("user");
